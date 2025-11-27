@@ -7,7 +7,7 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
-# --- 1. 靜態資源設定 ---
+# --- 1. 靜態資源設定 (解決 Import Error 的關鍵) ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 
 # 產生圖片檔名對照 (修正為 .png)
@@ -190,7 +190,7 @@ def get_main_sign_text(kin_num):
         
     return "查無印記名稱"
 
-# --- 9. 瑪雅曆法日期查詢 (新增) ---
+# --- 9. 瑪雅曆法日期查詢 ---
 def get_maya_calendar_info(date_obj):
     """
     根據國曆日期查詢瑪雅曆日期、瑪雅月、瑪雅週等資訊。
@@ -200,7 +200,6 @@ def get_maya_calendar_info(date_obj):
     result = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Status": "查無資料"}
     
     try:
-        # 格式化查詢的國曆日期字串: YYYY-MM-DD
         query_date_str = date_obj.strftime('%Y-%m-%d')
         
         # 查詢 Calendar_Converter 表 (假設這個表是從 對應瑪雅生日.csv 匯入的)

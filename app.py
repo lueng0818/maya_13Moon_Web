@@ -1,282 +1,168 @@
-import os
-import calendar
-import datetime
-from PIL import Image
-import pandas as pd
 import streamlit as st
-
-# ────────────── Path Setup ──────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-IMG_DIR  = os.path.join(BASE_DIR, "images")
-
-# 確保資料夾存在
-if not os.path.exists(DATA_DIR): os.makedirs(DATA_DIR)
-if not os.path.exists(IMG_DIR): os.makedirs(IMG_DIR)
-
-# ────────────── Page Config & CSS ──────────────
-st.set_page_config(page_title="Maya 生命印記解碼", layout="wide", page_icon="🔮")
-st.markdown(
-    """<style>
-    .hero {padding:4rem 2rem; text-align:center; background:#f0f5f9; border-radius: 10px; margin-bottom: 2rem;}
-    .hero h1 {font-size:3rem; font-weight:700; margin-bottom:0.5rem; color: #1d4ed8;}
-    .hero p  {font-size:1.25rem; margin-bottom:1.5rem; color: #4b5563;}
-    .btn-primary {background:#1d4ed8; color:white; padding:0.75rem 1.5rem; border-radius:0.375rem; text-decoration:none;}
-    .features, .example, .testimonials, .faq {padding:2rem; background: white; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
-    .footer {position:fixed; bottom:0; left:0; width:100%; background:#1f2937; color:white; text-align:center; padding:1rem; z-index:999;}
-    .footer a {color:#60a5fa; text-decoration:none; margin:0 0.5rem;}
-    /* 隱藏 Streamlit 預設 footer */
-    footer {visibility: hidden;}
-    </style>""",
-    unsafe_allow_html=True,
+import datetime
+import os
+import pandas as pd
+import sqlite3
+from create_db import init_db
+from kin_utils import (
+    calculate_kin, get_full_kin_data, get_oracle, 
+    calculate_life_castle, get_img_b64, 
+    SEAL_FILES, TONE_FILES
 )
 
-# ────────────── Logic & Data Generation ──────────────
-# 為了讓程式能獨立運作，這裡內建了計算邏輯與資料生成
-# 如果您有真實的 CSV，它會優先讀取 CSV
-
-def generate_kin_data():
-    """生成 1-260 KIN 的基本資料 (如果沒有 CSV)"""
-    seals = ["紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗",
-             "藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
-    tones = ["磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
-    
-    data = []
-    for k in range(1, 261):
-        s_idx = (k - 1) % 20
-        t_idx = (k - 1) % 13
-        totem = seals[s_idx]
-        tone = tones[t_idx]
-        data.append({
-            "KIN": k,
-            "主印記": f"{tone}{totem}",
-            "圖騰": totem,
-            "調性": tone
-        })
-    return pd.DataFrame(data)
-
-def generate_interpretation_data():
-    """生成圖騰解釋範本 (如果沒有 CSV)"""
-    seals = ["紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗",
-             "藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
-    
-    data = []
-    for s in seals:
-        data.append({
-            "圖騰": s,
-            "你是誰": f"你是【{s}】，擁有獨特的能量頻率。",
-            "最常遇到的瓶頸": f"作為{s}，有時會感到能量流動受阻或過度。",
-            "建議": f"試著連結{s}的原型力量，保持覺知。",
-            "擁有什麼樣的禮物": f"你的天賦在於展現{s}的高頻特質。"
-        })
-    return pd.DataFrame(data)
-
-def calculate_kin_from_date(y, m, d):
-    """標準 13 月亮曆算法 (Reference: 2023/7/26 = KIN 1)"""
-    ref_date = datetime.date(2023, 7, 26)
-    target_date = datetime.date(y, m, d)
-    delta = (target_date - ref_date).days
-    kin = (1 + delta) % 260
-    return 260 if kin == 0 else kin
-
-# ────────────── Load Data ──────────────
-# 嘗試讀取 CSV，失敗則使用內建生成函數
-try:
-    # 這裡我們稍微調整邏輯：不讀取 start_year 和 month_accum，直接用 datetime 算 KIN
-    # 但保留 kin_basic 和 self_df 的結構
-    
-    path_kin = os.path.join(DATA_DIR, "kin_basic_info.csv")
-    path_interp = os.path.join(DATA_DIR, "totem_interpretation_new.csv")
-    
-    if os.path.exists(path_kin):
-        kin_basic = pd.read_csv(path_kin)
-    else:
-        kin_basic = generate_kin_data()
-        
-    if os.path.exists(path_interp):
-        self_df = pd.read_csv(path_interp)
-    else:
-        self_df = generate_interpretation_data()
-
-except Exception as e:
-    st.error(f"❌ 資料初始化失敗：{e}")
+# --- 1. 自動檢查並建立資料庫 ---
+if not os.path.exists("13moon.db"):
+    st.warning("正在初始化資料庫，請稍候...")
+    init_db()
+    st.success("資料庫建立完成！請重新整理頁面。")
     st.stop()
 
-# ────────────── Hero Section ──────────────
-st.markdown(
-    """
-    <section class="hero">
-      <h1>立即解碼你的 Maya 生命印記，喚醒宇宙支持能量</h1>
-      <p>只要輸入出生日期，一鍵探索你的專屬靈性密碼，並獲得實踐建議──無需下載、馬上操作。</p>
-      <p><em>請從左側面板輸入你的西元生日，即可立即查看。</em></p>
-    </section>
-    """,
-    unsafe_allow_html=True,
-)
+# --- 2. 頁面設定 ---
+st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🌙")
 
-# ────────────── Sidebar Input ──────────────
-st.sidebar.header("📅 查詢你的 Maya 印記")
-# 年份範圍設定
-years = list(range(1920, 2031))
-year = st.sidebar.selectbox("西元年", years, index=years.index(1990))
-month = st.sidebar.selectbox("月份", list(range(1,13)), index=0)
+st.markdown("""
+<style>
+    .stApp { background-color: #0e1117; color: #fff; }
+    h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
+    .kin-card {
+        background: #262730; border: 1px solid #444; 
+        border-radius: 12px; padding: 10px; text-align: center;
+        transition: transform 0.2s;
+    }
+    .kin-card:hover { transform: scale(1.03); border-color: #d4af37; }
+    .matrix-data {
+        font-family: monospace; color: #00ff00; background: #000;
+        padding: 10px; border-radius: 5px; margin-top: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# 動態計算該月最大天數
-try:
-    max_day = calendar.monthrange(year, month)[1]
-except:
-    max_day = 31 
-day = st.sidebar.slider("日期", 1, max_day, 1)
+# 側邊欄
+st.sidebar.title("🌌 13 Moon System")
+mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "通訊錄/合盤", "矩陣資料庫"])
 
-# ────────────── KIN 計算 ──────────────
-# 使用 Datetime 核心算法取代查表法，更精準
-try:
-    kin = calculate_kin_from_date(year, month, day)
-except Exception as e:
-    st.sidebar.error(f"日期無效: {e}")
-    st.stop()
+# --- 輔助顯示卡片 ---
+def show_card(label, s_id, t_id, is_main=False):
+    s_file = SEAL_FILES.get(s_id, "01紅龍.jpg")
+    t_file = TONE_FILES.get(t_id, "瑪雅曆法圖騰-34.png")
+    
+    with st.container():
+        st.markdown(f"<div class='kin-card' style='border:{'2px solid gold' if is_main else ''}'>", unsafe_allow_html=True)
+        st.image(f"assets/tones/{t_file}", width=30 if not is_main else 40)
+        st.image(f"assets/seals/{s_file}", width=70 if not is_main else 100)
+        st.caption(label)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# ────────────── 顯示基本 KIN 與圖騰 ──────────────
-subset = kin_basic[kin_basic["KIN"] == kin]
-
-if subset.empty:
-    st.error(f"❓ 找不到 KIN {kin} 資料，請檢查 kin_basic_info.csv")
-    st.stop()
-
-info = subset.iloc[0]
-totem = info["圖騰"]
-tone = info["調性"]
-full_name = info["主印記"]
-
-col1, col2 = st.columns([1, 2])
-
-with col1:
-    # 嘗試顯示圖片，若無則顯示替代文字
-    # 圖片命名邏輯：假設圖片名為 "紅龍.png"
-    img_file = os.path.join(IMG_DIR, f"{totem}.png")
-    # 如果找不到 png，嘗試 jpg
-    if not os.path.exists(img_file):
-        img_file = os.path.join(IMG_DIR, f"{totem}.jpg")
+# === 頁面 1: 個人解碼 ===
+if mode == "個人星系解碼":
+    st.title("🔮 個人星系印記解碼")
+    date_in = st.date_input("請選擇生日", datetime.date.today())
+    
+    if st.button("開始解碼"):
+        kin = calculate_kin(date_in)
+        data = get_full_kin_data(kin)
+        oracle = get_oracle(kin)
         
-    if os.path.exists(img_file):
-        st.image(Image.open(img_file), width=150)
-    else:
-        # 如果沒有圖片，顯示一個帶顏色的圓圈
-        st.markdown(f"""
-        <div style="width:120px; height:120px; background:#eee; border-radius:50%; 
-        display:flex; align-items:center; justify-content:center; border: 4px solid #d4af37;">
-            <span style="font-size:24px;">{totem[0]}</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown(f"## 🔢 KIN {kin}")
-    st.markdown(f"<h3 style='color:#d4af37;'>{full_name}</h3>", unsafe_allow_html=True)
-    st.markdown(f"**圖騰：** {totem} ｜ **調性：** {tone}")
-
-# ────────────── 功能說明 ──────────────
-with st.expander("🔍 點擊查看功能說明", expanded=False):
-    st.markdown("""
-    1. **輸入你的生日**：選擇西元年／月／日，精準算出你的 Maya 能量頻率（KIN）。
-    2. **一鍵生成印記**：系統自動計算並對應 20 種圖騰。
-    3. **深入能量解讀**：解鎖你的天賦、挑戰與角色定位。
-    4. **分享與回饋**：將你的專屬印記分享給朋友。
-    """)
-
-# ────────────── caption mapping ──────────────
-descriptions = {
-  "你是誰": "← 描述你的個性或能量特質…",
-  "最常遇到的瓶頸": "← 代表你比較容易卡關的地方…",
-  "建議": "← 提供簡單可行的日常提醒…",
-  "擁有什麼樣的禮物": "← 你天生擁有的天賦與力量…",
-}
-
-def render_section(df_row, items, edu_pts):
-    # 顯示教育提示
-    for pt in edu_pts:
-        st.info(pt)
-    
-    st.markdown("---")
-    
-    # 使用 2x2 grid 排版
-    cols = st.columns(2)
-    
-    for idx, (col_key, label) in enumerate(items):
-        if col_key not in df_row: continue
+        c1, c2 = st.columns([1, 2])
         
-        with cols[idx % 2]:
-            st.markdown(f"#### {label}")
-            cap = descriptions.get(col_key)
-            if cap: st.caption(cap)
+        with c1:
+            # 顯示主印記大圖
+            st.image(f"assets/seals/{data['seal_img']}", width=180)
+            st.markdown(f"## KIN {kin}")
+            st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
+            st.info(f"波符：{data.get('wave_name','')} 波符")
             
-            content = df_row[col_key]
-            # 美化輸出框
-            st.markdown(
-                f"""<div style="background:#f8f9fa; padding:15px; border-radius:5px; border-left:4px solid #1d4ed8; margin-bottom:20px;">
-                {content}
-                </div>""", 
-                unsafe_allow_html=True
-            )
+            # 矩陣數據
+            st.markdown("#### 🧬 441 矩陣座標")
+            st.markdown(f"""
+            <div class="matrix-data">
+            時間: {data.get('Matrix_Time')}<br>
+            空間: {data.get('Matrix_Space')}<br>
+            共時: {data.get('Matrix_Sync')}<br>
+            BMU : {data.get('Matrix_BMU')}
+            </div>
+            """, unsafe_allow_html=True)
 
-# ────────────── 深度解讀：自我探索 ──────────────
-st.markdown("### 🔮 深度解讀：自我探索")
+        with c2:
+            st.subheader("📜 祈禱文")
+            st.write(data.get('祈禱文', '（無資料）'))
+            
+            if 'IChing_Meaning' in data:
+                with st.expander("查看易經卦象", expanded=True):
+                    st.success(f"**{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}\n\n_{data.get('IChing_Story','')}_")
 
-# 篩選對應圖騰的解釋
-interp_subset = self_df[self_df["圖騰"] == totem]
+            st.subheader("五大神諭")
+            cols = st.columns(5)
+            with cols[0]: show_card("引導", oracle['guide']['s'], oracle['guide']['t'])
+            with cols[1]: show_card("擴展", oracle['antipode']['s'], oracle['antipode']['t'])
+            with cols[2]: show_card("主印記", oracle['destiny']['s'], oracle['destiny']['t'], True)
+            with cols[3]: show_card("支持", oracle['analog']['s'], oracle['analog']['t'])
+            with cols[4]: show_card("推動", oracle['occult']['s'], oracle['occult']['t'])
+            
+            st.subheader("波符旅程")
+            if os.path.exists(f"assets/wavespells/{data['wave_img']}"):
+                st.image(f"assets/wavespells/{data['wave_img']}")
 
-if not interp_subset.empty:
-    row = interp_subset.iloc[0]
-    render_section(
-        row,
-        [("你是誰","🙋 你是誰"),
-         ("最常遇到的瓶頸","🚧 最常遇到的瓶頸"),
-         ("建議","🪄 建議"),
-         ("擁有什麼樣的禮物","🎁 擁有什麼樣的禮物")],
-        [f"「{totem}」是你的角色原型，幫助你看見優勢與盲點。", "內化這份能量，成為更完整的自己。"]
-    )
-else:
-    st.warning(f"目前資料庫中尚未建立「{totem}」的詳細解讀資料。")
+# === 頁面 2: 52流年 ===
+elif mode == "52流年城堡":
+    st.title("🏰 52 年生命城堡")
+    date_in = st.date_input("請選擇生日", datetime.date(1990, 1, 1))
+    
+    if st.button("計算流年"):
+        path = calculate_life_castle(date_in)
+        
+        # 顯示 0-51 歲 (第一輪)
+        st.subheader("第一週期 (0-51歲)")
+        cols = st.columns(4)
+        for i, row in enumerate(path[:52]):
+            with cols[i % 4]:
+                info = row['Info']
+                img_path = f"assets/seals/{info['seal_img']}"
+                img_b64 = get_img_b64(img_path)
+                
+                st.markdown(f"""
+                <div style="background:{row['Color']}; padding:8px; border-radius:8px; margin-bottom:8px; color:#333; text-align:center;">
+                    <small>{row['Age']} 歲 ({row['Year']})</small><br>
+                    <b style="color:#b8860b">KIN {row['KIN']}</b><br>
+                    <img src="data:image/jpg;base64,{img_b64}" width="40" style="border-radius:50%"><br>
+                    <span style="font-size:12px">{info.get('調性','')} {info.get('圖騰','')}</span>
+                </div>
+                """, unsafe_allow_html=True)
 
-# ────────────── 深度解讀範例 (固定顯示) ──────────────
-st.markdown('<div class="example">', unsafe_allow_html=True)
-st.markdown("### 📖 深度解讀範例 (參考)")
-st.markdown("""
-- **圖騰：** 白狗  
-- **核心能量：** 護佑、守護、內在安定  
-- **建議實踐：** 每日冥想前，點蠟燭並呼吸三分鐘，想像溫暖的火焰保障你的安全。  
-- **背後故事：** 白狗象徵夜晚的守護神，牠引領靈魂穿越黑暗，回到自我中心。
-""")
-st.markdown('</div>', unsafe_allow_html=True)
+# === 頁面 3: 通訊錄 ===
+elif mode == "通訊錄/合盤":
+    st.title("👥 通訊錄與合盤")
+    conn = sqlite3.connect("13moon.db")
+    try:
+        df = pd.read_sql("SELECT * FROM Users", conn)
+        st.dataframe(df)
+        
+        st.subheader("❤️ 合盤計算器")
+        names = df['名字'].tolist() if not df.empty else []
+        c1, c2 = st.columns(2)
+        p1 = c1.selectbox("選擇 A", ["手動輸入"] + names)
+        p2 = c2.selectbox("選擇 B", ["手動輸入"] + names)
+        
+        if st.button("計算關係"):
+            # 簡單範例：抓取 KIN 進行計算
+            # 實際專案可在此擴充合盤邏輯
+            st.info("合盤功能開發中... (可從 Users 表讀取 KIN 相加)")
+            
+    except:
+        st.error("通訊錄讀取失敗，請確認 data/通訊錄.csv 是否存在")
+    conn.close()
 
-# ────────────── 案例分享 ──────────────
-st.markdown('<div class="testimonials">', unsafe_allow_html=True)
-st.markdown("### ❤️ 使用者案例分享")
-st.markdown("""
-> **小芸，35 歲｜自由工作者** > “第一次查到『藍鷹』印記，就驚覺自己其實一直渴望自由翱翔。照著建議練習後，一個月內順利接下夢想案子！”
-""")
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ────────────── 常見問題 ──────────────
-st.markdown('<div class="faq">', unsafe_allow_html=True)
-st.markdown("### ❓ 常見問題")
-st.markdown("""
-- **為什麼查不到我的印記？** 請確認輸入格式（西元），或確認您的生日是否正確。  
-
-- **一天可以查幾次？** 本系統無限制，但建議每次查詢後給自己一點時間消化訊息，穩定能量頻率。  
-""")
-st.markdown('</div>', unsafe_allow_html=True)
-
-# 為了防止 footer 遮擋內容，加一點底部空間
-st.markdown("<br><br><br>", unsafe_allow_html=True)
-
-# ────────────── 固定 Footer ──────────────
-st.markdown(
-    """
-    <footer class="footer">
-      <a href="https://www.facebook.com/soulclean1413/" target="_blank">👉 加入粉專</a> 
-      <a href="https://www.instagram.com/tilandky/" target="_blank">👉 追蹤IG</a>
-      <a href="https://line.me/R/ti/p/%40690ZLAGN" target="_blank">👉 加入社群</a>
-    </footer>
-    """,
-    unsafe_allow_html=True
-)
+# === 頁面 4: 矩陣資料庫 ===
+elif mode == "矩陣資料庫":
+    st.title("🧬 核心資料庫預覽")
+    conn = sqlite3.connect("13moon.db")
+    
+    tab1, tab2, tab3 = st.tabs(["卓爾金曆", "441矩陣", "星際年"])
+    with tab1: st.dataframe(pd.read_sql("SELECT * FROM Kin_Data LIMIT 50", conn))
+    with tab2: 
+        try: st.dataframe(pd.read_sql("SELECT * FROM Matrix_Data LIMIT 50", conn))
+        except: st.warning("矩陣資料未匯入")
+    with tab3:
+        try: st.dataframe(pd.read_sql("SELECT * FROM Star_Years LIMIT 50", conn))
+        except: st.warning("星際年資料未匯入")
+    conn.close()

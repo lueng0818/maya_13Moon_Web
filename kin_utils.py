@@ -8,10 +8,10 @@ DB_PATH = "13moon.db"
 
 # --- 圖片檔名設定 (根據您上傳的檔案) ---
 SEAL_FILES = {
-    1: "01紅龍.jpg", 2: "02白風.jpg", 3: "03藍夜.jpg", 4: "04黃種子.jpg", 5: "05紅蛇.jpg",
-    6: "06白世界橋.jpg", 7: "07藍手.jpg", 8: "08黃星星.jpg", 9: "09紅月.jpg", 10: "10白狗.jpg",
-    11: "11藍猴.jpg", 12: "12黃人.jpg", 13: "13紅天行者.jpg", 14: "14白巫師.jpg", 15: "15藍鷹.jpg",
-    16: "16黃戰士.jpg", 17: "17紅地球.jpg", 18: "18白鏡.jpg", 19: "19藍風暴.jpg", 20: "20黃太陽.jpg"
+    1: "01紅龍.png", 2: "02白風.png", 3: "03藍夜.png", 4: "04黃種子.png", 5: "05紅蛇.png",
+    6: "06白世界橋.png", 7: "07藍手.png", 8: "08黃星星.png", 9: "09紅月.png", 10: "10白狗.png",
+    11: "11藍猴.png", 12: "12黃人.png", 13: "13紅天行者.png", 14: "14白巫師.png", 15: "15藍鷹.png",
+    16: "16黃戰士.png", 17: "17紅地球.png", 18: "18白鏡.png", 19: "19藍風暴.png", 20: "20黃太陽.png"
 }
 
 # 調性 1 (34) ~ 調性 13 (46)
@@ -73,7 +73,7 @@ def get_full_kin_data(kin):
     # 4. 圖片與波符
     s_num = data.get('圖騰數字', 1)
     t_num = data.get('調性數字', 1)
-    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.jpg")
+    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     
     wave_id = math.ceil(kin / 13)
@@ -126,3 +126,4 @@ def calculate_life_castle(birth_date):
             "Info": info, "Color": col
         })
     return path
+

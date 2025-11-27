@@ -8,14 +8,14 @@ from create_db import init_db
 from kin_utils import (
     calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
     calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES, get_main_sign_text,
-    save_user_data, get_user_list, get_user_kin, calculate_composite
+    get_maya_calendar_info, get_week_key_sentence, get_heptad_prayer,
+    get_main_sign_text, save_user_data, get_user_list, get_user_kin, calculate_composite,
+    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
 )
 
 # 1. 系統初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
-# 檢查資料庫狀態並初始化
 if not os.path.exists("13moon.db"):
     with st.spinner("系統初始化中 (建立資料庫)..."):
         st.cache_data.clear()
@@ -33,6 +33,7 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
     
+    /* 五大神諭卡片通用樣式 */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -60,7 +61,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.sidebar.title("🌌 13 Moon System")
-mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "人員生日管理", "通訊錄/合盤", "系統檢查員"]) # 新增/調整導航名稱
+mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "人員生日管理", "通訊錄/合盤", "系統檢查員"])
 
 # --- 輔助顯示卡片 ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
@@ -70,6 +71,7 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     img_s_b64 = get_img_b64(f"assets/seals/{s_f}")
     img_t_b64 = get_img_b64(f"assets/tones/{t_f}")
     
+    # 關鍵修正：透過 KIN 數字查詢精準的主印記名稱
     display_text = get_main_sign_text(kin_num)
     
     if "查無印記名稱" in display_text:
@@ -88,8 +90,9 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     </div>
     """
 
-# --- 主程式碼 (各頁面) ---
-# ... (頁面 1: 個人解碼) ...
+# ==========================================
+# 頁面 1: 個人星系解碼 (包含雙核心分頁)
+# ==========================================
 if mode == "個人星系解碼":
     st.title("🔮 個人星系印記解碼")
     
@@ -111,7 +114,7 @@ if mode == "個人星系解碼":
     if start_btn or st.session_state.get('run_decode'):
         st.session_state['run_decode'] = True
         
-        # 1. 計算 KIN (優先查表)
+        # 1. 計算所有數據
         kin, err = calculate_kin_v2(date_in)
         if kin is None:
             st.error(f"⚠️ KIN計算失敗: {err} (切換為數學備案)")
@@ -124,18 +127,30 @@ if mode == "個人星系解碼":
         maya_cal_info = get_maya_calendar_info(date_in)
         week_key_sentence = get_week_key_sentence(maya_cal_info.get('瑪雅週', ''))
         heptad_prayer = get_heptad_prayer(maya_cal_info.get('Heptad_Path', ''))
-
+        
         st.divider()
         
-        tab_20, tab_28 = st.tabs(["1️⃣3️⃣ : 2️⃣0️⃣ 共時編碼", "1️⃣3️⃣ : 2️⃣8️⃣ 時間循環"])
+        # 輔助計算周邊印記的 KIN 數字 (用於顯示)
+        def get_kin_from_ids(s_id, t_id):
+            raw_kin = s_id + (t_id - 1) * 20
+            return (raw_kin - 1) % 260 + 1
+
+        guide_kin = get_kin_from_ids(oracle_info['guide']['s'], oracle_info['guide']['t'])
+        analog_kin = get_kin_from_ids(oracle_info['analog']['s'], oracle_info['analog']['t'])
+        antipode_kin = get_kin_from_ids(oracle_info['antipode']['s'], oracle_info['antipode']['t'])
+        occult_kin = get_kin_from_ids(oracle_info['occult']['s'], oracle_info['occult']['t'])
         
-        # --- TAB 1: 13:20 共時編碼 (KIN & Oracle) ---
+        tab_20, tab_28 = st.tabs(["1️⃣3️⃣ : 2️⃣0️⃣ 共時編碼 (Tzolkin)", "1️⃣3️⃣ : 2️⃣8️⃣ 時間循環 (Solar-Lunar)"])
+        
+        # === TAB 1: 13:20 共時編碼 (KIN & Oracle) ===
         with tab_20:
+            
             t_col1, t_col2 = st.columns([1, 1.6])
             
-            # 左側：主資訊
+            # --- 左側：主資訊 ---
             with t_col1:
-                s_path = f"assets/seals/{data.get('seal_img','')}"
+                seal_img = data.get('seal_img','')
+                s_path = f"assets/seals/{seal_img}"
                 if os.path.exists(s_path): st.image(s_path, width=180)
                 
                 st.markdown(f"## KIN {kin}")
@@ -174,19 +189,10 @@ if mode == "個人星系解碼":
                     BMU : {data.get('Matrix_BMU','-')}
                     </div>""", unsafe_allow_html=True)
 
-            # 右側：五大神諭盤
+            # --- 右側：五大神諭盤 ---
             with t_col2:
                 st.subheader("五大神諭盤")
                 
-                def get_kin_from_ids(s_id, t_id):
-                    raw_kin = s_id + (t_id - 1) * 20
-                    return (raw_kin - 1) % 260 + 1
-
-                guide_kin = get_kin_from_ids(oracle_info['guide']['s'], oracle_info['guide']['t'])
-                analog_kin = get_kin_from_ids(oracle_info['analog']['s'], oracle_info['analog']['t'])
-                antipode_kin = get_kin_from_ids(oracle_info['antipode']['s'], oracle_info['antipode']['t'])
-                occult_kin = get_kin_from_ids(oracle_info['occult']['s'], oracle_info['occult']['t'])
-
                 st.markdown(f"""
                 <div class="oracle-grid-container">
                     <div></div> <div>{get_card_html("引導", guide_kin, oracle_info['guide']['s'], oracle_info['guide']['t'])}</div> <div></div>
@@ -200,7 +206,10 @@ if mode == "個人星系解碼":
                 st.markdown("---")
                 if 'IChing_Meaning' in data:
                     st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
-        
+                if '祈禱文' in data:
+                    with st.expander("📜 祈禱文"):
+                        st.write(data['祈禱文'])
+
         # === TAB 2: 13:28 時間循環 (Solar-Lunar) ===
         with tab_28:
             
@@ -209,7 +218,8 @@ if mode == "個人星系解碼":
             with t_col1:
                 st.subheader("🗓️ 瑪雅曆法對照")
                 if maya_cal_info['Status'] == "查詢成功":
-                    st.markdown(f"**瑪雅日期**：<span style='color:#ffd700'>{maya_cal_info['Maya_Date']}</span>", unsafe_allow_html=True)
+                    st.markdown(f"**國曆日期**：<span style='color:#ffd700'>{date_in.strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"**瑪雅日期**：<span style='color:#ffd700'>{maya_cal_info['Maya_Date']}</span>")
                     st.markdown(f"**瑪雅月 (13月相)**：{maya_cal_info['Maya_Month']}")
                     st.markdown(f"**瑪雅週 (4色循環)**：{maya_cal_info['Maya_Week']}")
                     
@@ -217,7 +227,7 @@ if mode == "個人星系解碼":
                         st.markdown("---")
                         st.success(f"🔑 **本週主題金句**：{week_key_sentence}")
                 else:
-                    st.error(f"⚠️ {maya_cal_info['Status']}，無法顯示瑪雅曆資訊。")
+                    st.error(f"⚠️ {maya_cal_info['Status']}，請檢查 Calendar_Converter 表格範圍。")
             
             with t_col2:
                 st.subheader("🛣️ 七價路徑與調頻")
@@ -230,23 +240,27 @@ if mode == "個人星系解碼":
                     st.caption("查無對應的七價路徑祈禱文。")
 
 # ==========================================
-# 頁面 2: 52 流年城堡
+# 頁面 2: 52 流年城堡 (遇年改年)
 # ==========================================
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
-    d = st.date_input("出生日期", datetime.date(1990, 1, 1))
     
-    # 歲數/年數選擇 (遇年改年)
-    col_start_year, col_b = st.columns([1.5, 2.5])
+    col_d, col_start_year, col_b = st.columns([1.5, 1.5, 1])
+    
+    with col_d:
+        d = st.date_input("出生日期", datetime.date(1990, 1, 1))
+    
     with col_start_year:
          st.subheader("🔁 循環起始年")
-         # 這裡需要一個動態的年份列表，使用戶可以選擇從哪一年開始算 52 歲城堡
-         # 由於 Kin_Start 表格中 Min/Max Year 已經被載入，我們使用一個範圍
-         # 簡單設定為 1800 到 2100 年
+         # 設置起始年為可選範圍
          start_year = st.number_input("計算起始西元年", min_value=1800, max_value=2100, value=d.year)
          
-    if st.button("計算流年路徑"):
-        # 替換掉 date_in，使用新的起始年份
+    with col_b:
+        st.write("")
+        st.write("")
+        start_btn = st.button("計算流年路徑", type="primary")
+
+    if start_btn:
         start_dob = datetime.date(start_year, d.month, d.day)
         path = calculate_life_castle(start_dob)
         
@@ -259,7 +273,7 @@ elif mode == "52流年城堡":
                 s_p = f"assets/seals/{info.get('seal_img','')}"
                 img_html = f'<img src="data:image/png;base64,{get_img_b64(s_p)}" width="40" style="border-radius:50%">' if os.path.exists(s_p) else ""
                 
-                # 【新增波符名稱】顯示在印記名稱前
+                # 顯示 波符名稱 | 主印記名稱
                 display_name = f"{info.get('波符', '未知')} | {info.get('主印記', '')}"
                 
                 st.markdown(f"""
@@ -271,28 +285,26 @@ elif mode == "52流年城堡":
                 </div>
                 """, unsafe_allow_html=True)
 
-
 # ==========================================
-# 頁面 3: 人員生日管理 (建檔功能)
+# 頁面 3: 人員生日管理
 # ==========================================
 elif mode == "人員生日管理":
     st.title("👤 人員生日管理 (建檔)")
     
-    name = st.text_input("姓名", max_chars=50)
-    dob = st.date_input("生日", datetime.date(1990, 1, 1))
+    col1, col2 = st.columns(2)
+    with col1:
+        name = st.text_input("姓名", max_chars=50)
+    with col2:
+        dob = st.date_input("生日", datetime.date(1990, 1, 1))
     
     if st.button("💾 建檔 (儲存人員資料)", type="primary"):
         if name and dob:
-            # 1. 計算 KIN
             kin, err = calculate_kin_v2(dob)
             if kin is None:
                 st.error(f"❌ 查表失敗，無法建檔。錯誤：{err}")
                 st.stop()
             
-            # 2. 獲取主印記名稱
             main_sign = get_main_sign_text(kin)
-            
-            # 3. 儲存
             success, msg = save_user_data(name, dob.strftime('%Y-%m-%d'), kin, main_sign)
             if success:
                 st.success(f"✅ {name} 的資料已成功建檔！{msg}")
@@ -312,8 +324,6 @@ elif mode == "人員生日管理":
 # ==========================================
 elif mode == "通訊錄/合盤":
     st.title("❤️ 關係合盤計算")
-    st.write("透過已建檔人員或手動輸入 KIN 進行關係能量計算。")
-    
     df_users = get_user_list()
     
     if df_users.empty:
@@ -360,7 +370,6 @@ elif mode == "通訊錄/合盤":
 # ==========================================
 elif mode == "系統檢查員":
     st.title("🔍 系統檢查")
-    # ... (原系統檢查邏輯不變) ...
     if os.path.exists("13moon.db"):
         conn = sqlite3.connect("13moon.db")
         try:

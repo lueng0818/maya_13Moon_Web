@@ -1,199 +1,132 @@
-import streamlit as st
-import datetime
-import os
-import pandas as pd
 import sqlite3
-import base64
-from create_db import init_db
-from kin_utils import (
-    calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
-    calculate_life_castle, get_img_b64, 
-    SEAL_FILES, TONE_FILES
-)
+import pandas as pd
+import os
+import glob
 
-# 1. 系統初始化
-st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
+DB_NAME = "13moon.db"
+DATA_DIR = "data"
 
-if not os.path.exists("13moon.db"):
-    with st.spinner("系統初始化中 (建立資料庫)..."):
-        st.cache_data.clear()
-        init_db()
-    st.success("初始化完成！")
+def find_file(keyword):
+    """模糊搜尋檔案"""
+    if not os.path.exists(DATA_DIR): return None
+    files = glob.glob(os.path.join(DATA_DIR, "*.csv"))
+    for f in files:
+        if keyword in os.path.basename(f):
+            return f
+    return None
 
-# CSS
-st.markdown("""
-<style>
-    .stApp { background-color: #0e1117; color: #fff; }
-    h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
-    .kin-card-grid {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        background: #262730; border: 1px solid #444; border-radius: 8px;
-        padding: 5px; width: 100%; height: 100%;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    }
-    .matrix-data {
-        font-family: monospace; color: #00ff00; background: #000;
-        padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# 側邊欄
-st.sidebar.title("🌌 13 Moon System")
-mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "通訊錄/合盤", "系統檢查員"])
-
-# ==========================================
-# 頁面 1: 個人星系解碼
-# ==========================================
-if mode == "個人星系解碼":
-    st.title("🔮 個人星系印記解碼")
-    
-    # ────────────── Date Selector ──────────────
-    col_d, col_b = st.columns([2, 1])
-    with col_d:
-        st.subheader("📅 查詢日期")
-        date_in = st.date_input("選擇日期", datetime.date.today())
-    with col_b:
-        st.write("")
-        st.write("")
-        st.write("") # Spacer
-        start_btn = st.button("🚀 開始解碼", type="primary")
-
-    if start_btn or st.session_state.get('run_decode'):
-        st.session_state['run_decode'] = True
-        
-        # ────────────── KIN Calculation ──────────────
-        # 優先使用查表法 (v2)
-        kin, err = calculate_kin_v2(date_in)
-        
-        if kin is None:
-            st.error(f"⚠️ {err} (將切換為數學計算法)")
-            kin = calculate_kin_math(date_in) # 降級使用數學法
-            
-        # 取得完整資料
-        data = get_full_kin_data(kin)
-        oracle = get_oracle(kin)
-        
-        st.divider()
-        c1, c2 = st.columns([1, 1.6])
-        
-        # 左側資訊
-        with c1:
-            s_path = f"assets/seals/{data.get('seal_img','')}"
-            if os.path.exists(s_path):
-                st.image(s_path, width=180)
-            else:
-                st.warning(f"缺圖: {data.get('seal_img','')}")
-
-            st.markdown(f"## KIN {kin}")
-            st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
-            st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
-            
-            with st.expander("🧬 441 矩陣數據"):
-                st.markdown(f"""<div class="matrix-data">
-                時間: {data.get('Matrix_Time','-')}<br>
-                空間: {data.get('Matrix_Space','-')}<br>
-                共時: {data.get('Matrix_Sync','-')}<br>
-                BMU : {data.get('Matrix_BMU','-')}
-                </div>""", unsafe_allow_html=True)
-
-        # 右側神諭盤
-        with c2:
-            st.subheader("五大神諭盤")
-            
-            def get_card_html(label, s_id, t_id, is_main=False):
-                s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
-                t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
-                img_s = get_img_b64(f"assets/seals/{s_f}")
-                img_t = get_img_b64(f"assets/tones/{t_f}")
-                border = "2px solid gold" if is_main else "1px solid #555"
-                return f"""
-                <div class="kin-card-grid" style="border:{border}; background:#222;">
-                    <img src="data:image/png;base64,{img_t}" style="width:20px; filter:invert(1);">
-                    <img src="data:image/png;base64,{img_s}" style="width:50px; margin-top:2px;">
-                    <div style="font-size:10px; color:#aaa;">{label}</div>
-                </div>
-                """
-
-            html_guide = get_card_html("引導", oracle['guide']['s'], oracle['guide']['t'])
-            html_anti  = get_card_html("擴展", oracle['antipode']['s'], oracle['antipode']['t'])
-            html_main  = get_card_html("主印記", oracle['destiny']['s'], oracle['destiny']['t'], True)
-            html_analog= get_card_html("支持", oracle['analog']['s'], oracle['analog']['t'])
-            html_occult= get_card_html("推動", oracle['occult']['s'], oracle['occult']['t'])
-
-            st.markdown(f"""
-            <div style="display: grid; grid-template-columns: 80px 80px 80px; grid-template-rows: 90px 90px 90px; gap: 10px; justify-content: center;">
-                <div></div> <div>{html_guide}</div> <div></div>
-                <div>{html_anti}</div> <div>{html_main}</div> <div>{html_analog}</div>
-                <div></div> <div>{html_occult}</div> <div></div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if 'IChing_Meaning' in data:
-                st.markdown("---")
-                st.success(f"**☯️ {data.get('對應卦象','')}**：{data.get('IChing_Meaning','')}")
-
-# ==========================================
-# 頁面 2: 52 流年
-# ==========================================
-elif mode == "52流年城堡":
-    st.title("🏰 52 年生命城堡")
-    d = st.date_input("出生日期", datetime.date(1990, 1, 1))
-    
-    if st.button("計算"):
-        path = calculate_life_castle(d)
-        st.subheader("第一週期 (0-51歲)")
-        cols = st.columns(4)
-        for i, row in enumerate(path[:52]):
-            with cols[i % 4]:
-                info = row['Info']
-                s_p = f"assets/seals/{info.get('seal_img','')}"
-                img_html = f'<img src="data:image/png;base64,{get_img_b64(s_p)}" width="40" style="border-radius:50%">' if os.path.exists(s_p) else ""
-                
-                st.markdown(f"""
-                <div style="background:{row['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;">
-                    <b>{row['Age']}歲</b> ({row['Year']})<br>
-                    <span style="color:#b8860b">KIN {row['KIN']}</span><br>
-                    {img_html}<br>
-                    {info.get('圖騰','')}
-                </div>
-                """, unsafe_allow_html=True)
-
-# ==========================================
-# 頁面 3: 通訊錄
-# ==========================================
-elif mode == "通訊錄/合盤":
-    st.title("👥 通訊錄")
-    conn = sqlite3.connect("13moon.db")
-    try:
-        df = pd.read_sql("SELECT * FROM Users", conn)
-        st.dataframe(df)
-    except:
-        st.warning("無通訊錄資料")
-    conn.close()
-
-# ==========================================
-# 頁面 4: 系統檢查 (看資料庫有沒有建好)
-# ==========================================
-elif mode == "系統檢查員":
-    st.title("🔍 系統檢查")
-    if os.path.exists("13moon.db"):
-        conn = sqlite3.connect("13moon.db")
+def read_csv_robust(file_path, **kwargs):
+    """萬能編碼讀取"""
+    encodings = ['utf-8', 'cp950', 'big5', 'utf-8-sig', 'gbk']
+    for enc in encodings:
         try:
-            st.success("資料庫連接成功")
-            # 檢查新表格是否存在
-            tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
-            st.write("現有表格：", tables)
+            return pd.read_csv(file_path, encoding=enc, **kwargs)
+        except: continue
+    return None
+
+def process_matrix_csv(file_path):
+    """
+    處理矩陣.csv：
+    1. 攤平雙層標題
+    2. 強力去重複 (Deduplicate)
+    """
+    try:
+        # 讀取雙層標題
+        df = read_csv_robust(file_path, header=[0, 1])
+        if df is None: return None
+
+        # 1. 初步攤平標題
+        raw_columns = []
+        last_top = "Unknown"
+        
+        for top, bottom in df.columns:
+            # 如果上層標題不是 Unnamed，就更新 last_top
+            if "Unnamed" not in str(top): 
+                last_top = str(top).strip()
             
-            # 測試查表功能
-            st.subheader("查表測試 (2025年)")
-            try:
-                start = pd.read_sql("SELECT * FROM Kin_Start WHERE 年份=2025", conn)
-                st.write("2025 起始 KIN:", start)
-            except: st.error("Kin_Start 表格讀取失敗")
-            
-        except Exception as e:
-            st.error(f"錯誤: {e}")
-        conn.close()
-    else:
-        st.error("資料庫未建立")
+            clean_bottom = str(bottom).replace('\n', '').strip()
+            # 組合: "時間矩陣_KIN"
+            col_name = f"{last_top}_{clean_bottom}"
+            raw_columns.append(col_name)
+        
+        # 2. 強力去重複 (關鍵修正)
+        # 如果出現 ["A", "B", "A", "A"] -> 變成 ["A", "B", "A_2", "A_3"]
+        final_columns = []
+        col_counts = {}
+        
+        for col in raw_columns:
+            if col in col_counts:
+                col_counts[col] += 1
+                new_col = f"{col}_{col_counts[col]}"
+            else:
+                col_counts[col] = 1
+                new_col = col
+            final_columns.append(new_col)
+        
+        df.columns = final_columns
+        return df
+        
+    except Exception as e:
+        print(f"⚠️ 矩陣處理失敗: {e}")
+        return None
+
+def init_db():
+    print(f"🚀 開始建置資料庫: {DB_NAME}...")
+    
+    # 刪除舊檔
+    if os.path.exists(DB_NAME):
+        try: os.remove(DB_NAME)
+        except: pass
+
+    conn = sqlite3.connect(DB_NAME)
+    
+    # --- 1. 計算用表 (優先) ---
+    f_start = find_file("kin_start_year")
+    if f_start:
+        df = read_csv_robust(f_start)
+        if df is not None: df.to_sql("Kin_Start", conn, if_exists="replace", index=False)
+
+    f_accum = find_file("month_day_accum")
+    if f_accum:
+        df = read_csv_robust(f_accum)
+        if df is not None: df.to_sql("Month_Accum", conn, if_exists="replace", index=False)
+
+    f_basic = find_file("kin_basic_info")
+    if f_basic:
+        df = read_csv_robust(f_basic)
+        if df is not None: df.to_sql("Kin_Basic", conn, if_exists="replace", index=False)
+
+    # --- 2. 核心資料 ---
+    f_kin = find_file("卓爾金曆")
+    if f_kin:
+        df = read_csv_robust(f_kin)
+        if df is not None:
+            df.columns = [c.replace('\n', '').strip() for c in df.columns]
+            if 'KIN' in df.columns:
+                df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
+                df.to_sql("Kin_Data", conn, if_exists="replace", index=False)
+
+    f_matrix = find_file("矩陣")
+    if f_matrix:
+        # 使用去重複邏輯處理矩陣表
+        df = process_matrix_csv(f_matrix)
+        if df is not None:
+            df.to_sql("Matrix_Data", conn, if_exists="replace", index=False)
+
+    f_iching = find_file("銀河易經")
+    if f_iching:
+        df = read_csv_robust(f_iching)
+        if df is not None: df.to_sql("IChing", conn, if_exists="replace", index=False)
+
+    f_user = find_file("通訊錄")
+    if f_user:
+        df = read_csv_robust(f_user)
+        if df is not None:
+            valid = [c for c in df.columns if c.strip() in ['編號','名字','出生年','出生月','出生日','KIN']]
+            if valid: df[valid].to_sql("Users", conn, if_exists="replace", index=False)
+
+    conn.close()
+    print("🎉 資料庫建置完成！")
+
+if __name__ == "__main__":
+    init_db()

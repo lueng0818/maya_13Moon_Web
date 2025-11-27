@@ -8,7 +8,7 @@ from create_db import init_db
 from kin_utils import (
     calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
     calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
+    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES, get_main_sign_text # 【新增】導入查詢函數
 )
 
 # 1. 系統初始化
@@ -64,15 +64,27 @@ mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡",
 
 # --- 輔助顯示卡片 (已修正名稱對應邏輯) ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
+    """
+    獲取單張卡片的 HTML 碼。
+    【關鍵修正】：使用 KIN 數字查詢 '主印記' 文字。
+    """
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     
     img_s_b64 = get_img_b64(f"assets/seals/{s_f}")
     img_t_b64 = get_img_b64(f"assets/tones/{t_f}")
     
-    # 【關鍵修正 2】：直接從導入的列表獲取中文名稱，確保不會查錯
-    seal_name = SEALS_NAMES[s_id] if 0 < s_id < 21 else "未知圖騰"
-    tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知調性"
+    # 【關鍵修正 3】：呼叫新函數，根據 KIN 數字獲取精準的 主印記 名稱
+    main_sign_text = get_main_sign_text(kin_num)
+    
+    # 由於主印記格式就是 "調性 圖騰"，我們直接使用
+    # 如果查不到，就使用數學計算的名稱作為備案
+    if "查無印記名稱" in main_sign_text:
+        tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知"
+        seal_name = SEALS_NAMES[s_id] if 0 < s_id < 21 else "未知"
+        display_text = f"{tone_name} {seal_name}"
+    else:
+        display_text = main_sign_text # 例如: 磁性紅龍
 
     border_style = "2px solid gold" if is_main else "1px solid #555"
 
@@ -80,7 +92,7 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     <div class="kin-card-grid" style="border:{border_style};">
         <img src="data:image/png;base64,{img_t_b64}" style="width:30px; filter:invert(1); margin: 0 auto 5px auto;">
         <img src="data:image/jpeg;base64,{img_s_b64}" style="width:70px; margin-bottom: 5px;">
-        <div style="font-size:12px; color:#ddd; line-height:1.2;">{tone_name} {seal_name}</div>
+        <div style="font-size:12px; color:#ddd; line-height:1.2;">{display_text}</div>
         <div style="font-size:10px; color:#888;">KIN {kin_num}</div>
     </div>
     """
@@ -258,3 +270,4 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("資料庫未建立")
+

@@ -8,34 +8,39 @@ from create_db import init_db
 from kin_utils import (
     calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
     calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES, get_year_range
+    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
 )
 
 # 1. 系統初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
+# 檢查資料庫狀態並初始化
 if not os.path.exists("13moon.db"):
     with st.spinner("系統初始化中 (建立資料庫)..."):
         st.cache_data.clear()
         init_db()
     st.success("初始化完成！")
 
-# --- 設置用戶要求的新範圍 ---
+# 設置用戶要求的範圍
 MIN_USER_YEAR = 1800
 MAX_USER_YEAR = 2100
 SAFE_DEFAULT_DATE = datetime.date(1990, 1, 1)
-# -----------------------------
 
 # 全域 CSS 樣式
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
+    
+    /* 五大神諭卡片通用樣式 */
     .kin-card-grid {
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
         padding: 5px; width: 100%; height: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
+        text-align: center; gap: 0; 
     }
+    
+    /* 修正後的網格高度 (解決文字遮擋) */
     .oracle-grid-container {
         display: grid; 
         grid-template-columns: 100px 100px 100px;
@@ -44,11 +49,9 @@ st.markdown("""
         justify-content: center;
         align-items: center;
     }
-    .psi-box, .goddess-box {
-        background: linear-gradient(135deg, #2b1055, #7597de);
-        padding: 15px; border-radius: 10px; color: white; margin-top: 15px;
-    }
-    .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); }
+
+    .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
+    .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
     .matrix-data {
         font-family: monospace; color: #00ff00; background: #000;
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
@@ -59,7 +62,7 @@ st.markdown("""
 st.sidebar.title("🌌 13 Moon System")
 mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "通訊錄/合盤", "系統檢查員"])
 
-# --- 輔助顯示卡片 ---
+# --- 輔助顯示卡片 (已修正名稱對應邏輯) ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
@@ -67,6 +70,7 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     img_s_b64 = get_img_b64(f"assets/seals/{s_f}")
     img_t_b64 = get_img_b64(f"assets/tones/{t_f}")
     
+    # 【關鍵修正 2】：直接從導入的列表獲取中文名稱，確保不會查錯
     seal_name = SEALS_NAMES[s_id] if 0 < s_id < 21 else "未知圖騰"
     tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知調性"
 
@@ -90,10 +94,10 @@ if mode == "個人星系解碼":
     col_d, col_b = st.columns([2, 1])
     with col_d:
         st.subheader("📅 查詢日期")
-        # 【修正】使用使用者指定的範圍：1800-2100
+        # 設置日期選擇範圍
         date_in = st.date_input(
             "選擇生日", 
-            value=SAFE_DEFAULT_DATE, 
+            value=SAFE_DEFAULT_DATE,
             min_value=datetime.date(MIN_USER_YEAR, 1, 1), 
             max_value=datetime.date(MAX_USER_YEAR, 12, 31)
         )
@@ -110,7 +114,7 @@ if mode == "個人星系解碼":
         kin, err = calculate_kin_v2(date_in)
         if kin is None:
             st.error(f"⚠️ KIN計算失敗: {err} (請檢查資料庫 Kin_Start 表是否包含 {date_in.year} 年份。)")
-            kin = calculate_kin_math(date_in) # 降級使用數學備案
+            kin = calculate_kin_math(date_in)
             
         data = get_full_kin_data(kin)
         oracle_info = get_oracle(kin)
@@ -124,7 +128,7 @@ if mode == "個人星系解碼":
         def get_kin_from_ids(s_id, t_id):
             raw_kin = s_id + (t_id - 1) * 20
             return (raw_kin - 1) % 260 + 1
-        
+
         guide_kin = get_kin_from_ids(oracle_info['guide']['s'], oracle_info['guide']['t'])
         analog_kin = get_kin_from_ids(oracle_info['analog']['s'], oracle_info['analog']['t'])
         antipode_kin = get_kin_from_ids(oracle_info['antipode']['s'], oracle_info['antipode']['t'])
@@ -173,7 +177,7 @@ if mode == "個人星系解碼":
                 BMU : {data.get('Matrix_BMU','-')}
                 </div>""", unsafe_allow_html=True)
 
-        # --- 右側：五大神諭盤 ---
+        # --- 右側：五大神諭盤 (已修正版面) ---
         with c2:
             st.subheader("五大神諭盤")
             
@@ -188,7 +192,7 @@ if mode == "個人星系解碼":
             </div>
             """, unsafe_allow_html=True)
 
-            # 易經與祈禱文
+            # 祈禱文與易經
             st.markdown("---")
             if 'IChing_Meaning' in data:
                 st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
@@ -198,7 +202,7 @@ if mode == "個人星系解碼":
                     st.write(data['祈禱文'])
 
 # ==========================================
-# 頁面 2: 52 流年 (保持不變)
+# 頁面 2: 52 流年
 # ==========================================
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
@@ -254,31 +258,3 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("資料庫未建立")
-elif mode == "通訊錄/合盤":
-    st.title("👥 通訊錄")
-    conn = sqlite3.connect("13moon.db")
-    try:
-        df = pd.read_sql("SELECT * FROM Users", conn)
-        st.dataframe(df)
-    except:
-        st.warning("無通訊錄資料")
-    conn.close()
-
-elif mode == "系統檢查員":
-    st.title("🔍 系統檢查")
-    if os.path.exists("13moon.db"):
-        conn = sqlite3.connect("13moon.db")
-        try:
-            st.success("資料庫連接成功")
-            st.subheader("PSI/KIN 計算表狀態")
-            for table in ['Kin_Start', 'Month_Accum', 'Kin_Basic', 'PSI_Bank']:
-                try:
-                    df = pd.read_sql(f"SELECT * FROM {table} LIMIT 1", conn)
-                    st.write(f"✅ {table}：載入成功 (欄位: {df.columns.tolist()})")
-                except: st.error(f"❌ {table} 表格缺失或欄位錯誤")
-            
-        except Exception as e: st.error(f"錯誤: {e}")
-        conn.close()
-    else:
-        st.error("資料庫未建立")
-

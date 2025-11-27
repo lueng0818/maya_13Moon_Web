@@ -89,12 +89,12 @@ def get_full_kin_data(kin):
     data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     
-    # 補充中文名稱 (確保名稱對應正確)
+    # 補充中文名稱
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
     wid = math.ceil(kin / 13)
-    data['wave_name'] = data.get('波符', '未知') # 優先使用 Kin_Basic 裡的波符名稱
+    data['wave_name'] = data.get('波符', '未知') 
     data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
 
     conn.close()

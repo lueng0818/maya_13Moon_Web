@@ -8,13 +8,12 @@ from create_db import init_db
 from kin_utils import (
     calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
     calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES, get_main_sign_text # 【新增】導入查詢函數
+    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES, get_main_sign_text # 導入查詢函數
 )
 
 # 1. 系統初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
-# 檢查資料庫狀態並初始化
 if not os.path.exists("13moon.db"):
     with st.spinner("系統初始化中 (建立資料庫)..."):
         st.cache_data.clear()
@@ -32,7 +31,6 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
     
-    /* 五大神諭卡片通用樣式 */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -64,27 +62,20 @@ mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡",
 
 # --- 輔助顯示卡片 (已修正名稱對應邏輯) ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
-    """
-    獲取單張卡片的 HTML 碼。
-    【關鍵修正】：使用 KIN 數字查詢 '主印記' 文字。
-    """
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     
     img_s_b64 = get_img_b64(f"assets/seals/{s_f}")
     img_t_b64 = get_img_b64(f"assets/tones/{t_f}")
     
-    # 【關鍵修正 3】：呼叫新函數，根據 KIN 數字獲取精準的 主印記 名稱
-    main_sign_text = get_main_sign_text(kin_num)
+    # 關鍵修正：透過 KIN 數字查詢精準的主印記名稱 (例如: 磁性紅龍)
+    display_text = get_main_sign_text(kin_num)
     
-    # 由於主印記格式就是 "調性 圖騰"，我們直接使用
-    # 如果查不到，就使用數學計算的名稱作為備案
-    if "查無印記名稱" in main_sign_text:
-        tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知"
+    if "查無印記名稱" in display_text:
+        # 如果查不到，使用數學推算的名稱作為備案
         seal_name = SEALS_NAMES[s_id] if 0 < s_id < 21 else "未知"
+        tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知"
         display_text = f"{tone_name} {seal_name}"
-    else:
-        display_text = main_sign_text # 例如: 磁性紅龍
 
     border_style = "2px solid gold" if is_main else "1px solid #555"
 
@@ -106,7 +97,6 @@ if mode == "個人星系解碼":
     col_d, col_b = st.columns([2, 1])
     with col_d:
         st.subheader("📅 查詢日期")
-        # 設置日期選擇範圍
         date_in = st.date_input(
             "選擇生日", 
             value=SAFE_DEFAULT_DATE,
@@ -125,7 +115,7 @@ if mode == "個人星系解碼":
         # 1. 計算 KIN (優先查表)
         kin, err = calculate_kin_v2(date_in)
         if kin is None:
-            st.error(f"⚠️ KIN計算失敗: {err} (請檢查資料庫 Kin_Start 表是否包含 {date_in.year} 年份。)")
+            st.error(f"⚠️ KIN計算失敗: {err} (切換為數學備案)")
             kin = calculate_kin_math(date_in)
             
         data = get_full_kin_data(kin)
@@ -189,7 +179,7 @@ if mode == "個人星系解碼":
                 BMU : {data.get('Matrix_BMU','-')}
                 </div>""", unsafe_allow_html=True)
 
-        # --- 右側：五大神諭盤 (已修正版面) ---
+        # --- 右側：五大神諭盤 ---
         with c2:
             st.subheader("五大神諭盤")
             
@@ -270,4 +260,3 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("資料庫未建立")
-

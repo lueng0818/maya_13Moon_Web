@@ -173,3 +173,19 @@ def calculate_life_castle(birth_date):
         col = "#fff0f0" if c_age<13 else ("#f8f8f8" if c_age<26 else ("#f0f8ff" if c_age<39 else "#fffff0"))
         path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
     return path
+
+# --- 8. 專門查詢主印記文字的函數 ---
+def get_main_sign_text(kin_num):
+    """從資料庫查詢主印記名稱 (使用 Kin_Basic 表)"""
+    conn = get_db()
+    try:
+        query = "SELECT 主印記 FROM Kin_Basic WHERE KIN = ?"
+        row = conn.execute(query, (kin_num,)).fetchone()
+        if row:
+            return row['主印記']
+    except:
+        pass
+    finally:
+        conn.close()
+        
+    return "查無印記名稱"

@@ -67,7 +67,12 @@ if mode == "個人星系解碼":
         
         with c1:
             # 顯示主印記大圖
-            st.image(f"assets/seals/{data['seal_img']}", width=180)
+            seal_path = f"assets/seals/{data.get('seal_img', '')}"
+            # 接下來的 if/else 也要跟著 seal_path 對齊
+            if os.path.exists(seal_path):
+                st.image(seal_path, width=180)
+            else:
+                st.warning(f"⚠️ 找不到圖片：{data.get('seal_img', '未知')}")
             st.markdown(f"## KIN {kin}")
             st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
             st.info(f"波符：{data.get('wave_name','')} 波符")
@@ -166,3 +171,4 @@ elif mode == "矩陣資料庫":
         try: st.dataframe(pd.read_sql("SELECT * FROM Star_Years LIMIT 50", conn))
         except: st.warning("星際年資料未匯入")
     conn.close()
+

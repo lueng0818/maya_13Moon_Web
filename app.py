@@ -179,7 +179,7 @@ if mode == "個人星系解碼":
                 BMU : {data.get('Matrix_BMU','-')}
                 </div>""", unsafe_allow_html=True)
 
-        # --- 右側：五大神諭盤 ---
+        # --- 右側：五大神諭盤 (已修正版面) ---
         with c2:
             st.subheader("五大神諭盤")
             

@@ -34,6 +34,8 @@ def process_matrix_csv(file_path):
             if "Unnamed" not in str(top): last_top = str(top).strip()
             clean_bottom = str(bottom).replace('\n', '').strip()
             new_columns.append(f"{last_top}_{clean_bottom}")
+        
+        # 強力去重複
         final_cols = []
         counts = {}
         for col in new_columns:
@@ -49,6 +51,7 @@ def process_matrix_csv(file_path):
 
 def init_db():
     print(f"🚀 開始建置資料庫: {DB_NAME}...")
+    # 刪除舊檔
     if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
@@ -56,13 +59,20 @@ def init_db():
     for keyword, table_name, index_col in [("kin_start_year", "Kin_Start", '年份'), ("month_day_accum", "Month_Accum", '月份'), ("kin_basic_info", "Kin_Basic", 'KIN'), ("PSI印記對照表", "PSI_Bank", '月日'), ("女神印記", "Goddess_Seal", 'KIN')]:
         f = find_file(keyword)
         if f:
+            print(f"🔹 匯入 {table_name}: {os.path.basename(f)}")
             df = read_csv_robust(f)
             if df is not None: 
                 df.columns = [c.strip() for c in df.columns]
                 if 'KIN' in df.columns:
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
-    
+                if index_col in df.columns:
+                    conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name.lower()} ON {table_name} ({index_col})")
+            else:
+                print(f"❌ 警告：{table_name} 讀取失敗或為空。")
+        else:
+            print(f"⚠️ 提醒：找不到 {keyword}.csv，將影響該功能。")
+
     # 建立人員生日管理表 (Users - 新增欄位，確保可以寫入)
     try:
         conn.execute("""
@@ -85,7 +95,9 @@ def init_db():
                 df_subset['生日'] = df_subset.apply(lambda row: f"{row['出生年']}-{row['出生月']}-{row['出生日']}", axis=1)
                 
                 for _, row in df_subset.iterrows():
-                    conn.execute("INSERT INTO Users (姓名, 生日) VALUES (?, ?)", (row['姓名'], row['生日']))
+                    # 避免重複，只匯入不存在的資料
+                    if conn.execute("SELECT COUNT(*) FROM Users WHERE 姓名 = ?", (row['姓名'],)).fetchone()[0] == 0:
+                        conn.execute("INSERT INTO Users (姓名, 生日) VALUES (?, ?)", (row['姓名'], row['生日']))
                 conn.commit()
 
     except Exception as e:

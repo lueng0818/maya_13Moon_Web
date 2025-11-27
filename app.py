@@ -9,8 +9,6 @@ from kin_utils import (
     calculate_life_castle, get_img_b64, 
     SEAL_FILES, TONE_FILES
 )
-# 加入這一行清除快取
-st.cache_data.clear()
 
 # --- 1. 自動檢查並建立資料庫 ---
 if not os.path.exists("13moon.db"):
@@ -173,5 +171,6 @@ elif mode == "矩陣資料庫":
         try: st.dataframe(pd.read_sql("SELECT * FROM Star_Years LIMIT 50", conn))
         except: st.warning("星際年資料未匯入")
     conn.close()
+
 
 

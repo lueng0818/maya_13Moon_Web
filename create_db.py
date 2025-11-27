@@ -77,7 +77,6 @@ def init_db():
     for keyword, table_name in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing"), ("通訊錄", "Users")]:
         f = find_file(keyword)
         if f:
-            # 矩陣需要特殊處理
             if keyword == "矩陣":
                  df = process_matrix_csv(f)
             else:

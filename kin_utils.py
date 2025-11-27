@@ -220,7 +220,7 @@ def get_maya_calendar_info(date_obj):
     conn.close()
     return result
 
-# --- 10. 瑪雅週關鍵句 (新增) ---
+# --- 10. 瑪雅週關鍵句 ---
 def get_week_key_sentence(week_name):
     """
     根據瑪雅週名稱查詢對應的關鍵句
@@ -241,7 +241,7 @@ def get_week_key_sentence(week_name):
     conn.close()
     return key_sentence
 
-# --- 11. 七價路徑祈禱文 (新增) ---
+# --- 11. 七價路徑祈禱文 ---
 def get_heptad_prayer(path_name):
     """
     根據七價路徑名稱查詢對應的祈禱文
@@ -261,3 +261,36 @@ def get_heptad_prayer(path_name):
         
     conn.close()
     return prayer
+
+# --- 12. 用戶管理函數 ---
+def save_user_data(name, dob_str, kin, main_sign):
+    """將人員資料存入資料庫"""
+    conn = get_db()
+    try:
+        conn.execute("INSERT INTO Users (姓名, 生日, KIN, 主印記) VALUES (?, ?, ?, ?)", (name, dob_str, kin, main_sign))
+        conn.commit()
+        return True, "建檔成功"
+    except Exception as e:
+        return False, f"存檔失敗: {e}"
+    finally:
+        conn.close()
+
+def get_user_list():
+    """獲取人員列表 (用於合盤下拉選單)"""
+    conn = get_db()
+    df = pd.read_sql("SELECT 姓名, 生日, KIN FROM Users", conn)
+    conn.close()
+    return df
+
+def get_user_kin(name, df_users):
+    """根據姓名從 DF 裡查找 KIN"""
+    user_row = df_users[df_users['姓名'] == name]
+    if not user_row.empty:
+        return int(user_row.iloc[0]['KIN']), user_row.iloc[0]['生日']
+    return None, None
+
+def calculate_composite(kin_a, kin_b):
+    """合盤 KIN = (Kin_A + Kin_B) % 260"""
+    total = kin_a + kin_b
+    comp = total % 260
+    return 260 if comp == 0 else comp

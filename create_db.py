@@ -7,7 +7,6 @@ DB_NAME = "13moon.db"
 DATA_DIR = "data"
 
 def find_file(keyword):
-    """模糊搜尋檔案"""
     if not os.path.exists(DATA_DIR): return None
     files = glob.glob(os.path.join(DATA_DIR, "*.csv"))
     for f in files:
@@ -15,7 +14,6 @@ def find_file(keyword):
     return None
 
 def read_csv_robust(file_path, **kwargs):
-    """萬能編碼讀取"""
     encodings = ['utf-8', 'cp950', 'big5', 'utf-8-sig', 'gbk']
     for enc in encodings:
         try:
@@ -42,33 +40,46 @@ def init_db():
     if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
-    # ----------------------------------------------------
-    # 1. 新增：計算用查表資料 (您的新需求)
-    # ----------------------------------------------------
+    # ------------------------------------------------
+    # 1. 新增：PSI 對照表 (NEW)
+    # ------------------------------------------------
+    f_psi = find_file("PSI印記對照表")
+    if f_psi:
+        print(f"🔹 匯入 PSI 對照表: {os.path.basename(f_psi)}")
+        df = read_csv_robust(f_psi)
+        if df is not None:
+            # 清理欄位
+            df.columns = [c.strip() for c in df.columns]
+            # 確保 PSI 印記是整數
+            if 'PSI印記' in df.columns:
+                df['PSI印記'] = pd.to_numeric(df['PSI印記'], errors='coerce').fillna(0).astype(int)
+            # 建立查詢索引 (用 '月日' 欄位)
+            df.to_sql("PSI_Bank", conn, if_exists="replace", index=False)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_psi_date ON PSI_Bank (月日)")
+
+    # ------------------------------------------------
+    # 2. 計算用表
+    # ------------------------------------------------
     f_start = find_file("kin_start_year")
     if f_start:
-        print(f"🔹 匯入起始年表: {os.path.basename(f_start)}")
         df = read_csv_robust(f_start)
         if df is not None: df.to_sql("Kin_Start", conn, if_exists="replace", index=False)
 
     f_accum = find_file("month_day_accum")
     if f_accum:
-        print(f"🔹 匯入月累積表: {os.path.basename(f_accum)}")
         df = read_csv_robust(f_accum)
         if df is not None: df.to_sql("Month_Accum", conn, if_exists="replace", index=False)
 
     f_basic = find_file("kin_basic_info")
     if f_basic:
-        print(f"🔹 匯入基礎資訊: {os.path.basename(f_basic)}")
         df = read_csv_robust(f_basic)
         if df is not None: df.to_sql("Kin_Basic", conn, if_exists="replace", index=False)
 
-    # ----------------------------------------------------
-    # 2. 原有核心資料 (保持不變)
-    # ----------------------------------------------------
+    # ------------------------------------------------
+    # 3. 核心資料
+    # ------------------------------------------------
     f_kin = find_file("卓爾金曆")
     if f_kin:
-        print(f"🔹 匯入卓爾金曆: {os.path.basename(f_kin)}")
         df = read_csv_robust(f_kin)
         if df is not None:
             df.columns = [c.replace('\n', '').strip() for c in df.columns]
@@ -78,7 +89,6 @@ def init_db():
 
     f_matrix = find_file("矩陣")
     if f_matrix:
-        print(f"🔹 匯入矩陣: {os.path.basename(f_matrix)}")
         df = process_matrix_csv(f_matrix)
         if df is not None: df.to_sql("Matrix_Data", conn, if_exists="replace", index=False)
 

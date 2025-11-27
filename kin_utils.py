@@ -63,6 +63,28 @@ def calculate_kin_math(date_obj):
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
+
+    # 【新增】專門查詢主印記文字的函數
+    def get_main_sign_text(kin_num):
+        """從資料庫查詢主印記名稱"""
+        conn = get_db()
+        try:
+            # 優先從 Kin_Basic 查詢 (這是使用者指定的資料來源)
+            query = "SELECT 主印記 FROM Kin_Basic WHERE KIN = ?"
+            row = conn.execute(query, (kin_num,)).fetchone()
+            if row:
+                return row['主印記']
+        except:
+            # 如果 Kin_Basic 失敗，嘗試從 Kin_Data 查詢
+            try:
+                query = "SELECT 主印記 FROM Kin_Data WHERE KIN = ?"
+                row = conn.execute(query, (kin_num,)).fetchone()
+                if row: return row['主印記']
+            except:
+                return "查無印記名稱"
+        finally:
+            conn.close()
+        return "查無印記名稱"
     
     # 1. 從 Kin_Basic 讀取基礎資料
     try:
@@ -166,3 +188,4 @@ def calculate_life_castle(birth_date):
         col = "#fff0f0" if c_age<13 else ("#f8f8f8" if c_age<26 else ("#f0f8ff" if c_age<39 else "#fffff0"))
         path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
     return path
+

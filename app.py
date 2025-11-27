@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os
+from create_db import init_db
+# 自動檢查：如果資料庫不存在，就自動建立
+if not os.path.exists("13moon.db"):
+    init_db()
 import sqlite3
 from kin_utils import (
     get_kin_info, calculate_kin_from_date, get_oracle_system, 
@@ -275,4 +279,5 @@ elif app_mode == "關係合盤計算":
             st.write(f"**合盤波符旅程**")
             w_path = os.path.join("assets/wavespells", comp_info['wave_img'])
             if os.path.exists(w_path):
+
                 st.image(w_path)

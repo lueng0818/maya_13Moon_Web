@@ -6,15 +6,13 @@ import os
 
 DB_PATH = "13moon.db"
 
-# --- 圖片檔名設定 (根據您上傳的檔案) ---
-SEAL_FILES = {
-    1: "01紅龍.png", 2: "02白風.png", 3: "03藍夜.png", 4: "04黃種子.png", 5: "05紅蛇.png",
-    6: "06白世界橋.png", 7: "07藍手.png", 8: "08黃星星.png", 9: "09紅月.png", 10: "10白狗.png",
-    11: "11藍猴.png", 12: "12黃人.png", 13: "13紅天行者.png", 14: "14白巫師.png", 15: "15藍鷹.png",
-    16: "16黃戰士.png", 17: "17紅地球.png", 18: "18白鏡.png", 19: "19藍風暴.png", 20: "20黃太陽.png"
-}
+# --- 圖片檔名對照 (根據您上傳的檔名) ---
+SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 
-# 調性 1 (34) ~ 調性 13 (46)
+# 產生檔名對照表: 1 -> "01紅龍.jpg"
+SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.jpg" for i, name in enumerate(SEALS_NAMES) if i > 0 }
+
+# 調性檔名: 1 -> "瑪雅曆法圖騰-34.png"
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 
 def get_db():
@@ -23,22 +21,20 @@ def get_db():
     return conn
 
 def get_img_b64(path):
-    """將圖片轉 Base64 以便在 HTML 顯示"""
     if os.path.exists(path):
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     return ""
 
 def calculate_kin(date_obj):
-    """計算 KIN (基礎版)"""
-    base_date = datetime.date(2023, 7, 26)
-    base_kin = 1
-    delta = (date_obj - base_date).days
-    kin = (base_kin + delta) % 260
+    """日期轉 KIN"""
+    base = datetime.date(2023, 7, 26)
+    delta = (date_obj - base).days
+    kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
 def get_full_kin_data(kin):
-    """取得 KIN 的所有詳細資料 (含矩陣、易經)"""
+    """從資料庫撈取文字資料"""
     conn = get_db()
     data = {}
     
@@ -48,82 +44,78 @@ def get_full_kin_data(kin):
         if row: data.update(dict(row))
     except: pass
 
-    # 2. 矩陣資料 (嘗試從 Matrix_Data 撈)
+    # 2. 矩陣
     try:
-        # 搜尋邏輯：在 Matrix_Data 找 '時間矩陣_KIN' 等於 kin 的資料
-        m_row = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
-        if m_row:
-            data['Matrix_Time'] = m_row.get('時間矩陣_矩陣位置', '-')
-            data['Matrix_Space'] = m_row.get('空間矩陣_矩陣位置', '-')
-            data['Matrix_Sync'] = m_row.get('共時矩陣_矩陣位置', '-')
-            data['Matrix_BMU'] = m_row.get('基本母體矩陣_BMU', '-')
-    except: 
-        data['Matrix_Time'] = "N/A"
+        m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
+        if m:
+            data['Matrix_Time'] = m.get('時間矩陣_矩陣位置')
+            data['Matrix_Space'] = m.get('空間矩陣_矩陣位置')
+            data['Matrix_Sync'] = m.get('共時矩陣_矩陣位置')
+            data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
+    except: pass
 
-    # 3. 易經
-    if '對應卦象' in data:
-        try:
-            gua = data['對應卦象']
-            i_row = conn.execute("SELECT * FROM IChing WHERE 卦象 = ?", (gua,)).fetchone()
-            if i_row:
-                data['IChing_Meaning'] = i_row.get('意涵', '')
-                data['IChing_Story'] = i_row.get('說明', '')
-        except: pass
-
-    # 4. 圖片與波符
+    # 3. 圖片路徑
     s_num = data.get('圖騰數字', 1)
     t_num = data.get('調性數字', 1)
-    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
+    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.jpg")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     
-    wave_id = math.ceil(kin / 13)
+    # 波符
+    wid = math.ceil(kin / 13)
     data['wave_name'] = data.get('波符', '未知')
-    # 波符圖片補零 (瑪雅曆20波符-08.png)
-    data['wave_img'] = f"瑪雅曆20波符-{str(wave_id).zfill(2)}.png"
+    data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
 
     conn.close()
     return data
 
 def get_oracle(kin):
-    """計算五大神諭 (簡單版)"""
-    data = get_full_kin_data(kin)
-    seal = int(data.get('圖騰數字', 1))
-    tone = int(data.get('調性數字', 1))
+    """
+    數學計算五大神諭 (解決日期沒對應到的問題)
+    回傳: 各位置的 (圖騰ID, 調性ID)
+    """
+    # 1. 主印記
+    seal = kin % 20; seal = 20 if seal==0 else seal
+    tone = kin % 13; tone = 13 if tone==0 else tone
     
-    def fix_s(s): return 20 if s==0 else (s+20 if s<1 else (s-20 if s>20 else s))
-    def fix_t(t): return 13 if t==0 else (t+13 if t<1 else (t-13 if t>13 else t))
+    # 2. 支持 (19-seal)
+    analog = 19 - seal
+    if analog <= 0: analog += 20
+    
+    # 3. 擴展 (seal+10)
+    antipode = (seal + 10) % 20
+    if antipode == 0: antipode = 20
+    
+    # 4. 推動 (21-seal, 14-tone)
+    occult_s = 21 - seal
+    occult_t = 14 - tone
+    
+    # 5. 引導 (簡易版：同主印記)
+    guide = seal 
 
     return {
         "destiny": {"s": seal, "t": tone},
-        "analog":  {"s": fix_s(19-seal), "t": tone},
-        "antipode":{"s": fix_s(seal+10), "t": tone},
-        "occult":  {"s": fix_s(21-seal), "t": fix_t(14-tone)},
-        "guide":   {"s": seal, "t": tone} # 暫用主印記
+        "analog":  {"s": analog, "t": tone},
+        "antipode":{"s": antipode, "t": tone},
+        "occult":  {"s": occult_s, "t": occult_t},
+        "guide":   {"s": guide, "t": tone}
     }
 
 def calculate_life_castle(birth_date):
-    """計算 52 流年"""
+    """52 流年計算"""
     base_kin = calculate_kin(birth_date)
     path = []
-    
-    for age in range(105): # 算兩輪
+    for age in range(105):
         year = birth_date.year + age
-        # 流年公式: KIN + 105 * age
         curr_kin = (base_kin + age * 105) % 260
         if curr_kin == 0: curr_kin = 260
         
         info = get_full_kin_data(curr_kin)
         
-        # 城堡顏色
         cycle = age % 52
-        if cycle < 13: col = "#fff0f0" # 紅
-        elif cycle < 26: col = "#f8f8f8" # 白
-        elif cycle < 39: col = "#f0f8ff" # 藍
-        else: col = "#fffff0" # 黃
+        if cycle < 13: col = "#fff0f0"
+        elif cycle < 26: col = "#f8f8f8"
+        elif cycle < 39: col = "#f0f8ff"
+        else: col = "#fffff0"
         
-        path.append({
-            "Age": age, "Year": year, "KIN": curr_kin,
-            "Info": info, "Color": col
-        })
+        path.append({"Age":age, "Year":year, "KIN":curr_kin, "Info":info, "Color":col})
     return path
-

@@ -55,7 +55,7 @@ def init_db():
     if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
-    # --- 1. 計算用參照表 (KIN_START, MONTH_ACCUM, KIN_BASIC) ---
+    # --- 1. 計算用參照表 (KIN_START, MONTH_ACCUM, KIN_BASIC, PSI, GODDESS) ---
     for keyword, table_name, index_col in [("kin_start_year", "Kin_Start", '年份'), ("month_day_accum", "Month_Accum", '月份'), ("kin_basic_info", "Kin_Basic", 'KIN'), ("PSI印記對照表", "PSI_Bank", '月日'), ("女神印記", "Goddess_Seal", 'KIN')]:
         f = find_file(keyword)
         if f:

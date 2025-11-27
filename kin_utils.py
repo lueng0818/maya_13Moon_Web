@@ -7,11 +7,11 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
-# --- 1. 靜態資源設定 (確保與您的 assets 資料夾和 Kin_Basic 表格一致) ---
+# --- 1. 靜態資源設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
+
 # 圖片檔名對照 (修正為 .png)
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
-# 調性檔名 (例如: 1 -> "瑪雅曆法圖騰-34.png")
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
@@ -27,7 +27,7 @@ def get_img_b64(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
     return ""
 
-# --- 3. KIN 計算邏輯 (查表法) ---
+# --- 3. KIN 計算邏輯 (查表法 - 解決 no such table 錯誤) ---
 def calculate_kin_v2(date_obj):
     """
     邏輯：(年起始 KIN + 月累積天數 + 日期) % 260
@@ -63,18 +63,18 @@ def calculate_kin_math(date_obj):
     kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
-# --- 4. 資料獲取核心 ---
+# --- 4. 資料獲取核心 (優先從 Kin_Basic 撈取文字) ---
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
     
-    # 1. 從 Kin_Basic 讀取基礎資料 (波符/城堡/主印記名稱)
+    # 1. 從 Kin_Basic 讀取基礎資料 (主印記、波符、城堡等文字)
     try:
         row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
     except: pass
     
-    # 2. 補充矩陣資料
+    # 2. 補充矩陣資料 (若 Matrix_Data 存在)
     try:
         m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
         if m:
@@ -84,14 +84,14 @@ def get_full_kin_data(kin):
             data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
     except: pass
 
-    # 3. 補充圖片路徑與名稱 ID (使用數學推算 ID)
+    # 3. 補充圖片路徑與名稱 ID
     s_num = (kin - 1) % 20 + 1
     t_num = (kin - 1) % 13 + 1
     
     data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     
-    # 如果資料庫沒有提供，使用數學推算名稱 (確保不會是 '未知')
+    # 補充中文名稱 (確保名稱對應正確)
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
@@ -102,8 +102,9 @@ def get_full_kin_data(kin):
     conn.close()
     return data
 
-# --- 5. PSI 查詢 (查表) ---
+# --- 6. PSI 與 女神計算 ---
 def get_psi_kin(date_obj):
+    """查詢 PSI 印記 (查表)"""
     conn = get_db()
     psi_data = {}
     try:
@@ -117,7 +118,25 @@ def get_psi_kin(date_obj):
     conn.close()
     return psi_data
 
-# --- 6. 五大神諭計算 ---
+def get_goddess_kin(kin):
+    """計算女神印記 (Occult Kin + 130)"""
+    oracle = get_oracle(kin) 
+    occult_s = oracle['occult']['s']
+    occult_t = oracle['occult']['t']
+    occult_kin = (occult_s + (occult_t - 1) * 20 - 1) % 260 + 1 # 算出隱藏印記 KIN
+    
+    goddess_kin = (occult_kin + 130) % 260
+    if goddess_kin == 0: goddess_kin = 260
+    
+    goddess_info = get_full_kin_data(goddess_kin)
+    
+    return {
+        "KIN": goddess_kin,
+        "Info": goddess_info,
+        "Base_KIN": occult_kin
+    }
+
+# --- 7. 五大神諭計算 ---
 def get_oracle(kin):
     """計算五大神諭的 (圖騰ID, 調性ID)"""
     s = (kin - 1) % 20 + 1
@@ -141,7 +160,7 @@ def get_oracle(kin):
         "guide": {"s":guide, "t":t}
     }
 
-# --- 7. 52 流年計算 ---
+# --- 8. 52 流年計算 ---
 def calculate_life_castle(birth_date):
     """計算 52 流年路徑"""
     bk, _ = calculate_kin_v2(birth_date)

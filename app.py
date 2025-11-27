@@ -7,15 +7,15 @@ import base64
 from create_db import init_db
 from kin_utils import (
     calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
-    calculate_life_castle, get_img_b64, get_psi_kin, # 匯入 PSI 函數
+    calculate_life_castle, get_img_b64, get_psi_kin,
     SEAL_FILES, TONE_FILES
 )
 
-# 1. 系統初始化
+# 1. 初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
 if not os.path.exists("13moon.db"):
-    with st.spinner("系統初始化中 (建立資料庫)..."):
+    with st.spinner("系統初始化中..."):
         st.cache_data.clear()
         init_db()
     st.success("初始化完成！")
@@ -64,16 +64,14 @@ if mode == "個人星系解碼":
     if start_btn or st.session_state.get('run_decode'):
         st.session_state['run_decode'] = True
         
-        # 1. 計算主印記
+        # 1. 計算 KIN (優先查表)
         kin, err = calculate_kin_v2(date_in)
         if kin is None:
-            st.error(f"⚠️ {err}")
+            st.error(f"⚠️ {err} (切換數學模式)")
             kin = calculate_kin_math(date_in)
             
         data = get_full_kin_data(kin)
         oracle = get_oracle(kin)
-        
-        # 2. 計算 PSI (查表)
         psi_data = get_psi_kin(date_in)
         
         st.divider()
@@ -85,21 +83,18 @@ if mode == "個人星系解碼":
                 st.image(s_path, width=180)
             
             st.markdown(f"## KIN {kin}")
-            st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
+            st.markdown(f"### {data.get('主印記', f'{data.get('調性','')} {data.get('圖騰','')}')}")
             st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
+            st.caption(f"🏰 **城堡**：{data.get('城堡','')}")
             
-            # --- PSI 區塊 (新增) ---
             if psi_data:
                 p_info = psi_data['Info']
-                p_kin = psi_data['KIN']
-                p_mtx = psi_data['Matrix_Pos']
-                
                 st.markdown(f"""
                 <div class="psi-box">
                     <h4 style="margin:0">🧬 PSI 行星記憶庫</h4>
-                    <h3 style="margin:5px 0 0 0; color:#ffd700">KIN {p_kin}</h3>
-                    <div style="font-size:14px">{p_info.get('調性','')} {p_info.get('圖騰','')}</div>
-                    <div style="font-size:12px; margin-top:5px; color:#ddd">矩陣位置: {p_mtx}</div>
+                    <h3 style="margin:5px 0 0 0; color:#ffd700">KIN {psi_data['KIN']}</h3>
+                    <div style="font-size:14px">{p_info.get('主印記','')}</div>
+                    <div style="font-size:12px; margin-top:5px; color:#ddd">矩陣位置: {psi_data['Matrix']}</div>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -166,7 +161,7 @@ elif mode == "52流年城堡":
                     <b>{row['Age']}歲</b> ({row['Year']})<br>
                     <span style="color:#b8860b">KIN {row['KIN']}</span><br>
                     {img_html}<br>
-                    {info.get('圖騰','')}
+                    {info.get('主印記','')}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -192,15 +187,17 @@ elif mode == "系統檢查員":
         conn = sqlite3.connect("13moon.db")
         try:
             st.success("資料庫連接成功")
-            tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
-            st.write("表格列表：", tables)
-            
-            # 測試 PSI
-            st.subheader("PSI 查詢測試 (7/26)")
+            # 檢查 Kin_Basic
             try:
-                psi = pd.read_sql("SELECT * FROM PSI_Bank WHERE 月日='7月26日'", conn)
-                st.write(psi)
-            except: st.error("PSI 查詢失敗")
+                kb = pd.read_sql("SELECT * FROM Kin_Basic LIMIT 3", conn)
+                st.write("Kin_Basic (前3筆):", kb)
+            except: st.error("Kin_Basic 表格缺失")
+            
+            # 檢查 Kin_Start
+            try:
+                ks = pd.read_sql("SELECT * FROM Kin_Start LIMIT 3", conn)
+                st.write("Kin_Start (前3筆):", ks)
+            except: st.error("Kin_Start 表格缺失")
             
         except Exception as e: st.error(f"錯誤: {e}")
         conn.close()

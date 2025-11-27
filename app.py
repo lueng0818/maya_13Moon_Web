@@ -29,7 +29,7 @@ SAFE_DEFAULT_DATE = datetime.date(1990, 1, 1)
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
-    h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
+    h1, h2, h3 { color: #d4af37 !important; font-family: "Custom Font", "Microsoft JhengHei"; }
     
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
@@ -179,7 +179,7 @@ if mode == "個人星系解碼":
                 BMU : {data.get('Matrix_BMU','-')}
                 </div>""", unsafe_allow_html=True)
 
-        # --- 右側：五大神諭盤 (已修正版面) ---
+        # --- 右側：五大神諭盤 ---
         with c2:
             st.subheader("五大神諭盤")
             

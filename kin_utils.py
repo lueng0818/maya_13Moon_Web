@@ -7,55 +7,68 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
-# 圖片與名稱設定
+# --- 1. 靜態資源設定 (確保與您的 assets 資料夾和 Kin_Basic 表格一致) ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
+# 圖片檔名對照 (修正為 .png)
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
+# 調性檔名 (例如: 1 -> "瑪雅曆法圖騰-34.png")
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
+# --- 2. 輔助函數 ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def get_img_b64(path):
+    """將圖片轉為 Base64 字串"""
     if os.path.exists(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
     return ""
 
+# --- 3. KIN 計算邏輯 (查表法) ---
 def calculate_kin_v2(date_obj):
-    """查表計算 KIN"""
+    """
+    邏輯：(年起始 KIN + 月累積天數 + 日期) % 260
+    """
     conn = get_db()
     try:
+        # 1. 查年份 (Kin_Start)
         q_year = f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}"
         res_year = conn.execute(q_year).fetchone()
         if not res_year: return None, f"無 {date_obj.year} 年起始KIN資料"
         start_kin = res_year['起始KIN']
         
+        # 2. 查月份 (Month_Accum)
         q_month = f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}"
         res_month = conn.execute(q_month).fetchone()
         if not res_month: return None, f"無 {date_obj.month} 月累積天數資料"
         month_accum = res_month['累積天數']
         
+        # 3. 計算公式: (年起始 + 月累積 + 日) % 260
         total = start_kin + month_accum + date_obj.day
         kin = total % 260
         return (260 if kin == 0 else kin), None
+        
     except Exception as e:
         return None, str(e)
     finally:
         conn.close()
 
+# 數學備案 (萬一查不到表時使用)
 def calculate_kin_math(date_obj):
     base = datetime.date(2023, 7, 26)
     delta = (date_obj - base).days
     kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
+# --- 4. 資料獲取核心 ---
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
     
-    # 1. 【核心】從 Kin_Basic 撈取波符 (E 欄位) 和城堡等資訊
+    # 1. 從 Kin_Basic 讀取基礎資料 (波符/城堡/主印記名稱)
     try:
         row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
@@ -71,27 +84,25 @@ def get_full_kin_data(kin):
             data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
     except: pass
 
-    # 3. 圖片與名稱 (用數學推算 ID)
+    # 3. 補充圖片路徑與名稱 ID (使用數學推算 ID)
     s_num = (kin - 1) % 20 + 1
     t_num = (kin - 1) % 13 + 1
     
     data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     
-    # 【關鍵】確保波符名稱使用 Kin_Basic 中的欄位 (波符 / 城堡)
-    data['波符'] = data.get('波符', '未知') # Column E
-    data['城堡'] = data.get('城堡', '未知')
-    
+    # 如果資料庫沒有提供，使用數學推算名稱 (確保不會是 '未知')
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
     wid = math.ceil(kin / 13)
-    data['wave_name'] = data.get('波符', '未知') # 這裡使用 data['波符'] 裡的內容
+    data['wave_name'] = data.get('波符', '未知') # 優先使用 Kin_Basic 裡的波符名稱
     data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
 
     conn.close()
     return data
 
+# --- 5. PSI 查詢 (查表) ---
 def get_psi_kin(date_obj):
     conn = get_db()
     psi_data = {}
@@ -106,27 +117,36 @@ def get_psi_kin(date_obj):
     conn.close()
     return psi_data
 
+# --- 6. 五大神諭計算 ---
 def get_oracle(kin):
+    """計算五大神諭的 (圖騰ID, 調性ID)"""
     s = (kin - 1) % 20 + 1
     t = (kin - 1) % 13 + 1
     
+    # 支援 (Analog)
     ana = 19 - s; ana += 20 if ana <= 0 else 0
-    antipode = (s + 10) % 20; antipode = 20 if antipode == 0 else antipode
-    occult_s = 21 - s
-    occult_t = 14 - t
+    # 擴展 (Antipode)
+    anti = (s + 10) % 20; anti = 20 if anti == 0 else anti
+    # 推動 (Occult)
+    occ_s = 21 - s
+    occ_t = 14 - t
+    # 引導 (Guide) - 簡化為數學對應
     guide = s
     
     return {
         "destiny": {"s":s, "t":t},
         "analog": {"s":ana, "t":t},
-        "antipode": {"s":antipode, "t":t},
-        "occult": {"s":occult_s, "t":occult_t},
+        "antipode": {"s":anti, "t":t},
+        "occult": {"s":occ_s, "t":occ_t},
         "guide": {"s":guide, "t":t}
     }
 
+# --- 7. 52 流年計算 ---
 def calculate_life_castle(birth_date):
+    """計算 52 流年路徑"""
     bk, _ = calculate_kin_v2(birth_date)
     if not bk: bk = calculate_kin_math(birth_date)
+    
     path = []
     for age in range(105):
         ck = (bk + age*105)%260

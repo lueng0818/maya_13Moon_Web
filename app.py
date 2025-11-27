@@ -3,7 +3,6 @@ import datetime
 import os
 import pandas as pd
 import sqlite3
-import base64
 from create_db import init_db
 from kin_utils import (
     calculate_kin, get_full_kin_data, get_oracle, 
@@ -11,26 +10,24 @@ from kin_utils import (
     SEAL_FILES, TONE_FILES
 )
 
-# --- 1. 系統初始化 ---
-st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🌙")
-
-# 自動檢查資料庫
+# --- 1. 自動檢查資料庫 ---
 if not os.path.exists("13moon.db"):
-    with st.spinner("正在初始化系統資料庫..."):
-        init_db()
-    st.success("資料庫建立完成！")
+    st.cache_data.clear() # 清除快取以防萬一
+    init_db()
 
-# CSS 美化
+# --- 2. 頁面設定 ---
+st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
+
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
-    .kin-card {
-        background: #262730; border: 1px solid #444; 
-        border-radius: 12px; padding: 10px; text-align: center;
-        transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    .kin-card-grid {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #262730; border: 1px solid #444; border-radius: 8px;
+        padding: 5px; width: 100%; height: 100%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
     }
-    .kin-card:hover { transform: translateY(-5px); border-color: #d4af37; }
     .matrix-data {
         font-family: monospace; color: #00ff00; background: #000;
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
@@ -38,137 +35,115 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. 核心功能：卡片顯示器 ---
-def show_card(label, s_id, t_id, is_main=False):
-    """
-    顯示單張印記卡片
-    s_id: 圖騰編號 (1-20)
-    t_id: 調性編號 (1-13)
-    """
-    # 取得檔名 (確保 kin_utils.py 的對照表正確)
-    s_file = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.jpg") # 預設檔名格式
-    t_file = TONE_FILES.get(t_id, f"tone-{t_id}.png")
-    
-    # 組合路徑
-    path_seal = f"assets/seals/{s_file}"
-    path_tone = f"assets/tones/{t_file}"
-    
-    with st.container():
-        # 卡片外框
-        border_style = "2px solid gold" if is_main else "1px solid #444"
-        st.markdown(f"<div class='kin-card' style='border:{border_style}'>", unsafe_allow_html=True)
-        
-        # 顯示調性 (上方)
-        if os.path.exists(path_tone):
-            st.image(path_tone, width=30 if not is_main else 40)
-        else:
-            st.caption(f"調性 {t_id}")
-            
-        # 顯示圖騰 (中間)
-        if os.path.exists(path_seal):
-            st.image(path_seal, width=70 if not is_main else 100)
-        else:
-            st.warning(f"缺圖: {s_file}")
-            
-        # 顯示標籤 (下方)
-        st.caption(label)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# --- 3. 側邊欄導航 ---
+# 側邊欄
 st.sidebar.title("🌌 13 Moon System")
-mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "通訊錄/合盤", "資料庫檢查"])
+mode = st.sidebar.radio("功能導航", ["個人星系解碼", "52流年城堡", "通訊錄/合盤"])
 
-# --- 頁面邏輯 ---
-
+# === 功能 1: 個人星系解碼 ===
 if mode == "個人星系解碼":
     st.title("🔮 個人星系印記解碼")
     
-    col_date, col_btn = st.columns([2, 1])
-    with col_date:
+    col_d, col_b = st.columns([2, 1])
+    with col_d:
         date_in = st.date_input("請選擇生日", datetime.date.today())
-    with col_btn:
-        st.write("") # Spacer
-        st.write("") 
-        if st.button("🚀 開始解碼", type="primary"):
-            st.session_state['run_decode'] = True
+    with col_b:
+        st.write("")
+        st.write("")
+        start_btn = st.button("🚀 開始解碼", type="primary")
 
-    if st.session_state.get('run_decode'):
-        # 1. 計算 KIN
+    if start_btn or st.session_state.get('run_decode'):
+        st.session_state['run_decode'] = True
+        
+        # 計算資料
         kin = calculate_kin(date_in)
-        
-        # 2. 取得詳細資料 (文字)
         data = get_full_kin_data(kin)
-        
-        # 3. 計算五大神諭 (ID)
         oracle = get_oracle(kin)
         
         st.divider()
-        
-        # 版面配置：左邊主資訊，右邊神諭盤
         c1, c2 = st.columns([1, 1.5])
         
+        # --- 左側：主資訊 ---
         with c1:
             # 主印記大圖
-            show_card("主印記", oracle['destiny']['s'], oracle['destiny']['t'], is_main=True)
-            
+            s_path = f"assets/seals/{data.get('seal_img','')}"
+            if os.path.exists(s_path):
+                st.image(s_path, width=180)
+            else:
+                st.warning(f"缺圖: {data.get('seal_img','')}")
+
             st.markdown(f"## KIN {kin}")
             st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
             st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
             
-            # 矩陣數據展示
-            with st.expander("🧬 查看 441 矩陣數據"):
-                st.markdown(f"""
-                <div class="matrix-data">
-                時間矩陣: {data.get('Matrix_Time', '-')}<br>
-                空間矩陣: {data.get('Matrix_Space', '-')}<br>
-                共時矩陣: {data.get('Matrix_Sync', '-')}<br>
-                BMU : {data.get('Matrix_BMU', '-')}
-                </div>
-                """, unsafe_allow_html=True)
+            with st.expander("🧬 查看 441 矩陣"):
+                st.markdown(f"""<div class="matrix-data">
+                時間: {data.get('Matrix_Time','-')}<br>
+                空間: {data.get('Matrix_Space','-')}<br>
+                共時: {data.get('Matrix_Sync','-')}<br>
+                BMU : {data.get('Matrix_BMU','-')}
+                </div>""", unsafe_allow_html=True)
 
+        # --- 右側：五大神諭盤 (CSS Grid 完美版) ---
         with c2:
             st.subheader("五大神諭盤")
             
-            # 使用 3x3 Grid 排版
-            r1c1, r1c2, r1c3 = st.columns(3)
-            with r1c2: show_card("引導 (Guide)", oracle['guide']['s'], oracle['guide']['t'])
-            
-            r2c1, r2c2, r2c3 = st.columns(3)
-            with r2c1: show_card("擴展 (Antipode)", oracle['antipode']['s'], oracle['antipode']['t'])
-            with r2c2: st.markdown("<br><div style='text-align:center; color:#aaa'>Destiny</div>", unsafe_allow_html=True) # 中央留白或放文字
-            with r2c3: show_card("支持 (Analog)", oracle['analog']['s'], oracle['analog']['t'])
-            
-            r3c1, r3c2, r3c3 = st.columns(3)
-            with r3c2: show_card("推動 (Occult)", oracle['occult']['s'], oracle['occult']['t'])
+            # 產生卡片 HTML 的函數
+            def get_html(label, s_id, t_id, is_main=False):
+                s_f = SEAL_FILES.get(s_id, "01紅龍.jpg")
+                t_f = TONE_FILES.get(t_id, "瑪雅曆法圖騰-34.png")
+                
+                img_s = get_img_b64(f"assets/seals/{s_f}")
+                img_t = get_img_b64(f"assets/tones/{t_f}")
+                
+                border = "2px solid gold" if is_main else "1px solid #555"
+                
+                return f"""
+                <div class="kin-card-grid" style="border:{border}">
+                    <img src="data:image/png;base64,{img_t}" style="width:20px; margin-bottom:2px;">
+                    <img src="data:image/jpeg;base64,{img_s}" style="width:50px; border-radius:50%;">
+                    <div style="font-size:10px; color:#aaa;">{label}</div>
+                </div>
+                """
 
-            # 祈禱文與易經
+            # 產生五張卡
+            card_guide = get_html("引導", oracle['guide']['s'], oracle['guide']['t'])
+            card_anti  = get_html("擴展", oracle['antipode']['s'], oracle['antipode']['t'])
+            card_main  = get_html("主印記", oracle['destiny']['s'], oracle['destiny']['t'], True)
+            card_analog= get_html("支持", oracle['analog']['s'], oracle['analog']['t'])
+            card_occult= get_html("推動", oracle['occult']['s'], oracle['occult']['t'])
+
+            # Grid 佈局 (3x3)
+            st.markdown(f"""
+            <div style="display: grid; grid-template-columns: 80px 80px 80px; grid-template-rows: 90px 90px 90px; gap: 10px; justify-content: center;">
+                <div></div> <div>{card_guide}</div> <div></div>
+                <div>{card_anti}</div> <div>{card_main}</div> <div>{card_analog}</div>
+                <div></div> <div>{card_occult}</div> <div></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # 易經與祈禱文
             st.markdown("---")
-            if '祈禱文' in data:
-                st.markdown(f"**📜 祈禱文**")
-                st.write(data['祈禱文'])
-            
             if 'IChing_Meaning' in data:
-                st.markdown(f"**☯️ 易經：{data.get('對應卦象','')}**")
-                st.caption(data.get('IChing_Meaning',''))
+                st.success(f"**☯️ 易經**：{data.get('對應卦象','')}\n\n{data.get('IChing_Meaning','')}")
+            if '祈禱文' in data:
+                with st.expander("📜 祈禱文"):
+                    st.write(data['祈禱文'])
 
+# === 功能 2: 52 流年 ===
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
     d = st.date_input("請選擇生日", datetime.date(1990, 1, 1))
-    
     if st.button("計算流年"):
         path = calculate_life_castle(d)
-        
         st.subheader("第一週期 (0-51歲)")
+        
+        # 使用 Streamlit columns 顯示 (每行 4 個)
         cols = st.columns(4)
         for i, row in enumerate(path[:52]):
             with cols[i % 4]:
                 info = row['Info']
-                # 這裡使用簡單的 HTML 顯示小卡
-                seal_img_path = f"assets/seals/{info.get('seal_img','')}"
-                img_html = ""
-                if os.path.exists(seal_img_path):
-                    b64 = get_img_b64(seal_img_path)
-                    img_html = f'<img src="data:image/jpg;base64,{b64}" width="40" style="border-radius:50%">'
+                s_path = f"assets/seals/{info.get('seal_img','')}"
+                img_html = f'<img src="data:image/jpeg;base64,{get_img_b64(s_path)}" width="40" style="border-radius:50%">' if os.path.exists(s_path) else ""
                 
                 st.markdown(f"""
                 <div style="background:{row['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;">
@@ -179,32 +154,13 @@ elif mode == "52流年城堡":
                 </div>
                 """, unsafe_allow_html=True)
 
-elif mode == "資料庫檢查":
-    st.title("🔍 系統檢查員")
-    
-    st.subheader("1. 檔案檢查")
-    if os.path.exists("assets/seals"):
-        files = os.listdir("assets/seals")
-        st.success(f"✅ 圖騰圖片庫: 找到 {len(files)} 張圖片")
-        with st.expander("查看所有圖檔名"):
-            st.write(files)
-    else:
-        st.error("❌ 找不到 assets/seals 資料夾")
-
-    st.subheader("2. 資料庫連接")
-    if os.path.exists("13moon.db"):
-        conn = sqlite3.connect("13moon.db")
-        try:
-            df = pd.read_sql("SELECT count(*) FROM Kin_Data", conn)
-            cnt = df.iloc[0,0]
-            st.success(f"✅ Kin_Data 連接成功 (共 {cnt} 筆資料)")
-            
-            # 測試查詢
-            kin1 = pd.read_sql("SELECT * FROM Kin_Data WHERE KIN=1", conn)
-            st.write("KIN 1 測試數據:", kin1)
-            
-        except Exception as e:
-            st.error(f"❌ 資料表讀取失敗: {e}")
-        conn.close()
-    else:
-        st.error("❌ 13moon.db 不存在")
+# === 功能 3: 通訊錄 ===
+elif mode == "通訊錄/合盤":
+    st.title("👥 通訊錄")
+    conn = sqlite3.connect("13moon.db")
+    try:
+        df = pd.read_sql("SELECT * FROM Users", conn)
+        st.dataframe(df)
+    except:
+        st.warning("通訊錄資料未匯入")
+    conn.close()

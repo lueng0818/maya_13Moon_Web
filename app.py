@@ -68,7 +68,7 @@ if mode == "個人星系解碼":
         with c1:
             # 顯示主印記大圖
             # --- 修改後的安全程式碼 ---
-seal_path = f"assets/seals/{data.get('seal_img', '')}"
+seal_path = "assets/seals/{data.get('seal_img', '')}"
 
 # 先檢查檔案是否存在
 if os.path.exists(seal_path):
@@ -176,4 +176,5 @@ elif mode == "矩陣資料庫":
         try: st.dataframe(pd.read_sql("SELECT * FROM Star_Years LIMIT 50", conn))
         except: st.warning("星際年資料未匯入")
     conn.close()
+
 

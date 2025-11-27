@@ -63,7 +63,6 @@ def init_db():
             df = read_csv_robust(f)
             if df is not None: 
                 df.columns = [c.strip() for c in df.columns]
-                # 確保 KIN 欄位為整數
                 if 'KIN' in df.columns:
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
@@ -78,7 +77,12 @@ def init_db():
     for keyword, table_name in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing"), ("通訊錄", "Users")]:
         f = find_file(keyword)
         if f:
-            df = read_csv_robust(f, header=[0,1]) if keyword=="矩陣" else read_csv_robust(f)
+            # 矩陣需要特殊處理
+            if keyword == "矩陣":
+                 df = process_matrix_csv(f)
+            else:
+                df = read_csv_robust(f)
+                
             if df is not None:
                 if keyword != "矩陣": df.columns = [c.replace('\n', '').strip() for c in df.columns]
                 df.to_sql(table_name, conn, if_exists="replace", index=False)

@@ -3,11 +3,10 @@ import datetime
 import math
 import base64
 import os
-import pandas as pd # 需要 pandas 讀取 SQL
+import pandas as pd
 
 DB_PATH = "13moon.db"
 
-# 圖片與名稱設定
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
@@ -23,40 +22,52 @@ def get_img_b64(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
     return ""
 
-# 【核心更新】新的 KIN 計算邏輯 (查表法)
-def calculate_kin_v2(date_obj):
+# 【新增】PSI 查詢功能
+def get_psi_kin(date_obj):
     """
-    使用 Kin_Start 和 Month_Accum 資料表進行計算
+    根據日期查詢 PSI 印記
+    對應表格式: '7月26日'
     """
     conn = get_db()
+    psi_data = {}
+    
     try:
-        # 1. 讀取年份起始 KIN
-        query_year = f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}"
-        df_year = pd.read_sql(query_year, conn)
+        # 格式化日期: 7月26日 (注意月份不補0)
+        query_date = f"{date_obj.month}月{date_obj.day}日"
         
-        # 2. 讀取月份累積天數
-        query_month = f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}"
-        df_month = pd.read_sql(query_month, conn)
+        row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (query_date,)).fetchone()
+        if row:
+            psi_kin = row['PSI印記']
+            # 再去查 Kin_Data 拿詳細資料
+            psi_info = get_full_kin_data(psi_kin)
+            psi_data = {
+                "KIN": psi_kin,
+                "Info": psi_info,
+                "Matrix_Pos": row.get('矩陣位置', '-')
+            }
+    except Exception as e:
+        print(f"PSI Error: {e}")
         
-        if df_year.empty: return None, "資料庫無此年份資料"
-        if df_month.empty: return None, "資料庫無此月份資料"
+    conn.close()
+    return psi_data
+
+def calculate_kin_v2(date_obj):
+    conn = get_db()
+    try:
+        q_y = f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}"
+        df_y = pd.read_sql(q_y, conn)
+        q_m = f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}"
+        df_m = pd.read_sql(q_m, conn)
         
-        start_kin = df_year.iloc[0,0]
-        month_accum = df_month.iloc[0,0]
+        if df_y.empty or df_m.empty: return None, "無資料"
         
-        # 3. 計算公式
-        raw = start_kin + month_accum + date_obj.day
+        raw = df_y.iloc[0,0] + df_m.iloc[0,0] + date_obj.day
         kin = raw % 260
         if kin == 0: kin = 260
-        
         return kin, None
-        
-    except Exception as e:
-        return None, str(e)
-    finally:
-        conn.close()
+    except Exception as e: return None, str(e)
+    finally: conn.close()
 
-# 舊的數學計算法 (作為備用)
 def calculate_kin_math(date_obj):
     base = datetime.date(2023, 7, 26)
     delta = (date_obj - base).days
@@ -66,14 +77,11 @@ def calculate_kin_math(date_obj):
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
-    
-    # 優先讀取 Kin_Data (資料最全)
     try:
         row = conn.execute("SELECT * FROM Kin_Data WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
     except: pass
     
-    # 矩陣資料
     try:
         m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
         if m:
@@ -83,10 +91,8 @@ def get_full_kin_data(kin):
             data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
     except: pass
 
-    # 圖片與波符
     s_num = int(data.get('圖騰數字', (kin-1)%20 + 1))
     t_num = int(data.get('調性數字', (kin-1)%13 + 1))
-    
     data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     data['調性'] = data.get('調性', TONE_NAMES[t_num])
@@ -100,18 +106,13 @@ def get_full_kin_data(kin):
     return data
 
 def get_oracle(kin):
-    # 這裡的邏輯不變，省略以節省篇幅
     seal = (kin - 1) % 20 + 1
     tone = (kin - 1) % 13 + 1
-    
-    analog = 19 - seal
-    if analog <= 0: analog += 20
-    antipode = (seal + 10) % 20
-    if antipode == 0: antipode = 20
+    analog = 19 - seal; analog += 20 if analog <=0 else 0
+    antipode = (seal + 10) % 20; antipode = 20 if antipode == 0 else antipode
     occult_s = 21 - seal
     occult_t = 14 - tone
     guide = seal 
-
     return {
         "destiny": {"s": seal, "t": tone},
         "analog":  {"s": analog, "t": tone},
@@ -121,23 +122,17 @@ def get_oracle(kin):
     }
 
 def calculate_life_castle(birth_date):
-    # 使用新版計算邏輯
-    base_kin, err = calculate_kin_v2(birth_date)
-    if not base_kin: base_kin = calculate_kin_math(birth_date) # 降級備案
-    
+    base_kin, _ = calculate_kin_v2(birth_date)
+    if not base_kin: base_kin = calculate_kin_math(birth_date)
     path = []
     for age in range(105):
-        year = birth_date.year + age
         curr_kin = (base_kin + age * 105) % 260
         if curr_kin == 0: curr_kin = 260
-        
         info = get_full_kin_data(curr_kin)
-        
         cycle = age % 52
         if cycle < 13: col = "#fff0f0"
         elif cycle < 26: col = "#f8f8f8"
         elif cycle < 39: col = "#f0f8ff"
         else: col = "#fffff0"
-        
-        path.append({"Age":age, "Year":year, "KIN":curr_kin, "Info":info, "Color":col})
+        path.append({"Age":age, "Year":birth_date.year+age, "KIN":curr_kin, "Info":info, "Color":col})
     return path

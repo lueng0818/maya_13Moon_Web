@@ -65,22 +65,27 @@ if mode == "個人星系解碼":
         
         c1, c2 = st.columns([1, 2])
         
-        with c1:
-            # 顯示主印記大圖
-            # --- 修改後的安全程式碼 ---
-seal_path = "assets/seals/{data.get('seal_img', '')}"
+        # ... 上面是 c1, c2 = st.columns([1, 2]) ...
 
-# 先檢查檔案是否存在
-if os.path.exists(seal_path):
-    st.image(seal_path, width=180)
-else:
-    # 找不到圖片時，顯示紅色錯誤框，幫您除錯
-    st.error(f"⚠️ 圖片遺失：{seal_path}")
-    st.caption("請檢查 GitHub 的 assets/seals 資料夾內是否有此檔案")
-# ------------------------
+        with c1:
+            # (注意：這裡必須要縮排！請確保這行前面有空格)
+            # --- 修改後的圖片顯示邏輯 ---
+            seal_path = f"assets/seals/{data.get('seal_img', '')}"
+            
+            # 檢查檔案是否存在
+            if os.path.exists(seal_path):
+                st.image(seal_path, width=180)
+            else:
+                # 找不到時顯示替代文字，避免崩潰
+                st.warning(f"⚠️ 找不到圖片：{data.get('seal_img', '未知')}")
+                st.caption(f"路徑: {seal_path}")
+            # -----------------------------------
+
             st.markdown(f"## KIN {kin}")
             st.markdown(f"### {data.get('調性','')} {data.get('圖騰','')}")
             st.info(f"波符：{data.get('wave_name','')} 波符")
+            
+            # ... 下面繼續 ...
             
             # 矩陣數據
             st.markdown("#### 🧬 441 矩陣座標")
@@ -176,5 +181,6 @@ elif mode == "矩陣資料庫":
         try: st.dataframe(pd.read_sql("SELECT * FROM Star_Years LIMIT 50", conn))
         except: st.warning("星際年資料未匯入")
     conn.close()
+
 
 

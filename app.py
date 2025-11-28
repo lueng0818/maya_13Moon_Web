@@ -557,50 +557,60 @@ elif mode == "國王棋盤":
         with c2: st.success(f"🐢 {tk['Turtle_Color']} | {tk['Turtle_Day']}\n\n{tk.get('Turtle_Desc','')}")
 
 # 6. 人員管理
-elif mode == "人員生日管理":
-    st.title("👤 人員管理")
-    t1, t2, t3 = st.tabs(["新增", "列表/編輯", "匯入/匯出"])
-    with t1:
-        c1, c2 = st.columns(2)
-        n = c1.text_input("姓名")
-        db = c2.date_input("生日", SAFE_DATE)
-        if st.button("存檔"):
-            k, _ = calculate_kin_v2(db)
-            if k:
-                ok, m = save_user_data(n, db.strftime('%Y-%m-%d'), k, get_main_sign_text(k))
-                if ok: st.success(m)
-                else: st.error(m)
-    with t2:
-        df = get_user_list()
-        st.dataframe(df)
-        if not df.empty:
-            sel = st.selectbox("編輯對象", df['姓名'])
-            if sel:
-                r = df[df['姓名']==sel].iloc[0]
-                nn = st.text_input("新姓名", value=sel)
-                nd = st.date_input("新生日", value=datetime.datetime.strptime(r['生日'],"%Y-%m-%d").date())
-                c_up, c_del = st.columns(2)
-                if c_up.button("更新"):
-                    nk, _ = calculate_kin_v2(nd)
-                    from kin_utils import update_user_data
-                    update_user_data(sel, nn, nd.strftime('%Y-%m-%d'), nk, get_main_sign_text(nk))
-                    st.success("更新成功"); st.rerun()
-                if c_del.button("刪除"):
-                    from kin_utils import delete_user_data
-                    delete_user_data([sel])
-                    st.success("已刪除"); st.rerun()
-    with t3:
+with t3:
         st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
         up = st.file_uploader("匯入 CSV", type="csv")
+        
         if up and st.button("開始匯入"):
             try:
-                d_in = pd.read_csv(up)
+                # 1. 嘗試讀取 CSV (自動處理編碼：UTF-8 或 Big5/CP950)
+                try:
+                    d_in = pd.read_csv(up)
+                except UnicodeDecodeError:
+                    up.seek(0)
+                    d_in = pd.read_csv(up, encoding='cp950')
+                
+                success_count = 0
+                
+                # 2. 逐行處理資料
                 for _, r in d_in.iterrows():
-                    dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
-                    kk, _ = calculate_kin_v2(dd)
-                    save_user_data(r['姓名'], dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
-                st.success("匯入完成")
-            except: st.error("格式錯誤")
+                    dd = None
+                    # 自動抓取姓名 (支援 '姓名' 或 '名字')
+                    name = r.get('姓名', r.get('名字', '未命名'))
+                    
+                    # 情況 A: CSV 有單一「生日」欄位 (如: 2023-01-01 或 2023/1/1)
+                    if '生日' in d_in.columns:
+                        try:
+                            # 簡單的日期字串處理
+                            d_str = str(r['生日']).strip().replace('/', '-').split(' ')[0]
+                            parts = d_str.split('-')
+                            if len(parts) == 3:
+                                dd = datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+                        except: pass
+                    
+                    # 情況 B: CSV 有分開的「出生年、月、日」欄位 (舊格式)
+                    elif '出生年' in d_in.columns and '出生月' in d_in.columns:
+                        try:
+                            dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
+                        except: pass
+
+                    # 3. 若成功解析出生日，計算 KIN 並存檔
+                    if dd:
+                        # 重新計算 KIN 以確保資料正確
+                        kk, _ = calculate_kin_v2(dd)
+                        if not kk: kk = calculate_kin_math(dd)
+                        
+                        save_user_data(name, dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
+                        success_count += 1
+                
+                if success_count > 0:
+                    st.success(f"🎉 成功匯入 {success_count} 筆資料！")
+                    st.rerun() # 自動重新整理頁面顯示新資料
+                else:
+                    st.warning("⚠️ 匯入失敗：找不到有效的日期格式。請確認 CSV 包含「生日」(2023-01-01) 或「出生年、出生月、出生日」欄位。")
+                    
+            except Exception as e:
+                st.error(f"❌ 檔案格式錯誤: {str(e)}")
 
 # 7. 合盤
 elif mode == "通訊錄/合盤":
@@ -634,6 +644,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

@@ -558,7 +558,7 @@ elif mode == "女神印記查詢":
                         f"</div>", 
                         unsafe_allow_html=True
                     )
-# 5. 對等印記 (矩陣高階版 + 地圖顯示)
+# 5. 對等印記 (矩陣高階版 - 無地圖)
 elif mode == "對等印記查詢":
     st.title("🔄 對等印記查詢 (矩陣高階版)")
     d, _ = render_date_selector("eq")
@@ -585,7 +585,7 @@ elif mode == "對等印記查詢":
             # 顯示結果
             st.success(f"🎉 原始 KIN {k} (瑪雅生日 {maya_date}) ➜ 對等 KIN {eq_k}")
             
-            # 顯示計算細節
+            # 顯示計算細節 (保留文字紀錄，移除圖片)
             with st.expander("🧮 查看詳細計算過程", expanded=True):
                 for log in res['Logs']:
                     st.write(log)
@@ -593,26 +593,7 @@ elif mode == "對等印記查詢":
                 st.markdown(f"**總和**：{res['Sums'][0]} + {res['Sums'][1]} + {res['Sums'][2]} = **{res['Total']}**")
                 st.markdown(f"**對等印記**：{res['Total']} % 260 = **KIN {eq_k}**")
 
-            # --- 顯示矩陣地圖 (新增基本母體矩陣) ---
-            st.markdown("### 🗺️ 矩陣地圖參考")
-            st.info("您可以在下方地圖中找到計算過程提到的座標位置 (例如 V11:H2) 以及 BMU 位置。")
-            
-            # ✨ 改為 4 個分頁
-            map_tabs = st.tabs(["1️⃣ 時間矩陣", "2️⃣ 空間矩陣", "3️⃣ 共時矩陣", "4️⃣ 基本母體矩陣"])
-            
-            with map_tabs[0]:
-                st.image("assets/441timematrix.png", caption="Time Matrix (時間矩陣)", use_container_width=True)
-            with map_tabs[1]:
-                st.image("assets/441spacematrix.png", caption="Space Matrix (空間矩陣)", use_container_width=True)
-            with map_tabs[2]:
-                st.image("assets/441synchronicmatrix.png", caption="Synchronic Matrix (共時矩陣)", use_container_width=True)
-            with map_tabs[3]:
-                # ✨ 新增這張圖
-                if os.path.exists("assets/441basematrix.png"):
-                    st.image("assets/441basematrix.png", caption="Base Matrix (基本母體矩陣)", use_container_width=True)
-                else:
-                    st.warning("請上傳 441basematrix.png 到 assets 資料夾")
-                    
+            st.markdown("---")
 
             # --- 結果佈局 ---
             c1, c2 = st.columns([1, 1.6])
@@ -878,6 +859,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

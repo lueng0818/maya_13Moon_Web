@@ -22,23 +22,28 @@ SAFE_DATE = datetime.date(1990, 1, 1)
 
 st.markdown("""
 <style>
-    /* 1. 主畫面背景 (右側主要內容) */
+    /* ==================================
+       1. 全域背景與基礎設定 
+       ================================== */
     .stApp { 
         background-color: #0e1117; 
         color: #ffffff; 
+        font-size: 18px; /* 全域預設字體加大 */
     }
-
-    /* 2. 側邊欄背景 (左側選單) - 設定為深黑色 */
+    
+    /* 側邊欄背景設定 */
     section[data-testid="stSidebar"] {
-        background-color: #262730; /* 這是 Streamlit 標準深色側邊欄顏色，若要全黑可改成 #000000 */
+        background-color: #262730;
         color: #ffffff;
     }
     
-    /* 3. 標題顏色 */
+    /* 標題顏色 */
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
-    
-    /* 4. 強制所有 Widget 的標籤 (Label) 為白色 */
-    /* 包含：下拉選單、日期、輸入框等 */
+
+    /* ==================================
+       2. 輸入元件標籤 (Labels) - 標題字加大 
+       ================================== */
+    /* 例如：「輸入方式」、「篩選人員」、「調性」這些標題 */
     .stSelectbox label p, 
     .stDateInput label p, 
     .stTextInput label p, 
@@ -46,22 +51,70 @@ st.markdown("""
     .stRadio label p {
         color: #ffffff !important;
         font-weight: bold;
-        font-size: 16px;
+        font-size: 20px !important; /* 標題加大到 20px */
+        margin-bottom: 8px;
     }
 
-    /* 5. 強制 Radio Button (單選按鈕) 選項文字為白色 */
-    .stRadio div[role='radiogroup'] p {
-        color: #ffffff !important;
-        font-size: 15px;
+    /* ==================================
+       3. 單選按鈕 (Radio) - 選項字體加大 & 按鈕變胖 
+       ================================== */
+    
+    /* (A) 按鈕容器設定 */
+    div[role="radiogroup"] label {
+        padding: 12px 15px !important; /* 增加內距，讓按鈕變胖，比較好點 */
+        margin-bottom: 8px !important; /* 按鈕之間的距離加大 */
+        border-radius: 10px !important;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        background-color: rgba(255, 255, 255, 0.05); /* 給未選中的選項一點點底色，比較好識別 */
     }
     
-    /* 6. 側邊欄內的特定文字修正 (確保導航選項也是白色) */
-    section[data-testid="stSidebar"] .stRadio label p,
-    section[data-testid="stSidebar"] p {
+    /* (B) 選項文字設定 */
+    div[role="radiogroup"] label p {
         color: #ffffff !important;
+        font-size: 18px !important; /* 選項文字加大到 18px */
+    }
+
+    /* (C) 滑鼠移過去 (Hover) */
+    div[role="radiogroup"] label:hover {
+        background-color: #444444 !important;
+        transform: translateX(5px); /* 增加一點點位移特效 */
+    }
+
+    /* (D) ✨ 已選中 (Selected) - 金色反白 */
+    div[role="radiogroup"] label:has(input:checked) {
+        background-color: #d4af37 !important;
+        border: 1px solid #d4af37;
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+    }
+
+    /* (E) 已選中的文字顏色 */
+    div[role="radiogroup"] label:has(input:checked) p {
+        color: #000000 !important;
+        font-weight: 900 !important;
+        font-size: 19px !important; /* 選中時稍微再大一點點 */
     }
     
-    /* 7. 既有的卡片與區塊樣式 (維持不變) */
+    /* (F) 隱藏原本的小圓點 */
+    div[role="radiogroup"] label div:first-child {
+        display: none; 
+    }
+
+    /* ==================================
+       4. 下拉選單 (Selectbox) 與 輸入框文字加大 
+       ================================== */
+    /* 選擇框內的文字 */
+    div[data-baseweb="select"] div {
+        font-size: 18px !important; 
+    }
+    /* 輸入框內的文字 */
+    input[type="text"], input[type="number"] {
+        font-size: 18px !important;
+    }
+    
+    /* ==================================
+       5. 既有的其他樣式 (維持不變)
+       ================================== */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -81,12 +134,14 @@ st.markdown("""
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
     }
     .concept-text {
-        font-size: 14px; color: #ddd; background-color: #1f1f1f; 
-        padding: 10px; border-left: 4px solid #d4af37; margin-bottom: 20px;
+        font-size: 16px; /* 這裡也稍微加大 */
+        color: #ddd; background-color: #1f1f1f; 
+        padding: 12px; border-left: 4px solid #d4af37; margin-bottom: 20px;
         border-radius: 4px;
     }
 </style>
 """, unsafe_allow_html=True)
+
 st.sidebar.title("🌌 13 Moon System")
 mode = st.sidebar.radio("功能導航", [
     "個人星系解碼", "個人流年查詢", "52流年城堡", 
@@ -467,6 +522,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

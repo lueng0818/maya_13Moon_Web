@@ -5,8 +5,17 @@ import pandas as pd
 import sqlite3
 import base64
 from create_db import init_db
-from kin_utils import *
+from kin_utils import (
+    calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
+    calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
+    get_maya_calendar_info, get_week_key_sentence, get_heptad_prayer,
+    get_main_sign_text, save_user_data, get_user_list, get_user_kin, calculate_composite,
+    get_wavespell_data, get_octave_positions, get_year_range, get_telektonon_info,
+    get_whole_brain_tuning, get_king_prophecy,
+    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
+)
 
+# 1. 初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
 if not os.path.exists("13moon.db"):
@@ -20,6 +29,7 @@ if MIN_YEAR > 1800: MIN_YEAR = 1800
 if MAX_YEAR < 2100: MAX_YEAR = 2100
 SAFE_DATE = datetime.date(1990, 1, 1)
 
+# CSS (保持不變)
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
@@ -57,17 +67,23 @@ mode = st.sidebar.radio("功能導航", [
     "人員生日管理", "通訊錄/合盤", "八度音階查詢", "系統檢查員"
 ])
 
+# --- 輔助函數 (卡片) ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     img_s = get_img_b64(f"assets/seals/{s_f}")
     img_t = get_img_b64(f"assets/tones/{t_f}")
-    
     txt = get_main_sign_text(kin_num)
     if "查無" in txt: txt = f"{TONE_NAMES[t_id]} {SEALS_NAMES[s_id]}"
-    
     border = "2px solid gold" if is_main else "1px solid #555"
     return f"""<div class="kin-card-grid" style="border:{border};"><img src="data:image/png;base64,{img_t}" style="width:30px; filter:invert(1); margin:0 auto 5px auto;"><img src="data:image/jpeg;base64,{img_s}" style="width:70px; margin-bottom:5px;"><div style="font-size:12px; color:#ddd; line-height:1.2;">{txt}</div><div style="font-size:10px; color:#888;">KIN {kin_num}</div></div>"""
+
+def show_basic_result(kin, data):
+    if os.path.exists(f"assets/seals/{data.get('seal_img','' )}"):
+        st.image(f"assets/seals/{data.get('seal_img','')}", width=150)
+    st.markdown(f"## KIN {kin}")
+    st.markdown(f"### {data.get('主印記','')}")
+    st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
 
 def user_selector(label, key):
     df = get_user_list()
@@ -105,14 +121,7 @@ def render_date_selector(key_prefix=""):
             except: st.error("日期錯誤")
     return d, u
 
-def show_basic_result(kin, data):
-    if os.path.exists(f"assets/seals/{data.get('seal_img','' )}"):
-        st.image(f"assets/seals/{data.get('seal_img','')}", width=150)
-    st.markdown(f"## KIN {kin}")
-    st.markdown(f"### {data.get('主印記','')}")
-    st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
-
-# 1. 個人解碼
+# === 1. 個人解碼 ===
 if mode == "個人星系解碼":
     st.title("🔮 個人星系印記解碼")
     c1, c2 = st.columns([2,1])
@@ -151,22 +160,18 @@ if mode == "個人星系解碼":
             with tc2:
                 st.subheader("五大神諭盤")
                 def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
-                k_g = gk(oracle['guide']['s'], oracle['guide']['t'])
-                k_an = gk(oracle['analog']['s'], oracle['analog']['t'])
-                k_anti = gk(oracle['antipode']['s'], oracle['antipode']['t'])
-                k_occ = gk(oracle['occult']['s'], oracle['occult']['t'])
-                
                 st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html("引導", k_g, oracle['guide']['s'], oracle['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_anti, oracle['antipode']['s'], oracle['antipode']['t'])}</div> 
+                    <div></div> <div>{get_card_html("引導", gk(oracle['guide']['s'],oracle['guide']['t']), oracle['guide']['s'], oracle['guide']['t'])}</div> <div></div>
+                    <div>{get_card_html("擴展", gk(oracle['antipode']['s'],oracle['antipode']['t']), oracle['antipode']['s'], oracle['antipode']['t'])}</div> 
                     <div>{get_card_html("主印記", kin, oracle['destiny']['s'], oracle['destiny']['t'], True)}</div> 
-                    <div>{get_card_html("支持", k_an, oracle['analog']['s'], oracle['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occ, oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
+                    <div>{get_card_html("支持", gk(oracle['analog']['s'],oracle['analog']['t']), oracle['analog']['s'], oracle['analog']['t'])}</div>
+                    <div></div> <div>{get_card_html("推動", gk(oracle['occult']['s'],oracle['occult']['t']), oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
                 </div>""", unsafe_allow_html=True)
                 st.markdown("---")
                 if 'IChing_Meaning' in data: st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
                 if '祈禱文' in data: 
                     with st.expander("📜 查看祈禱文"): st.write(data['祈禱文'])
+            
             st.markdown("---")
             st.subheader(f"🌊 {data.get('wave_name','')} 波符旅程")
             wz = get_wavespell_data(kin)
@@ -212,7 +217,6 @@ elif mode == "個人流年查詢":
             k_an = gk(fo['analog']['s'], fo['analog']['t'])
             k_anti = gk(fo['antipode']['s'], fo['antipode']['t'])
             k_occ = gk(fo['occult']['s'], fo['occult']['t'])
-            
             st.markdown(f"""<div class="oracle-grid-container">
                     <div></div> <div>{get_card_html("引導", k_g, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
                     <div>{get_card_html("擴展", k_anti, fo['antipode']['s'], fo['antipode']['t'])}</div> 
@@ -237,16 +241,13 @@ elif mode == "52流年城堡":
                 img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
                 st.markdown(f"<div style='background:{r['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;'><b>{r['Age']}歲</b><br><span style='color:#b8860b'>KIN {r['KIN']}</span><br>{img}<br>{inf.get('波符','')} | {inf.get('主印記','')}</div>", unsafe_allow_html=True)
 
-# 4. PSI/女神/對等
+# 4. PSI/女神/對等 (單獨查詢)
 elif mode == "PSI查詢":
     st.title("🧬 PSI 查詢")
     d, _ = render_date_selector("psi")
     if st.button("查詢"):
         res = get_psi_kin(d)
-        if res and res['KIN']:
-            st.success(f"PSI: KIN {res['KIN']}")
-            show_basic_result(res['KIN'], res['Info'])
-            st.info(f"矩陣: {res.get('Matrix','-')}")
+        if res and res['KIN']: st.success(f"PSI: KIN {res['KIN']}"); show_basic_result(res['KIN'], res['Info'])
         else: st.warning("無資料")
 
 elif mode == "女神印記查詢":
@@ -265,11 +266,8 @@ elif mode == "對等印記查詢":
     if st.button("查詢"):
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
-        from kin_utils import calculate_equivalent_kin
         res = calculate_equivalent_kin(k)
-        if res:
-            st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}")
-            show_basic_result(res['Eq_Kin'], res['Eq_Info'])
+        if res: st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}"); show_basic_result(res['Eq_Kin'], res['Eq_Info'])
 
 # 5. 高階功能
 elif mode == "全腦調頻":
@@ -326,6 +324,7 @@ elif mode == "人員生日管理":
                     delete_user_data([sel])
                     st.success("已刪除"); st.rerun()
     with t3:
+        df = get_user_list()
         st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
         up = st.file_uploader("匯入 CSV", type="csv")
         if up and st.button("開始匯入"):

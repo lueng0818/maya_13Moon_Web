@@ -5,17 +5,8 @@ import pandas as pd
 import sqlite3
 import base64
 from create_db import init_db
-from kin_utils import (
-    calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
-    calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    get_maya_calendar_info, get_week_key_sentence, get_heptad_prayer,
-    get_main_sign_text, save_user_data, get_user_list, get_user_kin, calculate_composite,
-    get_wavespell_data, get_octave_positions, get_year_range, get_telektonon_info,
-    get_whole_brain_tuning, get_king_prophecy,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
-)
+from kin_utils import *
 
-# 1. 系統初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
 if not os.path.exists("13moon.db"):
@@ -29,7 +20,6 @@ if MIN_YEAR > 1800: MIN_YEAR = 1800
 if MAX_YEAR < 2100: MAX_YEAR = 2100
 SAFE_DATE = datetime.date(1990, 1, 1)
 
-# CSS
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
@@ -57,7 +47,6 @@ st.markdown("""
         padding: 10px; border-left: 4px solid #d4af37; margin-bottom: 20px;
         border-radius: 4px;
     }
-    .flow-year-header { background: #2a2a2a; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #555; margin-bottom: 20px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -68,90 +57,64 @@ mode = st.sidebar.radio("功能導航", [
     "人員生日管理", "通訊錄/合盤", "八度音階查詢", "系統檢查員"
 ])
 
-# --- 輔助函數 ---
-def get_card_html(kin_num, s_id, t_id, is_main=False):
+def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     img_s = get_img_b64(f"assets/seals/{s_f}")
     img_t = get_img_b64(f"assets/tones/{t_f}")
+    
     txt = get_main_sign_text(kin_num)
     if "查無" in txt: txt = f"{TONE_NAMES[t_id]} {SEALS_NAMES[s_id]}"
+    
     border = "2px solid gold" if is_main else "1px solid #555"
     return f"""<div class="kin-card-grid" style="border:{border};"><img src="data:image/png;base64,{img_t}" style="width:30px; filter:invert(1); margin:0 auto 5px auto;"><img src="data:image/jpeg;base64,{img_s}" style="width:70px; margin-bottom:5px;"><div style="font-size:12px; color:#ddd; line-height:1.2;">{txt}</div><div style="font-size:10px; color:#888;">KIN {kin_num}</div></div>"""
 
-def show_basic_result(kin, data):
-    if os.path.exists(f"assets/seals/{data.get('seal_img','' )}"):
-        st.image(f"assets/seals/{data.get('seal_img','')}", width=150)
-    st.markdown(f"## KIN {kin}")
-    st.markdown(f"### {data.get('主印記','')}")
-    st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
-
-# --- 【新增】人員篩選器邏輯 ---
 def user_selector(label, key):
-    """提供 姓名/調性/圖騰 三種篩選方式"""
     df = get_user_list()
-    if df.empty:
-        st.warning("通訊錄為空")
-        return None
+    if df.empty: st.warning("通訊錄為空"); return None
+    fm = st.radio(f"篩選 {label}", ["全部", "依調性", "依圖騰"], horizontal=True, key=f"{key}_mode")
+    fdf = df
+    if fm == "依調性":
+        t = st.selectbox("調性", TONE_NAMES[1:], key=f"{key}_t")
+        fdf = df[df['主印記'].str.contains(t, na=False)]
+    elif fm == "依圖騰":
+        s = st.selectbox("圖騰", SEALS_NAMES[1:], key=f"{key}_s")
+        fdf = df[df['主印記'].str.contains(s, na=False)]
     
-    # 篩選模式
-    filter_mode = st.radio(f"篩選 {label}", ["全部顯示", "依調性", "依圖騰"], horizontal=True, key=f"{key}_mode")
-    
-    filtered_df = df
-    if filter_mode == "依調性":
-        tone = st.selectbox("選擇調性", TONE_NAMES[1:], key=f"{key}_tone")
-        filtered_df = df[df['主印記'].str.contains(tone, na=False)]
-    elif filter_mode == "依圖騰":
-        seal = st.selectbox("選擇圖騰", SEALS_NAMES[1:], key=f"{key}_seal")
-        filtered_df = df[df['主印記'].str.contains(seal, na=False)]
-        
-    # 產生選項清單 (姓名 + 主印記)
-    options = filtered_df.apply(lambda x: f"{x['姓名']} ({x['主印記']})", axis=1).tolist()
-    
-    if not options:
-        st.warning("無符合條件的人員")
-        return None
-        
-    selected_str = st.selectbox(f"選擇 {label}", options, key=f"{key}_sel")
-    
-    # 回傳選中的姓名 (去掉後面的括號)
-    if selected_str:
-        return selected_str.split(" (")[0]
-    return None
+    opts = fdf.apply(lambda x: f"{x['姓名']} ({x['主印記']})", axis=1).tolist()
+    if not opts: st.warning("無符合"); return None
+    sel = st.selectbox(f"選擇 {label}", opts, key=f"{key}_sel")
+    return sel.split(" (")[0] if sel else None
 
 def render_date_selector(key_prefix=""):
     m = st.radio("輸入方式", ["📅 自訂", "👤 通訊錄"], horizontal=True, key=f"{key_prefix}_m")
     d = SAFE_DATE; u = ""
-    
     if m == "📅 自訂":
         d = st.date_input("生日", value=SAFE_DATE, min_value=datetime.date(MIN_YEAR,1,1), max_value=datetime.date(MAX_YEAR,12,31), key=f"{key_prefix}_d")
     else:
-        # 使用新的篩選器
-        sel_name = user_selector("人員", key_prefix)
-        if sel_name:
-            u = sel_name
-            us = get_user_list()
+        sn = user_selector("人員", key_prefix)
+        if sn:
+            u = sn
             try: 
-                dob_str = us[us['姓名']==sel_name].iloc[0]['生日']
-                d = datetime.datetime.strptime(dob_str, "%Y-%m-%d").date()
-                st.caption(f"已載入：{sel_name} ({d})")
-            except: st.error("日期錯誤")
-            
+                dob = get_user_list().query(f"姓名=='{sn}'").iloc[0]['生日']
+                d = datetime.datetime.strptime(dob, "%Y-%m-%d").date()
+                st.caption(f"已載入：{sn} ({d})")
+            except: st.error("錯誤")
     return d, u
 
-# === 1. 個人解碼 ===
+# 1. 個人解碼
 if mode == "個人星系解碼":
     st.title("🔮 個人星系印記解碼")
     c1, c2 = st.columns([2,1])
     with c1: date_in, _ = render_date_selector("decode")
     with c2: 
         st.write(""); st.write("")
-        go = st.button("🚀 開始解碼", type="primary")
+        go = st.button("🚀 開始解碼", type="primary", use_container_width=True)
         
     if go or st.session_state.get('run'):
         st.session_state['run'] = True
         kin, err = calculate_kin_v2(date_in)
-        if not kin: kin = calculate_kin_math(date_in)
+        if not kin: st.warning(err); kin = calculate_kin_math(date_in)
         
         data = get_full_kin_data(kin)
         oracle = get_oracle(kin)
@@ -168,9 +131,12 @@ if mode == "個人星系解碼":
             st.markdown("<div class='concept-text'><b>13:20 共時編碼：</b>結合13調性與20圖騰，理解時間的潛在結構與靈魂頻率。</div>", unsafe_allow_html=True)
             tc1, tc2 = st.columns([1, 1.6])
             with tc1:
-                show_basic_result(kin, data)
+                if os.path.exists(f"assets/seals/{data.get('seal_img','')}"): st.image(f"assets/seals/{data.get('seal_img','')}", width=180)
+                st.markdown(f"## KIN {kin}")
+                st.markdown(f"### {data.get('主印記','')}")
+                st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
                 if psi and psi['KIN']: st.markdown(f"<div class='psi-box'><h4>🧬 PSI</h4>KIN {psi['KIN']} {psi['Info'].get('主印記','')}<br><small>矩陣: {psi.get('Matrix','-')}</small></div>", unsafe_allow_html=True)
-                if goddess and goddess['KIN']: st.markdown(f"<div class='goddess-box'><h4>💖 女神</h4>KIN {goddess['KIN']} {goddess['Info'].get('主印記','')}<br><small>隱藏源頭: KIN {goddess.get('Base_KIN')}</small></div>", unsafe_allow_html=True)
+                if goddess and goddess['KIN']: st.markdown(f"<div class='goddess-box'><h4>💖 女神</h4>KIN {goddess['KIN']} {goddess['Info'].get('主印記','')}<br><small>源頭: KIN {goddess.get('Base_KIN')}</small></div>", unsafe_allow_html=True)
                 with st.expander("✨ 進階星際密碼"):
                     st.markdown(f"**原型**：{data.get('星際原型','-')}<br>**BMU**：{data.get('BMU','-')}<br>**行星**：{data.get('行星','-')}", unsafe_allow_html=True)
                 with st.expander("🧬 441 矩陣"):
@@ -179,11 +145,11 @@ if mode == "個人星系解碼":
                 st.subheader("五大神諭盤")
                 def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
                 st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html(gk(oracle['guide']['s'],oracle['guide']['t']), oracle['guide']['s'], oracle['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html(gk(oracle['antipode']['s'],oracle['antipode']['t']), oracle['antipode']['s'], oracle['antipode']['t'])}</div> 
-                    <div>{get_card_html(kin, oracle['destiny']['s'], oracle['destiny']['t'], True)}</div> 
-                    <div>{get_card_html(gk(oracle['analog']['s'],oracle['analog']['t']), oracle['analog']['s'], oracle['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html(gk(oracle['occult']['s'],oracle['occult']['t']), oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
+                    <div></div> <div>{get_card_html("引導", gk(oracle['guide']['s'],oracle['guide']['t']), oracle['guide']['s'], oracle['guide']['t'])}</div> <div></div>
+                    <div>{get_card_html("擴展", gk(oracle['antipode']['s'],oracle['antipode']['t']), oracle['antipode']['s'], oracle['antipode']['t'])}</div> 
+                    <div>{get_card_html("主印記", kin, oracle['destiny']['s'], oracle['destiny']['t'], True)}</div> 
+                    <div>{get_card_html("支持", gk(oracle['analog']['s'],oracle['analog']['t']), oracle['analog']['s'], oracle['analog']['t'])}</div>
+                    <div></div> <div>{get_card_html("推動", gk(oracle['occult']['s'],oracle['occult']['t']), oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
                 </div>""", unsafe_allow_html=True)
                 st.markdown("---")
                 st.subheader(f"🌊 {data.get('wave_name','')} 波符旅程")
@@ -219,30 +185,26 @@ elif mode == "個人流年查詢":
         age = ty - d.year
         fk = (bk + age*105)%260
         if fk==0: fk=260
-        
         st.subheader(f"{u or '此人'} {ty} 年 ( {age} 歲 )")
         fd = get_full_kin_data(fk)
         fo = get_oracle(fk)
-        
         c1, c2 = st.columns([1, 1.6])
         with c1: show_basic_result(fk, fd)
         with c2:
             def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
             st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html(gk(fo['guide']['s'],fo['guide']['t']), fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html(gk(fo['antipode']['s'],fo['antipode']['t']), fo['antipode']['s'], fo['antipode']['t'])}</div> 
+                    <div></div> <div>{get_card_html("引導", gk(fo['guide']['s'],fo['guide']['t']), fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
+                    <div>{get_card_html("擴展", gk(fo['antipode']['s'],fo['antipode']['t']), fo['antipode']['s'], fo['antipode']['t'])}</div> 
                     <div>{get_card_html(fk, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
-                    <div>{get_card_html(gk(fo['analog']['s'],fo['analog']['t']), fo['analog']['s'], fo['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html(gk(fo['occult']['s'],fo['occult']['t']), fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
+                    <div>{get_card_html("支持", gk(fo['analog']['s'],fo['analog']['t']), fo['analog']['s'], fo['analog']['t'])}</div>
+                    <div></div> <div>{get_card_html("推動", gk(fo['occult']['s'],fo['occult']['t']), fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
             </div>""", unsafe_allow_html=True)
 
-# 3. 52流年城堡
+# 3. 52流年
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
-    col_d, col_y = st.columns([1.5, 1.5])
-    with col_d: d, _ = render_date_selector("castle")
-    with col_y: sy = st.number_input("起始年", 1800, 2100, d.year)
-    
+    d, _ = render_date_selector("castle")
+    sy = st.number_input("起始年", 1800, 2100, d.year)
     if st.button("計算"):
         path = calculate_life_castle(datetime.date(sy, d.month, d.day))
         st.subheader(f"週期起始：{sy} 年")
@@ -281,7 +243,6 @@ elif mode == "對等印記查詢":
     if st.button("查詢"):
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
-        from kin_utils import calculate_equivalent_kin
         res = calculate_equivalent_kin(k)
         if res:
             st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}")
@@ -357,23 +318,19 @@ elif mode == "人員生日管理":
 # 7. 合盤
 elif mode == "通訊錄/合盤":
     st.title("❤️ 關係合盤")
+    pn1 = user_selector("夥伴 A", "p1")
+    pn2 = user_selector("夥伴 B", "p2")
     
-    # 使用新的篩選器選擇人員
-    p1_name = user_selector("夥伴 A", "p1")
-    p2_name = user_selector("夥伴 B", "p2")
-    
-    if st.button("計算合盤"):
-        if p1_name and p2_name:
+    if st.button("計算"):
+        if pn1 and pn2:
             us = get_user_list()
-            k1, _ = get_user_kin(p1_name, us)
-            k2, _ = get_user_kin(p2_name, us)
+            k1, _ = get_user_kin(pn1, us)
+            k2, _ = get_user_kin(pn2, us)
             if k1 and k2:
                 ck = calculate_composite(k1, k2)
                 ci = get_full_kin_data(ck)
-                st.success(f"🎉 {p1_name} & {p2_name} 合盤 KIN {ck}：{ci.get('主印記','')}")
+                st.success(f"🎉 {pn1} & {pn2} 合盤 KIN {ck}：{ci.get('主印記','')}")
                 show_basic_result(ck, ci)
-        else:
-            st.warning("請選擇兩位夥伴")
 
 # 8. 八度音階
 elif mode == "八度音階查詢":

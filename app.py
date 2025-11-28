@@ -69,15 +69,12 @@ st.markdown("""
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
 
     /* ==================================
-       3. 🚨 按鈕樣式修復 (關鍵新增) 🚨
+       3. 按鈕樣式修復 (解決白字白底)
        ================================== */
-    
-    /* (A) 一般按鈕 (Secondary Button) */
     .stButton > button {
-        background-color: #262730 !important; /* 深灰色底 */
-        color: #ffffff !important;            /* 白色字 */
-        border: 1px solid #555 !important;
-        border-radius: 8px !important;
+        background-color: #262730 !important;
+        color: #ffffff !important;
+        border: 1px solid #444 !important;
         font-size: 18px !important;
         padding: 10px 20px !important;
     }
@@ -85,30 +82,14 @@ st.markdown("""
         border-color: #d4af37 !important;
         color: #d4af37 !important;
     }
-    .stButton > button:active, .stButton > button:focus {
-        background-color: #333 !important;
-        color: #fff !important;
-    }
-
-    /* (B) 主要按鈕 (Primary Button - 如：開始解碼) */
-    /* 針對 type="primary" 的按鈕強制改為金色黑字 */
     div.stButton > button[kind="primary"] {
-        background-color: #d4af37 !important; /* 金色底 */
-        color: #000000 !important;            /* 黑色字 */
+        background-color: #d4af37 !important;
+        color: #000000 !important;
         border: none !important;
-        font-weight: bold !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #e6c253 !important;
-        color: #000000 !important;
-        box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
-    }
-    div.stButton > button[kind="primary"]:focus {
-        color: #000000 !important;
     }
 
     /* ==================================
-       4. 神諭盤版面 (彈性高度)
+       4. 神諭盤版面 (彈性高度修正版)
        ================================== */
     .oracle-grid-container {
         display: grid; 
@@ -175,14 +156,12 @@ mode = st.sidebar.radio("功能導航", [
 
 # --- 4. 共用函式 ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
-    # 使用新版 kin_utils 的檔案對應 (純數字檔名)
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     
     img_s = get_img_b64(f"assets/seals/{s_f}")
     img_t = get_img_b64(f"assets/tones/{t_f}")
     
-    # 圖片容錯：若讀不到，顯示 emoji
     html_s = f'<img src="data:image/png;base64,{img_s}" style="width:70px; margin-bottom:5px;">' if img_s else '<div style="font-size:40px;">🔮</div>'
     html_t = f'<img src="data:image/png;base64,{img_t}" style="width:30px; filter:invert(1); margin:0 auto 5px auto;">' if img_t else '<div style="font-size:20px;">🎵</div>'
 
@@ -229,7 +208,6 @@ def render_date_selector(key_prefix=""):
     return d, u
 
 def show_basic_result(kin, data):
-    # 圖片容錯顯示
     img_b64 = get_img_b64(f"assets/seals/{data.get('seal_img','')}")
     if img_b64:
         st.markdown(f'<img src="data:image/png;base64,{img_b64}" width="150">', unsafe_allow_html=True)
@@ -288,9 +266,7 @@ if mode == "個人星系解碼":
                     | **流** | {data.get('流','-')} |
                     **📜 說明：** {data.get('說明','-')}
                     """, unsafe_allow_html=True)
-
-                # ❌ 已移除 🧬 441 矩陣 區塊
-
+            
             with tc2:
                 st.subheader("五大神諭盤")
                 def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
@@ -380,7 +356,7 @@ elif mode == "個人流年查詢":
                     <div>{get_card_html("擴展", k_antipode, fo['antipode']['s'], fo['antipode']['t'])}</div> 
                     <div>{get_card_html("流年", k_destiny, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
                     <div>{get_card_html("支持", k_analog, fo['analog']['s'], fo['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occult, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
+                    <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -429,7 +405,7 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-       # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版
+        # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
@@ -443,16 +419,14 @@ elif mode == "52流年城堡":
                             
                             # 樣式與顏色邏輯
                             if is_current:
-                                # 今年：深色背景，白色文字
                                 border = "2px solid #d4af37"
                                 bg = "#333333" 
                                 txt_hex = "#ffffff"
                                 box_shadow = "0 0 15px #d4af37"
                             else:
-                                # 其他年份：淺色背景，強制黑色文字
                                 border = "1px solid #999"
                                 bg = r['Color']
-                                txt_hex = "#000000" # 純黑
+                                txt_hex = "#000000"
                                 box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
                             # 圖片處理
@@ -460,9 +434,7 @@ elif mode == "52流年城堡":
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
-                            # 🚨 關鍵修正：
-                            # 不依賴父層 div 的 color 設定，直接在文字 span 上面加上 style='color: ...'
-                            # 這樣絕對不會被全域 CSS 覆蓋
+                            # 🚨 關鍵修正：在所有 span 標籤上強制加上 style='color:{txt_hex};'
                             st.markdown(
                                 f"""
                                 <div style='background:{bg}; border:{border}; border-radius:10px; 
@@ -867,6 +839,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+
 
 
 

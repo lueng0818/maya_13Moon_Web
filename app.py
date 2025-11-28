@@ -365,75 +365,150 @@ elif mode == "個人流年查詢":
                      if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
                 with c_txt:
                     st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-# 3. 52流年
-# 3. 52流年 (智慧延伸版)
+# 3. 52流年 (四色城堡架構版)
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
     
     col_d, col_y = st.columns([1.5, 1.5])
     with col_d: d, u = render_date_selector("castle")
-    # 預設起始年為出生年
     with col_y: sy = st.number_input("起始年份 (通常為出生年)", 1900, 2100, d.year)
     
     if st.button("計算生命城堡"):
-        # 1. 取得完整 105 年的資料
-        # 注意：這裡傳入 sy (起始年) 作為基準，確保 KIN 計算正確
+        # 1. 基礎計算
         start_date = datetime.date(sy, d.month, d.day)
-        path = calculate_life_castle(start_date)
+        bk, _ = calculate_kin_v2(start_date)
+        if not bk: bk = calculate_kin_math(start_date)
         
-        # 2. 計算目前年齡 (用於判斷是否顯示第二週期)
+        birth_info = get_full_kin_data(bk)
+        family_name = birth_info.get('家族', '未知')
+        
+        # 顯示家族圖片 (維持不變)
+        family_map = {
+            "極性家族": "family_polar.jpg", "基本家族": "family_cardinal.jpg", 
+            "主要家族": "family_cardinal.jpg", "核心家族": "family_core.jpg",
+            "信號家族": "family_signal.jpg", "通道家族": "family_gateway.jpg"
+        }
+        img_name = family_map.get(family_name)
+        
+        st.subheader(f"週期起始：{sy} 年")
+        if img_name and os.path.exists(f"assets/{img_name}"):
+            with st.expander(f"🖼️ 查看您的家族圖騰表：{family_name}", expanded=False):
+                st.image(f"assets/{img_name}", caption=f"{u or '此人'} 屬於 {family_name}", use_container_width=True)
+        else:
+            st.info(f"您的星際家族為：**{family_name}**")
+
+        # 2. 取得流年資料
+        path = calculate_life_castle(start_date)
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        st.subheader(f"週期起始：{sy} 年")
-        
-        # 3. 準備顯示內容
-        # 定義一個內部函式來渲染卡片迴圈，避免程式碼重複
-        def render_castle_cycle(data_list, start_age_offset):
-            cols = st.columns(4)
-            for i, r in enumerate(data_list):
-                with cols[i % 4]:
-                    inf = r['Info']
-                    
-                    # 判斷是否為「今年」 (高亮顯示)
-                    is_current = (r['Year'] == current_year)
-                    bg_style = "border: 2px solid #d4af37; box-shadow: 0 0 10px #d4af37;" if is_current else f"background:{r['Color']};"
-                    text_color = "#ffffff" if is_current else "#333333" # 高亮時白字，普通時黑字(因為背景是淺色)
-                    if is_current: bg_style += "background: #444;" # 高亮時深色背景
-                    
-                    img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
-                    
-                    st.markdown(
-                        f"""<div style='{bg_style} padding:5px; border-radius:8px; margin-bottom:10px; color:{text_color}; text-align:center; font-size:12px; min-height:100px;'>
-                        <b>{r['Age']}歲 ({r['Year']})</b><br>
-                        <span style='color:#b8860b; font-weight:bold;'>KIN {r['KIN']}</span><br>
-                        {img}<br>
-                        {inf.get('波符','')}波<br>{inf.get('主印記','')}
-                        </div>""", 
-                        unsafe_allow_html=True
-                    )
+        # 3. 定義渲染單一城堡 (13年) 的函式
+        def render_13_year_castle(data_subset):
+            # 依然使用 4 欄排列，保持家族對應 (每列 4 個，共 3 列多 1 個)
+            # data_subset 長度固定為 13
+            cols_per_row = 4
+            for i in range(0, 13, cols_per_row):
+                cols = st.columns(cols_per_row)
+                for j in range(cols_per_row):
+                    if i + j < 13:
+                        r = data_subset[i + j]
+                        with cols[j]:
+                            inf = r['Info']
+                            is_current = (r['Year'] == current_year)
+                            
+                            # 樣式設計
+                            border = "2px solid #d4af37" if is_current else "1px solid #444"
+                            bg = "#444" if is_current else r['Color']
+                            txt_col = "#fff" if is_current else "#333"
+                            box_shadow = "0 0 15px #d4af37" if is_current else "none"
+                            
+                            img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="45" style="margin: 8px 0;">'
+                            
+                            st.markdown(
+                                f"""
+                                <div style='background:{bg}; border:{border}; border-radius:10px; 
+                                    padding:10px 5px; text-align:center; min-height:150px; 
+                                    box-shadow:{box_shadow}; display:flex; flex-direction:column; 
+                                    justify-content:center; align-items:center;'>
+                                    
+                                    <div style='font-size:14px; font-weight:bold; color:{txt_col};'>
+                                        {r['Age']}歲
+                                    </div>
+                                    <div style='font-size:12px; color:{txt_col}; opacity:0.8;'>
+                                        {r['Year']}
+                                    </div>
+                                    
+                                    {img}
+                                    
+                                    <div style='font-size:13px; font-weight:bold; color:{txt_col};'>
+                                        KIN {r['KIN']}
+                                    </div>
+                                    <div style='font-size:12px; color:{txt_col}; margin-top:2px;'>
+                                        {inf.get('調性').replace('性','')} {inf.get('圖騰')}
+                                    </div>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
 
-        # 4. 判斷顯示模式
-        # 如果年齡超過 51，顯示兩個分頁；否則只顯示第一週期
-        if current_age > 51:
-            st.info(f"🎂 您目前約 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
-            tab1, tab2 = st.tabs(["🔄 第一週期 (0-51歲)", "🧬 第二週期 (52-103歲)"])
+        # 4. 定義顯示 52 年週期的主控台 (分為四個城堡 Tabs)
+        def render_52_cycle_tabs(cycle_data, base_age):
+            # 切割資料
+            red_data = cycle_data[0:13]
+            white_data = cycle_data[13:26]
+            blue_data = cycle_data[26:39]
+            yellow_data = cycle_data[39:52]
             
-            with tab1:
-                st.caption(f"📅 年份：{sy} ~ {sy+51}")
-                render_castle_cycle(path[:52], 0)
+            # 建立 Tabs
+            c_tabs = st.tabs([
+                "🔴 紅色東方城堡 (0-12)", 
+                "⚪ 白色北方城堡 (13-25)", 
+                "🔵 藍色西方城堡 (26-38)", 
+                "🟡 黃色南方城堡 (39-51)"
+            ])
+            
+            # 紅色城堡 (啟動)
+            with c_tabs[0]:
+                st.caption(f"🚀 **紅色東方城堡 (啟動之庭)** | 歲數：{base_age}~{base_age+12} 歲 | 你的生命在此啟動。")
+                render_13_year_castle(red_data)
                 
-            with tab2:
-                st.caption(f"📅 年份：{sy+52} ~ {sy+103} (第二生命荷包)")
-                render_castle_cycle(path[52:104], 52)
-        else:
-            # 年輕人模式：只顯示第一週期
-            st.caption(f"📅 第一週期：{sy} ~ {sy+51}")
-            render_castle_cycle(path[:52], 0)
+            # 白色城堡 (淨化)
+            with c_tabs[1]:
+                st.caption(f"⚔️ **白色北方城堡 (淨化之庭)** | 歲數：{base_age+13}~{base_age+25} 歲 | 經歷磨練與跨越。")
+                render_13_year_castle(white_data)
+                
+            # 藍色城堡 (蛻變)
+            with c_tabs[2]:
+                st.caption(f"🦋 **藍色西方城堡 (蛻變之庭)** | 歲數：{base_age+26}~{base_age+38} 歲 | 轉化與魔術的發生。")
+                render_13_year_castle(blue_data)
+                
+            # 黃色城堡 (收成)
+            with c_tabs[3]:
+                st.caption(f"☀️ **黃色南方城堡 (收成之庭)** | 歲數：{base_age+39}~{base_age+51} 歲 | 享受成果與給予。")
+                render_13_year_castle(yellow_data)
+
+        # 5. 主顯示邏輯
+        if current_age > 51:
+            st.info(f"🎂 您目前 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
             
-            # 雖然沒超過 51，但也給個按鈕可以偷看未來
-            with st.expander("👀 預覽第二週期 (52-103歲)"):
-                render_castle_cycle(path[52:104], 52)
+            # 使用 Expander 或 Tabs 區隔兩個大週期
+            cycle_tabs = st.tabs(["🧬 第二週期 (52-103歲)", "🔄 回顧：第一週期 (0-51歲)"])
+            
+            with cycle_tabs[0]:
+                st.markdown("### 🌟 第二生命荷包 (現在)")
+                render_52_cycle_tabs(path[52:104], 52)
+                
+            with cycle_tabs[1]:
+                st.markdown("### 📜 第一生命荷包 (過去)")
+                render_52_cycle_tabs(path[:52], 0)
+        else:
+            # 年輕模式 (只顯示第一週期)
+            st.markdown("### 📜 第一生命荷包 (0-51歲)")
+            render_52_cycle_tabs(path[:52], 0)
+            
+            # 預覽未來
+            with st.expander("👀 預覽：第二生命荷包 (52歲後)"):
+                render_52_cycle_tabs(path[52:104], 52)
 
 # 4. PSI/女神/對等
 # 4. PSI (升級版：含神諭與波符)
@@ -859,6 +934,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

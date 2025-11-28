@@ -402,9 +402,8 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        # 3. 定義渲染單一城堡 (13年)
+        # 3. 定義渲染單一城堡 (13年) - 圖像容錯版
         def render_13_year_castle(data_subset):
-            # 使用 4 欄排列
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
                 cols = st.columns(cols_per_row)
@@ -415,13 +414,30 @@ elif mode == "52流年城堡":
                             inf = r['Info']
                             is_current = (r['Year'] == current_year)
                             
-                            border = "2px solid #d4af37" if is_current else "1px solid #444"
-                            bg = "#444" if is_current else r['Color']
-                            txt_col = "#fff" if is_current else "#333"
-                            box_shadow = "0 0 15px #d4af37" if is_current else "none"
+                            # 樣式設計
+                            if is_current:
+                                border = "2px solid #d4af37"
+                                bg = "#444444" 
+                                txt_col = "#ffffff"
+                                box_shadow = "0 0 15px #d4af37"
+                            else:
+                                border = "1px solid #999"
+                                bg = r['Color']
+                                txt_col = "#000000"
+                                box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
-                            img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="45" style="margin: 8px 0;">'
+                            # 🚨 圖片讀取檢查 (關鍵修正) 🚨
+                            # 先嘗試取得圖片 Base64 編碼
+                            img_filename = inf.get("seal_img", "")
+                            b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             
+                            if b64_data:
+                                # 成功讀取到圖片
+                                img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">'
+                            else:
+                                # 讀不到圖片時，顯示替代 Emoji，避免出現破圖圖示
+                                img_html = '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
+
                             st.markdown(
                                 f"""
                                 <div style='background:{bg}; border:{border}; border-radius:10px; 
@@ -429,17 +445,19 @@ elif mode == "52流年城堡":
                                     box-shadow:{box_shadow}; display:flex; flex-direction:column; 
                                     justify-content:center; align-items:center;'>
                                     
-                                    <div style='font-size:14px; font-weight:bold; color:{txt_col};'>
+                                    <div style='font-size:14px; font-weight:bold; color:{txt_col} !important;'>
                                         {r['Age']}歲
                                     </div>
-                                    <div style='font-size:12px; color:{txt_col}; opacity:0.8;'>
+                                    <div style='font-size:12px; color:{txt_col} !important; opacity:0.8;'>
                                         {r['Year']}
                                     </div>
-                                    {img}
-                                    <div style='font-size:13px; font-weight:bold; color:{txt_col};'>
+                                    
+                                    {img_html}
+                                    
+                                    <div style='font-size:13px; font-weight:bold; color:{txt_col} !important;'>
                                         KIN {r['KIN']}
                                     </div>
-                                    <div style='font-size:12px; color:{txt_col}; margin-top:2px;'>
+                                    <div style='font-size:12px; color:{txt_col} !important; margin-top:2px;'>
                                         {inf.get('調性').replace('性','')} {inf.get('圖騰')}
                                     </div>
                                 </div>
@@ -925,6 +943,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

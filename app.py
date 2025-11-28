@@ -29,8 +29,15 @@ st.markdown("""
     /* ==================================
        1. 全域與基礎設定
        ================================== */
-    .stApp { background-color: #0e1117; color: #ffffff; font-size: 18px; }
-    section[data-testid="stSidebar"] { background-color: #262730; color: #ffffff; }
+    .stApp { 
+        background-color: #0e1117; 
+        color: #ffffff; 
+        font-size: 18px;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #262730;
+        color: #ffffff;
+    }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
@@ -90,9 +97,8 @@ st.markdown("""
     }
 
     /* ==================================
-       4. 🚨 52流年 Grid & Oracle 佈局 🚨
+       4. 52流年 Grid & Oracle 佈局
        ================================== */
-    /* 52流年專用 Grid 容器 (完全取代 st.columns) */
     .castle-grid-container {
         display: grid; 
         grid-template-columns: repeat(4, 1fr); 
@@ -100,39 +106,48 @@ st.markdown("""
         padding: 10px 0;
         width: 100%;
     }
-    /* 確保所有卡片都有一個高度 */
     .castle-card-content {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border-radius: 10px; min-height: 160px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    
-    /* 確保文字不會被全局白色覆蓋 */
     .castle-card-content span.text-content {
-        color: inherit !important; 
-        font-size: 14px;
-        font-weight: bold;
+        color: inherit !important; font-size: 14px; font-weight: bold;
     }
 
-    /* ==================================
-       5. 其他樣式 (維持不變)
-       ================================== */
-    .kin-card-grid { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #262730; border: 1px solid #444; border-radius: 12px; padding: 15px 5px; width: 100%; min-height: 180px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    .kin-card-grid {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: #262730; border: 1px solid #444; border-radius: 12px;
+        padding: 15px 5px; width: 100%; min-height: 180px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
     .kin-card-grid div { color: #ffffff !important; font-size: 16px !important; line-height: 1.5; margin-top: 8px; font-weight: bold; }
     .oracle-grid-container { display: grid; grid-template-columns: 130px 130px 130px; grid-template-rows: auto auto auto; gap: 15px; justify-content: center; align-items: center; padding: 10px; }
+    
+    /* ==================================
+       5. 其他樣式
+       ================================== */
     div[data-baseweb="select"] div { font-size: 18px !important; }
     input[type="text"], input[type="number"] { font-size: 18px !important; }
+    
     .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
     .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
     .lunar-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 15px; border-radius: 10px; color: white; margin-bottom: 15px; }
-    .matrix-data { font-family: monospace; color: #00ff00; background: #000; padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400; }
-    .concept-text { font-size: 16px; color: #ddd; background-color: #1f1f1f; padding: 12px; border-left: 4px solid #d4af37; margin-bottom: 20px; border-radius: 4px; }
+    .matrix-data {
+        font-family: monospace; color: #00ff00; background: #000;
+        padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
+    }
+    .concept-text {
+        font-size: 16px; color: #ddd; background-color: #1f1f1f; 
+        padding: 12px; border-left: 4px solid #d4af37; margin-bottom: 20px;
+        border-radius: 4px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- 3. 側邊欄導航 ---
 st.sidebar.title("🌌 13 Moon System")
 mode = st.sidebar.radio("功能導航", [
-    "個人星系解碼", "個人流年查詢", "52流年城堡", 
+    "個人星系解碼", "個人流年查詢", 
+    # "52流年城堡", # 暫時移除，避免錯誤
     "PSI查詢", "女神印記查詢", "對等印記查詢", "全腦調頻", "國王棋盤",
     "人員生日管理", "通訊錄/合盤", "八度音階查詢", "系統檢查員"
 ])
@@ -354,119 +369,7 @@ elif mode == "個人流年查詢":
                 with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                 with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 
-# 3. 52流年 (四色城堡 + 家族輪替 + 終極版面修復)
-elif mode == "52流年城堡":
-    st.title("🏰 52 年生命城堡")
-    
-    col_d, col_y = st.columns([1.5, 1.5])
-    with col_d: d, u = render_date_selector("castle")
-    with col_y: sy = st.number_input("起始年份 (通常為出生年)", 1900, 2100, d.year)
-    
-    if st.button("計算生命城堡"):
-        start_date = datetime.date(sy, d.month, d.day)
-        bk, _ = calculate_kin_v2(start_date)
-        if not bk: bk = calculate_kin_math(start_date)
-        
-        birth_info = get_full_kin_data(bk)
-        family_name = birth_info.get('家族', '未知')
-        
-        family_map = {
-            "極性家族": "family_polar.jpg", "基本家族": "family_cardinal.jpg", 
-            "主要家族": "family_cardinal.jpg", "核心家族": "family_core.jpg",
-            "信號家族": "family_signal.jpg", "通道家族": "family_gateway.jpg"
-        }
-        img_name = family_map.get(family_name)
-        
-        st.subheader(f"週期起始：{sy} 年")
-        if img_name and os.path.exists(f"assets/{img_name}"):
-            with st.expander(f"🖼️ 查看您的家族圖騰表：{family_name}", expanded=False):
-                st.image(f"assets/{img_name}", caption=f"{u or '此人'} 屬於 {family_name}", use_container_width=True)
-        else:
-            st.info(f"您的星際家族為：**{family_name}**")
-
-        path = calculate_life_castle(start_date)
-        current_year = datetime.date.today().year
-        current_age = current_year - sy
-        
-        # 3. 定義渲染單一城堡 (13年) - 最終顏色與結構修復版
-        def render_13_year_castle(data_subset):
-            # 🚨 關鍵：使用 Raw CSS Grid 佈局，解決版面混亂
-            html_content = '<div class="castle-grid-container">' 
-            
-            for r in data_subset:
-                inf = r['Info']
-                is_current = (r['Year'] == current_year)
-                
-                # 樣式與顏色邏輯
-                if is_current:
-                    border = "2px solid #d4af37"
-                    bg = "#333333" 
-                    txt_col = "#ffffff"
-                    box_shadow = "0 0 15px #d4af37"
-                else:
-                    border = "1px solid #999"
-                    bg = r['Color']
-                    txt_col = "#000000" # <-- 強制黑色
-                    box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
-                
-                # 圖片處理
-                img_filename = inf.get("seal_img", "")
-                b64_data = get_img_b64(f"assets/seals/{img_filename}")
-                img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
-
-                # 🚨 最終修正：使用 span 確保文字顏色不會被 CSS 覆蓋 🚨
-                card_html = f"""
-                <div class="castle-card-content" style='background:{bg}; border:{border}; box-shadow:{box_shadow};'>
-                    <span class="text-content" style='font-size:14px; font-weight:bold; color:{txt_col}; display:block; margin-bottom:2px;'>
-                        {r['Age']}歲
-                    </span>
-                    <span class="text-content" style='font-size:12px; color:{txt_col}; opacity:0.9; display:block; margin-bottom:5px;'>
-                        {r['Year']}
-                    </span>
-                    {img_html}
-                    <span class="text-content" style='font-size:13px; font-weight:bold; color:{txt_col}; display:block; margin-top:2px;'>
-                        KIN {r['KIN']}
-                    </span>
-                    <span class="text-content" style='font-size:12px; color:{txt_col}; display:block;'>
-                        {inf.get('調性').replace('性','')} {inf.get('圖騰')}
-                    </span>
-                </div>
-                """
-                html_content += card_html
-
-            html_content += '</div>'
-            st.markdown(html_content, unsafe_allow_html=True)
-
-
-        target_data = path[:52]
-        base_age_offset = 0
-        
-        if current_age > 51:
-            st.info(f"🎂 您目前 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
-            cycle_choice = st.radio("請選擇要查看的生命週期：", ["🧬 第二生命荷包 (52-103歲)", "🔄 回顧：第一生命荷包 (0-51歲)"], horizontal=True)
-            if "第二" in cycle_choice:
-                target_data = path[52:104]
-                base_age_offset = 52
-            else:
-                target_data = path[:52]
-                base_age_offset = 0
-        
-        st.markdown("---")
-        with st.container():
-            c_tabs = st.tabs(["🔴 紅色東方城堡", "⚪ 白色北方城堡", "🔵 藍色西方城堡", "🟡 黃色南方城堡"])
-            
-            with c_tabs[0]:
-                st.caption(f"🚀 **啟動之庭** | 歲數：{base_age_offset}~{base_age_offset+12} 歲")
-                render_13_year_castle(target_data[0:13])
-            with c_tabs[1]:
-                st.caption(f"⚔️ **淨化之庭** | 歲數：{base_age_offset+13}~{base_age_offset+25} 歲")
-                render_13_year_castle(target_data[13:26])
-            with c_tabs[2]:
-                st.caption(f"🦋 **蛻變之庭** | 歲數：{base_age_offset+26}~{base_age_offset+38} 歲")
-                render_13_year_castle(target_data[26:39])
-            with c_tabs[3]:
-                st.caption(f"☀️ **收成之庭** | 歲數：{base_age_offset+39}~{base_age_offset+51} 歲")
-                render_13_year_castle(target_data[39:52])
+# 3. 52流年 (此區塊已被移除，略過)
 
 # 4. PSI (含神諭波符)
 elif mode == "PSI查詢":

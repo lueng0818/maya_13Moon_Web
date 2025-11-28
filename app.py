@@ -721,15 +721,48 @@ elif mode == "八度音階查詢":
     if st.button("查詢"):
         st.dataframe(pd.DataFrame(get_octave_positions(note)))
 
-# 9. 系統檢查
+# 9. 系統檢查 (升級版：加入資料庫重建按鈕)
 elif mode == "系統檢查員":
     st.title("🔍 系統檢查")
+    
+    st.info("如果您上傳了新的 CSV 檔案，但查詢不到資料，請點擊下方按鈕重建資料庫。")
+    
+    # 加入重建按鈕
+    if st.button("🔄 強制重建資料庫 (讀取新 CSV)", type="primary"):
+        with st.spinner("正在重新讀取所有 CSV 檔案..."):
+            init_db()  # 呼叫 create_db.py 裡面的函式
+        st.success("✅ 資料庫重建完成！請重新載入網頁或點擊下方按鈕。")
+        st.rerun()
+
+    st.divider()
+
     if os.path.exists("13moon.db"):
         conn = sqlite3.connect("13moon.db")
-        st.success("資料庫連線正常")
-        st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
+        st.success("資料庫連線正常 (13moon.db)")
+        
+        # 顯示所有表格及其資料筆數
+        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
+        st.write("📊 目前資料庫中的表格：")
+        
+        table_stats = []
+        for t in tables['name']:
+            count = pd.read_sql(f"SELECT COUNT(*) FROM {t}", conn).iloc[0,0]
+            table_stats.append({"表格名稱": t, "資料筆數": count})
+        
+        st.table(pd.DataFrame(table_stats))
+        
+        # 特別檢查 PSI_Bank
+        if "PSI_Bank" in tables['name'].values:
+            psi_sample = pd.read_sql("SELECT * FROM PSI_Bank LIMIT 3", conn)
+            with st.expander("檢查 PSI_Bank 前 3 筆資料"):
+                st.dataframe(psi_sample)
+        else:
+            st.error("❌ 警告：資料庫中找不到 PSI_Bank 表格！請按上方按鈕重建。")
+
         conn.close()
-    else: st.error("資料庫遺失")
+    else:
+        st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

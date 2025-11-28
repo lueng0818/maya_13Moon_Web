@@ -558,25 +558,42 @@ elif mode == "女神印記查詢":
                         f"</div>", 
                         unsafe_allow_html=True
                     )
-# 對等印記 (升級版：含神諭與波符)
+# 5. 對等印記 (三段式矩陣加總版)
 elif mode == "對等印記查詢":
-    st.title("🔄 對等印記查詢")
+    st.title("🔄 對等印記查詢 (矩陣高階版)")
     d, _ = render_date_selector("eq")
     
     if st.button("查詢"):
+        # 1. 取得基礎資訊
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
         
-        from kin_utils import calculate_equivalent_kin
-        res = calculate_equivalent_kin(k)
+        # 2. 取得瑪雅生日 (X.X 格式)
+        maya_info = get_maya_calendar_info(d)
+        maya_date = maya_info.get('Maya_Date', '1.1')
         
-        if res:
+        # 3. 呼叫新算法
+        from kin_utils import calculate_equivalent_kin_new
+        res = calculate_equivalent_kin_new(k, maya_date)
+        
+        if "Error" in res:
+            st.error(f"計算錯誤: {res['Error']}")
+        else:
             eq_k = res['Eq_Kin']
             eq_info = res['Eq_Info']
             
-            st.success(f"原始 KIN {k} -> TFI總和: {res['TFI']} -> 對等 KIN {eq_k}")
+            # 顯示結果
+            st.success(f"🎉 原始 KIN {k} (瑪雅生日 {maya_date}) ➜ 對等 KIN {eq_k}")
             
-            # --- 佈局開始 ---
+            # 顯示計算細節 (使用 Expander 收合)
+            with st.expander("🧮 查看詳細計算過程", expanded=True):
+                for log in res['Logs']:
+                    st.write(log)
+                st.markdown("---")
+                st.markdown(f"**總和**：{res['Sums'][0]} + {res['Sums'][1]} + {res['Sums'][2]} = **{res['Total']}**")
+                st.markdown(f"**對等印記**：{res['Total']} % 260 = **KIN {eq_k}**")
+
+            # --- 佈局開始 (維持原本的豐富顯示) ---
             c1, c2 = st.columns([1, 1.6])
             
             with c1:
@@ -840,6 +857,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

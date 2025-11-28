@@ -1,175 +1,86 @@
 import sqlite3
-import datetime
-import math
-import base64
-import os
 import pandas as pd
+import os
+import glob
 
-DB_PATH = "13moon.db"
+DB_NAME = "13moon.db"
+DATA_DIR = "data"
 
-SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
-SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
-TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
-TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
+def find_file(keyword):
+    """模糊搜尋檔案"""
+    if not os.path.exists(DATA_DIR): return None
+    files = glob.glob(os.path.join(DATA_DIR, "*.csv"))
+    for f in files:
+        if keyword in os.path.basename(f): return f
+    return None
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def read_csv_robust(file_path, **kwargs):
+    """萬能編碼讀取"""
+    encodings = ['utf-8', 'cp950', 'big5', 'utf-8-sig', 'gbk']
+    for enc in encodings:
+        try:
+            return pd.read_csv(file_path, encoding=enc, **kwargs)
+        except: continue
+    return None
 
-def get_img_b64(path):
-    if os.path.exists(path):
-        with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
-    return ""
-
-# KIN 計算 (查表)
-def calculate_kin_v2(date_obj):
-    conn = get_db()
+def process_matrix_csv(file_path):
     try:
-        yr = conn.execute(f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}").fetchone()
-        if not yr: return None, f"無 {date_obj.year} 年資料"
+        df = read_csv_robust(file_path, header=[0, 1])
+        if df is None: return None
+        new_cols = []
+        last_top = "Unknown"
+        for top, bottom in df.columns:
+            if "Unnamed" not in str(top): last_top = str(top).strip()
+            clean_bottom = str(bottom).replace('\n', '').strip()
+            new_cols.append(f"{last_top}_{clean_bottom}")
         
-        mn = conn.execute(f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}").fetchone()
-        if not mn: return None, f"無 {date_obj.month} 月資料"
-        
-        kin = (yr['起始KIN'] + mn['累積天數'] + date_obj.day) % 260
-        return (260 if kin == 0 else kin), None
-    except Exception as e: return None, str(e)
-    finally: conn.close()
+        final_cols = []
+        counts = {}
+        for col in new_cols:
+            if col in counts:
+                counts[col] += 1
+                final_cols.append(f"{col}_{counts[col]}")
+            else:
+                counts[col] = 1
+                final_cols.append(col)
+        df.columns = final_cols
+        return df
+    except: return None
 
-def calculate_kin_math(date_obj):
-    base = datetime.date(2023, 7, 26)
-    delta = (date_obj - base).days
-    kin = (1 + delta) % 260
-    return 260 if kin == 0 else kin
-
-# 資料獲取
-def get_full_kin_data(kin):
-    conn = get_db()
-    data = {}
-    try:
-        row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
-        if row: data.update(dict(row))
-        
-        m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
-        if m:
-            data['Matrix_Time'] = m.get('時間矩陣_矩陣位置')
-            data['Matrix_Space'] = m.get('空間矩陣_矩陣位置')
-            data['Matrix_Sync'] = m.get('共時矩陣_矩陣位置')
-            data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
-    except: pass
-
-    s_num = (kin - 1) % 20 + 1
-    t_num = (kin - 1) % 13 + 1
-    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
-    data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
-    if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
-    if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
+def init_db():
+    print(f"🚀 開始建置資料庫: {DB_NAME}...")
+    if os.path.exists(DB_NAME): os.remove(DB_NAME)
+    conn = sqlite3.connect(DB_NAME)
     
-    wid = math.ceil(kin / 13)
-    data['wave_name'] = data.get('波符', '未知') 
-    data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
-    conn.close()
-    return data
+    # --- 1. 參照表 ---
+    for kw, table, idx in [("kin_start_year", "Kin_Start", '年份'), ("month_day_accum", "Month_Accum", '月份'), ("kin_basic_info", "Kin_Basic", 'KIN'), ("PSI印記對照表", "PSI_Bank", '月日'), ("女神印記", "Goddess_Seal", 'KIN')]:
+        f = find_file(kw)
+        if f:
+            print(f"🔹 匯入 {table}: {os.path.basename(f)}")
+            df = read_csv_robust(f)
+            if df is not None:
+                df.columns = [c.strip() for c in df.columns]
+                if 'KIN' in df.columns: df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
+                df.to_sql(table, conn, if_exists="replace", index=False)
+                if idx in df.columns: conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table} ON {table} ({idx})")
 
-def get_main_sign_text(kin_num):
-    conn = get_db()
-    try:
-        row = conn.execute("SELECT 主印記 FROM Kin_Basic WHERE KIN = ?", (kin_num,)).fetchone()
-        if row: return row['主印記']
-    except: pass
-    finally: conn.close()
-    return "查無印記名稱"
+    # --- 2. 核心資料 ---
+    for kw, table in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing")]:
+        f = find_file(kw)
+        if f:
+            print(f"🔹 匯入 {table}: {os.path.basename(f)}")
+            if kw == "矩陣": df = process_matrix_csv(f)
+            else: df = read_csv_robust(f)
+            
+            if df is not None:
+                if kw != "矩陣": df.columns = [c.strip() for c in df.columns]
+                df.to_sql(table, conn, if_exists="replace", index=False)
 
-def get_oracle(kin):
-    s = (kin - 1) % 20 + 1
-    t = (kin - 1) % 13 + 1
-    ana = 19 - s; ana += 20 if ana <= 0 else 0
-    anti = (s + 10) % 20; anti = 20 if anti == 0 else anti
-    occ_s = 21 - s
-    occ_t = 14 - t
-    guide = s
-    return { "destiny": {"s":s, "t":t}, "analog": {"s":ana, "t":t}, "antipode": {"s":anti, "t":t}, "occult": {"s":occ_s, "t":occ_t}, "guide": {"s":guide, "t":t} }
-
-def get_psi_kin(date_obj):
-    conn = get_db()
-    psi_data = {}
-    try:
-        q_date = f"{date_obj.month}月{date_obj.day}日"
-        row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (q_date,)).fetchone()
-        if row:
-            p_kin = int(row['PSI印記'])
-            p_info = get_full_kin_data(p_kin)
-            psi_data = {"KIN": p_kin, "Info": p_info, "Matrix": row.get('矩陣位置','-')}
-    except: pass
-    conn.close()
-    return psi_data
-
-def get_goddess_kin(kin):
-    oracle = get_oracle(kin) 
-    occult_s = oracle['occult']['s']
-    occult_t = oracle['occult']['t']
-    occult_kin = (occult_s + (occult_t - 1) * 20 - 1) % 260 + 1
-    goddess_kin = (occult_kin + 130) % 260
-    if goddess_kin == 0: goddess_kin = 260
-    goddess_info = get_full_kin_data(goddess_kin)
-    return {"KIN": goddess_kin, "Info": goddess_info, "Base_KIN": occult_kin}
-
-def calculate_life_castle(birth_date):
-    bk, _ = calculate_kin_v2(birth_date)
-    if not bk: bk = calculate_kin_math(birth_date)
-    path = []
-    for age in range(105):
-        ck = (bk + age*105)%260
-        if ck==0: ck=260
-        info = get_full_kin_data(ck)
-        c_age = age%52
-        col = "#fff0f0" if c_age<13 else ("#f8f8f8" if c_age<26 else ("#f0f8ff" if c_age<39 else "#fffff0"))
-        path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
-    return path
-
-# --- 曆法查詢 ---
-def get_maya_calendar_info(date_obj):
-    conn = get_db()
-    result = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Status": "查無資料"}
-    try:
-        q_date = date_obj.strftime('%Y-%m-%d')
-        row = conn.execute("SELECT * FROM Calendar_Converter WHERE 國曆生日 = ?", (q_date,)).fetchone()
-        if row:
-            result['Maya_Date'] = row.get('瑪雅生日', '-')
-            result['Maya_Month'] = row.get('瑪雅月', '-')
-            result['Maya_Week'] = row.get('瑪雅週', '-')
-            result['Heptad_Path'] = row.get('七價路徑', '-')
-            result['Plasma'] = row.get('等離子日', '-')
-            result['Status'] = "查詢成功"
-    except: pass
-    conn.close()
-    return result
-
-def get_week_key_sentence(week_name):
-    conn = get_db()
-    res = None
-    try:
-        row = conn.execute("SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 = ?", (week_name,)).fetchone()
-        if row: res = row['關鍵句']
-    except: pass
-    conn.close()
-    return res
-
-def get_heptad_prayer(path_name):
-    conn = get_db()
-    res = None
-    try:
-        row = conn.execute("SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 = ?", (path_name,)).fetchone()
-        if row: res = row['祈禱文']
-    except: pass
-    conn.close()
-    return res
-
-# --- 用戶管理 (自動修復 Schema) ---
-def ensure_users_table(conn):
+    # --- 3. 通訊錄 (Users) - 特殊處理 Schema ---
+    print("🔹 重建 Users 表格...")
+    conn.execute("DROP TABLE IF EXISTS Users")
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS Users (
+        CREATE TABLE Users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             姓名 TEXT NOT NULL,
             生日 TEXT NOT NULL,
@@ -177,38 +88,32 @@ def ensure_users_table(conn):
             主印記 TEXT
         )
     """)
+    
+    f_user = find_file("通訊錄")
+    if f_user:
+        df = read_csv_robust(f_user)
+        if df is not None:
+            try:
+                # 欄位對應: 名字 -> 姓名
+                if '名字' in df.columns: df['姓名'] = df['名字']
+                elif 'Name' in df.columns: df['姓名'] = df['Name']
+                
+                # 處理生日
+                if '出生年' in df.columns and '出生月' in df.columns and '出生日' in df.columns:
+                    df['生日'] = df.apply(lambda x: f"{int(x['出生年'])}-{int(x['出生月'])}-{int(x['出生日'])}", axis=1)
+                
+                # 確保欄位存在
+                for col in ['姓名', '生日', 'KIN', '主印記']:
+                    if col not in df.columns: df[col] = None
+                
+                # 寫入
+                df[['姓名', '生日', 'KIN', '主印記']].to_sql("Users", conn, if_exists="append", index=False)
+                print("   ✅ Users 資料匯入成功")
+            except Exception as e:
+                print(f"   ⚠️ 通訊錄匯入部分失敗 (但表格已建立): {e}")
 
-def save_user_data(name, dob_str, kin, main_sign):
-    conn = get_db()
-    try:
-        ensure_users_table(conn)
-        exist = conn.execute("SELECT COUNT(*) FROM Users WHERE 姓名 = ?", (name,)).fetchone()[0]
-        if exist == 0:
-            conn.execute("INSERT INTO Users (姓名, 生日, KIN, 主印記) VALUES (?, ?, ?, ?)", (name, dob_str, kin, main_sign))
-            conn.commit()
-            return True, "建檔成功"
-        else:
-            return False, "此姓名已存在"
-    except Exception as e:
-        return False, f"存檔失敗: {e}"
-    finally:
-        conn.close()
+    conn.close()
+    print("🎉 資料庫建置完成！")
 
-def get_user_list():
-    conn = get_db()
-    try:
-        ensure_users_table(conn)
-        df = pd.read_sql("SELECT 姓名, 生日, KIN FROM Users", conn)
-        return df
-    except: return pd.DataFrame()
-    finally: conn.close()
-
-def get_user_kin(name, df_users):
-    row = df_users[df_users['姓名'] == name]
-    if not row.empty: return int(row.iloc[0]['KIN']), row.iloc[0]['生日']
-    return None, None
-
-def calculate_composite(kin_a, kin_b):
-    total = kin_a + kin_b
-    comp = total % 260
-    return 260 if comp == 0 else comp
+if __name__ == "__main__":
+    init_db()

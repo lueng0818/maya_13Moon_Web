@@ -332,24 +332,49 @@ def get_bmu_from_coord(coord):
     except: return 0
     finally: conn.close()
 
+# 修改 kin_utils.py 中的 get_week_key_sentence 函式
+
 def get_week_key_sentence(week_name):
     conn = get_db()
     try:
         if week_name:
-            row = conn.execute(f"SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 LIKE '%{week_name}%'").fetchone()
+            # 去除可能的前後空白
+            clean_week = week_name.strip()
+            
+            # 直接查詢
+            row = conn.execute("SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 = ?", (clean_week,)).fetchone()
             if row: return row['關鍵句']
-    except: pass
+            
+            # 備用方案：模糊搜尋 (例如 "紅色啟動之週" 可能被寫成 "紅色啟動")
+            row = conn.execute(f"SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 LIKE ?", (f"%{clean_week}%",)).fetchone()
+            if row: return row['關鍵句']
+            
+    except Exception as e:
+        print(f"週關鍵句查詢錯誤: {e}")
     finally: conn.close()
     return None
+
+# 修改 kin_utils.py 中的 get_heptad_prayer 函式
 
 def get_heptad_prayer(path_name):
     conn = get_db()
     try:
         if path_name:
-            clean = path_name.split('\n')[0]
-            row = conn.execute(f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE '%{clean}%'").fetchone()
+            # path_name 從 app 傳來時已經是空白分隔 (例如 "紅色01 紅龍→紅蛇")
+            # 我們直接去資料庫精準查詢
+            clean_path = path_name.strip()
+            
+            row = conn.execute("SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 = ?", (clean_path,)).fetchone()
             if row: return row['祈禱文']
-    except: pass
+            
+            # 備用方案：萬一精準對比失敗，嘗試模糊搜尋 (取前段 "紅色01")
+            short_key = clean_path.split(' ')[0]
+            if short_key:
+                row = conn.execute(f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE ?", (f"{short_key}%",)).fetchone()
+                if row: return row['祈禱文']
+                
+    except Exception as e:
+        print(f"祈禱文查詢錯誤: {e}")
     finally: conn.close()
     return None
 
@@ -476,5 +501,6 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 

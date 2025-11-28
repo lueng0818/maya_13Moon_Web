@@ -28,7 +28,7 @@ st.markdown("""
     .stApp { 
         background-color: #0e1117; 
         color: #ffffff; 
-        font-size: 18px; /* 全域預設字體加大 */
+        font-size: 18px;
     }
     
     /* 側邊欄背景設定 */
@@ -41,9 +41,8 @@ st.markdown("""
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 輸入元件標籤 (Labels) - 標題字加大 
+       2. 輸入元件標籤 (Labels)
        ================================== */
-    /* 例如：「輸入方式」、「篩選人員」、「調性」這些標題 */
     .stSelectbox label p, 
     .stDateInput label p, 
     .stTextInput label p, 
@@ -51,48 +50,49 @@ st.markdown("""
     .stRadio label p {
         color: #ffffff !important;
         font-weight: bold;
-        font-size: 20px !important; /* 標題加大到 20px */
+        font-size: 20px !important;
         margin-bottom: 8px;
     }
 
     /* ==================================
-       3. 單選按鈕 (Radio) - 選項字體加大 & 按鈕變胖 
+       3. 單選按鈕 (Radio) - 修正看不見字的問題
        ================================== */
     
     /* (A) 按鈕容器設定 */
     div[role="radiogroup"] label {
-        padding: 12px 15px !important; /* 增加內距，讓按鈕變胖，比較好點 */
-        margin-bottom: 8px !important; /* 按鈕之間的距離加大 */
+        padding: 12px 15px !important;
+        margin-bottom: 8px !important;
         border-radius: 10px !important;
         transition: all 0.3s ease;
         border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.05); /* 給未選中的選項一點點底色，比較好識別 */
+        background-color: rgba(255, 255, 255, 0.05); 
     }
     
-    /* (B) 選項文字設定 */
-    div[role="radiogroup"] label p {
+    /* (B) 未選中時的文字：白色 */
+    div[role="radiogroup"] label p,
+    div[role="radiogroup"] label div {
         color: #ffffff !important;
-        font-size: 18px !important; /* 選項文字加大到 18px */
+        font-size: 18px !important;
     }
 
     /* (C) 滑鼠移過去 (Hover) */
     div[role="radiogroup"] label:hover {
         background-color: #444444 !important;
-        transform: translateX(5px); /* 增加一點點位移特效 */
     }
 
-    /* (D) ✨ 已選中 (Selected) - 金色反白 */
+    /* (D) ✨ 已選中 (Selected) - 金色背景 */
     div[role="radiogroup"] label:has(input:checked) {
         background-color: #d4af37 !important;
         border: 1px solid #d4af37;
         box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
     }
 
-    /* (E) 已選中的文字顏色 */
-    div[role="radiogroup"] label:has(input:checked) p {
+    /* (E) 🚨 關鍵修正：已選中時，強制所有內容變黑色 🚨 */
+    /* 使用 * 通配符，確保無論是 p, div, span 還是 markdown 內容，全部變黑 */
+    div[role="radiogroup"] label:has(input:checked) * {
         color: #000000 !important;
         font-weight: 900 !important;
-        font-size: 19px !important; /* 選中時稍微再大一點點 */
+        font-size: 19px !important;
     }
     
     /* (F) 隱藏原本的小圓點 */
@@ -101,20 +101,11 @@ st.markdown("""
     }
 
     /* ==================================
-       4. 下拉選單 (Selectbox) 與 輸入框文字加大 
+       4. 其他既有樣式
        ================================== */
-    /* 選擇框內的文字 */
-    div[data-baseweb="select"] div {
-        font-size: 18px !important; 
-    }
-    /* 輸入框內的文字 */
-    input[type="text"], input[type="number"] {
-        font-size: 18px !important;
-    }
+    div[data-baseweb="select"] div { font-size: 18px !important; }
+    input[type="text"], input[type="number"] { font-size: 18px !important; }
     
-    /* ==================================
-       5. 既有的其他樣式 (維持不變)
-       ================================== */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -134,8 +125,7 @@ st.markdown("""
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
     }
     .concept-text {
-        font-size: 16px; /* 這裡也稍微加大 */
-        color: #ddd; background-color: #1f1f1f; 
+        font-size: 16px; color: #ddd; background-color: #1f1f1f; 
         padding: 12px; border-left: 4px solid #d4af37; margin-bottom: 20px;
         border-radius: 4px;
     }
@@ -522,6 +512,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

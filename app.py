@@ -212,7 +212,8 @@ if mode == "個人星系解碼":
         data = get_full_kin_data(kin)
         oracle = get_oracle(kin)
         psi = get_psi_kin(date_in)
-        goddess = get_goddess_kin(kin)
+        # ❌ 已移除 goddess 計算
+        
         maya = get_maya_calendar_info(date_in)
         wk = get_week_key_sentence(maya.get('Maya_Week'))
         pr = get_heptad_prayer(maya.get('Heptad_Path'))
@@ -225,16 +226,23 @@ if mode == "個人星系解碼":
             tc1, tc2 = st.columns([1, 1.6])
             with tc1:
                 show_basic_result(kin, data)
-                if psi and psi['KIN']: st.markdown(f"<div class='psi-box'><h4>🧬 PSI</h4>KIN {psi['KIN']} {psi['Info'].get('主印記','')}<br><small>矩陣: {psi.get('Matrix','-')}</small></div>", unsafe_allow_html=True)
-                if goddess and goddess['KIN']: st.markdown(f"<div class='goddess-box'><h4>💖 女神</h4>KIN {goddess['KIN']} {goddess['Info'].get('主印記','')}<br><small>源頭: KIN {goddess.get('Base_KIN')}</small></div>", unsafe_allow_html=True)
+                
+                # 顯示 PSI (保留)
+                if psi and psi['KIN']: 
+                    st.markdown(f"<div class='psi-box'><h4>🧬 PSI</h4>KIN {psi['KIN']} {psi['Info'].get('主印記','')}<br><small>矩陣: {psi.get('Matrix','-')}</small></div>", unsafe_allow_html=True)
+                
+                # ❌ 已移除女神印記顯示區塊 (goddess-box)
+
                 with st.expander("✨ 進階星際密碼"):
                     st.markdown(f"**原型**：{data.get('星際原型','-')}<br>**BMU**：{data.get('BMU','-')}<br>**行星**：{data.get('行星','-')}<br>**家族**：{data.get('家族','-')}", unsafe_allow_html=True)
                 with st.expander("🧬 441 矩陣"):
                     st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
+            
             with tc2:
                 st.subheader("五大神諭盤")
-                # 這是正確的卓爾金曆反推公式：((調性 - 圖騰) * 40 + 圖騰)
+                # 使用修正後的公式
                 def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+                
                 k_g = gk(oracle['guide']['s'], oracle['guide']['t'])
                 k_an = gk(oracle['analog']['s'], oracle['analog']['t'])
                 k_anti = gk(oracle['antipode']['s'], oracle['antipode']['t'])
@@ -247,10 +255,12 @@ if mode == "個人星系解碼":
                     <div>{get_card_html("支持", k_an, oracle['analog']['s'], oracle['analog']['t'])}</div>
                     <div></div> <div>{get_card_html("推動", k_occ, oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
                 </div>""", unsafe_allow_html=True)
+                
                 st.markdown("---")
                 if 'IChing_Meaning' in data: st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
                 if '祈禱文' in data: 
                     with st.expander("📜 查看祈禱文"): st.write(data['祈禱文'])
+            
             st.markdown("---")
             st.subheader(f"🌊 {data.get('wave_name','')} 波符旅程")
             wz = get_wavespell_data(kin)
@@ -513,6 +523,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

@@ -358,18 +358,57 @@ elif mode == "52流年城堡":
                 st.markdown(f"<div style='background:{r['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;'><b>{r['Age']}歲</b><br><span style='color:#b8860b'>KIN {r['KIN']}</span><br>{img}<br>{inf.get('波符','')} | {inf.get('主印記','')}</div>", unsafe_allow_html=True)
 
 # 4. PSI/女神/對等
+# 4. PSI (升級版：含神諭與波符)
 elif mode == "PSI查詢":
     st.title("🧬 PSI 查詢")
     d, _ = render_date_selector("psi")
+    
     if st.button("查詢"):
         res = get_psi_kin(d)
         if res and res['KIN']:
-            st.success(f"PSI: KIN {res['KIN']}")
-            show_basic_result(res['KIN'], res['Info'])
-            st.info(f"矩陣: {res.get('Matrix','-')}")
-        else: st.warning("無資料")
+            pk = res['KIN']
+            p_info = res['Info']
+            
+            st.success(f"PSI: KIN {pk} (矩陣: {res.get('Matrix','-')})")
+            
+            # --- 佈局開始 ---
+            c1, c2 = st.columns([1, 1.6])
+            
+            with c1:
+                show_basic_result(pk, p_info)
+                
+            with c2:
+                st.subheader("PSI 五大神諭")
+                po = get_oracle(pk)
+                def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+                
+                k_destiny = pk
+                k_guide = gk(po['guide']['s'], po['guide']['t'])
+                k_analog = gk(po['analog']['s'], po['analog']['t'])
+                k_antipode = gk(po['antipode']['s'], po['antipode']['t'])
+                k_occult = gk(po['occult']['s'], po['occult']['t'])
+                
+                st.markdown(f"""<div class="oracle-grid-container">
+                        <div></div> <div>{get_card_html("引導", k_guide, po['guide']['s'], po['guide']['t'])}</div> <div></div>
+                        <div>{get_card_html("擴展", k_antipode, po['antipode']['s'], po['antipode']['t'])}</div> 
+                        <div>{get_card_html("PSI", k_destiny, po['destiny']['s'], po['destiny']['t'], True)}</div> 
+                        <div>{get_card_html("支持", k_analog, po['analog']['s'], po['analog']['t'])}</div>
+                        <div></div> <div>{get_card_html("推動", k_occult, po['occult']['s'], po['occult']['t'])}</div> <div></div>
+                </div>""", unsafe_allow_html=True)
 
-# ... (前面的程式碼)
+            st.markdown("---")
+            st.subheader(f"🌊 {p_info.get('wave_name','')} 波符旅程")
+            wz = get_wavespell_data(pk)
+            with st.expander(f"📜 查看 KIN {pk} 的完整 13 天旅程", expanded=True):
+                 for w in wz:
+                    hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == pk else "border: 1px solid #444;"
+                    c_img, c_txt = st.columns([0.5, 4])
+                    with c_img:
+                         if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
+                    with c_txt:
+                        st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
+        else:
+            st.warning("查無 PSI 資料")
 
 elif mode == "女神印記查詢":
     st.title("💖 女神查詢")
@@ -438,17 +477,60 @@ elif mode == "女神印記查詢":
                         f"</div>", 
                         unsafe_allow_html=True
                     )
+# 對等印記 (升級版：含神諭與波符)
 elif mode == "對等印記查詢":
     st.title("🔄 對等印記查詢")
     d, _ = render_date_selector("eq")
+    
     if st.button("查詢"):
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
+        
         from kin_utils import calculate_equivalent_kin
         res = calculate_equivalent_kin(k)
+        
         if res:
-            st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}")
-            show_basic_result(res['Eq_Kin'], res['Eq_Info'])
+            eq_k = res['Eq_Kin']
+            eq_info = res['Eq_Info']
+            
+            st.success(f"原始 KIN {k} -> TFI總和: {res['TFI']} -> 對等 KIN {eq_k}")
+            
+            # --- 佈局開始 ---
+            c1, c2 = st.columns([1, 1.6])
+            
+            with c1:
+                show_basic_result(eq_k, eq_info)
+                
+            with c2:
+                st.subheader("對等印記五大神諭")
+                eo = get_oracle(eq_k)
+                def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+                
+                k_destiny = eq_k
+                k_guide = gk(eo['guide']['s'], eo['guide']['t'])
+                k_analog = gk(eo['analog']['s'], eo['analog']['t'])
+                k_antipode = gk(eo['antipode']['s'], eo['antipode']['t'])
+                k_occult = gk(eo['occult']['s'], eo['occult']['t'])
+                
+                st.markdown(f"""<div class="oracle-grid-container">
+                        <div></div> <div>{get_card_html("引導", k_guide, eo['guide']['s'], eo['guide']['t'])}</div> <div></div>
+                        <div>{get_card_html("擴展", k_antipode, eo['antipode']['s'], eo['antipode']['t'])}</div> 
+                        <div>{get_card_html("對等", k_destiny, eo['destiny']['s'], eo['destiny']['t'], True)}</div> 
+                        <div>{get_card_html("支持", k_analog, eo['analog']['s'], eo['analog']['t'])}</div>
+                        <div></div> <div>{get_card_html("推動", k_occult, eo['occult']['s'], eo['occult']['t'])}</div> <div></div>
+                </div>""", unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.subheader(f"🌊 {eq_info.get('wave_name','')} 波符旅程")
+            wz = get_wavespell_data(eq_k)
+            with st.expander(f"📜 查看 KIN {eq_k} 的完整 13 天旅程", expanded=True):
+                 for w in wz:
+                    hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == eq_k else "border: 1px solid #444;"
+                    c_img, c_txt = st.columns([0.5, 4])
+                    with c_img:
+                         if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
+                    with c_txt:
+                        st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 
 # 5. 高階功能
 elif mode == "全腦調頻":
@@ -549,6 +631,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

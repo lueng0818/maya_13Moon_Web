@@ -87,19 +87,24 @@ def get_base_matrix_data(kin_num):
     finally: conn.close()
     return result
 
+# 修改 kin_utils.py 中的 get_full_kin_data 函式
+
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
     try:
+        # 1. 抓取基本 KIN 資料
         row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
         
+        # 2. 抓取 Kin_Data 詳細資料
         row_d = conn.execute("SELECT * FROM Kin_Data WHERE KIN = ?", (kin,)).fetchone()
         if row_d:
              for k, v in dict(row_d).items():
                 if k not in data or k in ['諧波', '密碼子', '星際原型', 'BMU', '行星', '流', '電路', '說明', '家族', '對應脈輪', '電路說明']:
                     data[k] = v
 
+        # 3. 抓取 Matrix_Data 矩陣資料
         m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
         if m:
             data['Matrix_Time'] = m.get('時間矩陣_矩陣位置')
@@ -107,19 +112,34 @@ def get_full_kin_data(kin):
             data['Matrix_Sync'] = m.get('共時矩陣_矩陣位置')
             data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
     except: pass
-    conn.close()
-
+    
+    # 4. 補完資料
     data.update(get_base_matrix_data(kin))
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
     
-    # 修正圖檔對應，避免 KeyError
+    # 圖片對應
     data['seal_img'] = SEAL_FILES.get(s_num, f"{str(s_num).zfill(2)}.png")
     data['tone_img'] = TONE_FILES.get(t_num, f"tone-{t_num}.png")
     
+    # 名稱對應
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
+    
+    # ✨ 新增：從 Seal_Info_Map 抓取圖騰詳細對應資料
+    # (星際原型、BMU、行星、流、電路、說明、家族)
+    try:
+        seal_name = SEALS_NAMES[s_num]
+        row_seal = conn.execute("SELECT * FROM Seal_Info_Map WHERE 圖騰 = ?", (seal_name,)).fetchone()
+        if row_seal:
+            # 將查到的資料寫入 data (若原本 Kin_Data 有相同欄位，這裡會覆蓋，以圖騰對應表為主)
+            for k in ['星際原型', 'BMU', '行星', '流', '電路', '說明', '家族']:
+                if k in dict(row_seal):
+                    data[k] = row_seal[k]
+    except: pass
+    
+    conn.close()
     
     wid = math.ceil(kin/13)
     data['wave_name'] = data.get('波符', '未知')
@@ -501,6 +521,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

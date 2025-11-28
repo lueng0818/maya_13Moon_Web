@@ -5,21 +5,13 @@ import pandas as pd
 import sqlite3
 import base64
 from create_db import init_db
-from kin_utils import (
-    calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
-    calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    get_maya_calendar_info, get_week_key_sentence, get_heptad_prayer,
-    get_main_sign_text, save_user_data, get_user_list, get_user_kin, calculate_composite,
-    get_wavespell_data, get_octave_positions, get_year_range, get_telektonon_info,
-    get_whole_brain_tuning, get_king_prophecy,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
-)
+from kin_utils import *
 
-# 1. 系統初始化
+# 1. 初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
 if not os.path.exists("13moon.db"):
-    with st.spinner("系統初始化中 (建立資料庫)..."):
+    with st.spinner("系統初始化中..."):
         st.cache_data.clear()
         init_db()
     st.success("完成！")
@@ -29,25 +21,36 @@ if MIN_YEAR > 1800: MIN_YEAR = 1800
 if MAX_YEAR < 2100: MAX_YEAR = 2100
 SAFE_DATE = datetime.date(1990, 1, 1)
 
-# CSS
+# CSS (新增選單優化)
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
-    .kin-card-grid {
-        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
-        background: #262730; border: 1px solid #444; border-radius: 8px;
-        padding: 5px; width: 100%; height: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        text-align: center; gap: 0; 
-    }
+    
+    /* 修正後的網格高度 */
     .oracle-grid-container {
         display: grid; grid-template-columns: 100px 100px 100px;
         grid-template-rows: 100px 140px 100px; gap: 12px; 
         justify-content: center; align-items: center;
     }
-    .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
-    .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
-    .lunar-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 15px; border-radius: 10px; color: white; margin-bottom: 15px; }
+    
+    /* === 關鍵修正：側邊欄選單優化 (字體放大與反白) === */
+    /* 目標：放大側邊欄選項文字 */
+    div[data-testid="stSidebarContent"] div[role="radiogroup"] label {
+        font-size: 16px !important; 
+        padding: 8px 10px !important;
+        margin-top: 2px;
+        transition: background-color 0.1s ease;
+    }
+    /* 目標：選中時反白 */
+    div[data-testid="stSidebarContent"] div[role="radiogroup"] label:has(input:checked) {
+        background-color: #d4af37 !important; /* Streamlit accent color */
+        color: #0e1117 !important; /* 確保選中時文字變深 */
+        border-radius: 6px;
+        font-weight: bold;
+    }
+    
+    .psi-box, .goddess-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
     .matrix-data {
         font-family: monospace; color: #00ff00; background: #000;
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
@@ -317,11 +320,9 @@ elif mode == "人員生日管理":
                 c_up, c_del = st.columns(2)
                 if c_up.button("更新"):
                     nk, _ = calculate_kin_v2(nd)
-                    from kin_utils import update_user_data
                     update_user_data(sel, nn, nd.strftime('%Y-%m-%d'), nk, get_main_sign_text(nk))
                     st.success("更新成功"); st.rerun()
                 if c_del.button("刪除"):
-                    from kin_utils import delete_user_data
                     delete_user_data([sel])
                     st.success("已刪除"); st.rerun()
     with t3:
@@ -330,25 +331,22 @@ elif mode == "人員生日管理":
         up = st.file_uploader("匯入 CSV", type="csv")
         if up and st.button("開始匯入"):
             try:
-                # 關鍵修正：處理匯入邏輯
                 d_in = pd.read_csv(up)
                 count = 0
                 for _, r in d_in.iterrows():
-                    # 修正姓名欄位
-                    name = r['姓名'] if '姓名' in r else (r['名字'] if '名字' in r else None)
-                    if not name: continue
-
                     try:
-                        # 嘗試解析生日 (YYYY-MM-DD or separate cols)
+                        # 嘗試解析生日
                         if '生日' in r and pd.notna(r['生日']):
-                            dob_str = str(r['生日']).replace('/','-')
-                            dd = datetime.datetime.strptime(dob_str, "%Y-%m-%d").date()
+                            dd = datetime.datetime.strptime(str(r['生日']).replace('/','-'), "%Y-%m-%d").date()
                         elif '出生年' in r and pd.notna(r['出生年']):
                             dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
-                        else: continue
+                        else: continue # 無生日資料，跳過
+                        
+                        # 修正姓名欄位
+                        name = r['姓名'] if '姓名' in r else r['名字']
                         
                         kk, _ = calculate_kin_v2(dd)
-                        if kk:
+                        if kk and name:
                             save_user_data(name, dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
                             count += 1
                     except: pass

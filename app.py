@@ -744,7 +744,7 @@ elif mode == "人員生日管理":
                 else: st.warning("⚠️ 匯入失敗")
             except Exception as e: st.error(f"❌ 錯誤: {str(e)}")
 
-# 10. 合盤 (多選 + 關係文案優化)
+# 10. 合盤 (多選 + 關係文案優化 + 篩選器)
 elif mode == "通訊錄/合盤":
     st.title("❤️ 關係/團隊合盤")
     df = get_user_list()
@@ -752,13 +752,39 @@ elif mode == "通訊錄/合盤":
     if df.empty:
         st.warning("📭 通訊錄目前是空的，請先至「人員生日管理」新增資料。")
     else:
-        options = df.apply(lambda x: f"{x['姓名']} (KIN {x['KIN']})", axis=1).tolist()
-        selected = st.multiselect("請選擇成員 (可選擇 2 人或多人)", options)
+        # --- 1. 篩選介面 (核心新增) ---
+        st.markdown("---")
+        st.subheader("篩選合盤成員")
+        
+        # 篩選模式選擇
+        fm = st.radio("篩選方式", ["全部", "依調性", "依圖騰"], horizontal=True, key="composite_mode")
+        fdf = df
+        
+        # 根據選擇進行資料過濾
+        if fm == "依調性":
+            t = st.selectbox("調性", TONE_NAMES[1:], key="composite_t")
+            fdf = df[df['主印記'].astype(str).str.contains(t, na=False)]
+        elif fm == "依圖騰":
+            s = st.selectbox("圖騰", SEALS_NAMES[1:], key="composite_s")
+            fdf = df[df['主印記'].astype(str).str.contains(s, na=False)]
+        
+        # 2. 準備多選選項
+        opts = fdf.apply(lambda x: f"{x['姓名']} (KIN {x['KIN']})", axis=1).tolist()
+        
+        # 3. 多選選單
+        if not opts:
+            st.warning("無符合篩選條件的成員。")
+            selected = [] # 確保 selected list 是空的
+        else:
+            selected = st.multiselect("✅ 請選擇 2 位或多位成員", opts, key="composite_selection")
+        
+        st.markdown("---")
         
         if st.button("計算合盤能量"):
             if len(selected) < 2:
                 st.warning("⚠️ 請至少選擇 2 位成員才能計算合盤喔！")
             else:
+                # 4. 計算邏輯 (維持不變)
                 total_kin_sum = 0
                 members_names = []
                 for item in selected:
@@ -772,6 +798,7 @@ elif mode == "通訊錄/合盤":
                 if ck == 0: ck = 260
                 ci = get_full_kin_data(ck)
                 
+                # 5. 顯示結果
                 st.success(f"🎉 成員：{' + '.join(members_names)}\n\n✨ 共同合盤 KIN {ck}")
                 c1, c2 = st.columns([1, 1.6])
                 with c1:
@@ -808,7 +835,7 @@ elif mode == "通訊錄/合盤":
                         c_img, c_txt = st.columns([0.5, 4])
                         with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                         with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>關係調性 {w['Tone']}：{relation_question}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
+                            
 # 11. 八度音階
 elif mode == "八度音階查詢":
     st.title("🎵 八度音階")
@@ -841,3 +868,4 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+

@@ -97,8 +97,9 @@ st.markdown("""
     }
 
     /* ==================================
-       4. 🚨 52流年 Grid & Oracle 佈局 🚨
+       4. 🚨 Oracle/52流年佈局 🚨
        ================================== */
+    /* 52流年專用 Grid 容器 */
     .castle-grid-container {
         display: grid; 
         grid-template-columns: repeat(4, 1fr); 
@@ -110,7 +111,6 @@ st.markdown("""
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         border-radius: 10px; min-height: 160px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    /* 確保所有卡片都有一個高度 */
     .castle-card-content span.text-content {
         color: inherit !important; font-size: 14px; font-weight: bold;
     }
@@ -337,11 +337,13 @@ elif mode == "個人流年查詢":
         st.success(f"{u or '此人'} {ty} 年 ( {age} 歲 ) -> 流年 KIN {fk}")
         fd = get_full_kin_data(fk)
         
+        fo = get_oracle(fk) # 關鍵修正點：提前定義 fo
+
         c1, c2 = st.columns([1, 1.6])
         with c1: show_basic_result(fk, fd)
         with c2:
             st.subheader("流年五大神諭")
-            fo = get_oracle(fk)
+            
             def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
             
             k_destiny = fk
@@ -352,9 +354,9 @@ elif mode == "個人流年查詢":
             
             st.markdown(f"""<div class="oracle-grid-container">
                     <div></div> <div>{get_card_html("引導", k_guide, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_antipode, fo['antipode']['s'], fo['antipode']['t'])}</div> 
+                    <div>{get_card_html("擴展", k_anti, fo['antipode']['s'], fo['antipode']['t'])}</div> 
                     <div>{get_card_html("流年", k_destiny, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
-                    <div>{get_card_html("支持", k_analog, fo['analog']['s'], fo['analog']['t'])}</div>
+                    <div>{get_card_html("支持", k_an, fo['analog']['s'], fo['analog']['t'])}</div>
                     <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
             </div>""", unsafe_allow_html=True)
 
@@ -369,7 +371,7 @@ elif mode == "個人流年查詢":
                 c_img, c_txt = st.columns([0.5, 4])
                 with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                 with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-                    
+
 # 3. 52流年 (此區塊已被移除，略過)
 
 # 4. PSI (含神諭波符)
@@ -535,8 +537,8 @@ elif mode == "全腦調頻":
 elif mode == "國王棋盤":
     st.title("👑 國王預言棋盤")
     
-    # 哲學背景與結構解讀區塊
-    # (此區塊代碼省略，請確保您的 app.py 中已包含此 expander)
+    # 哲學背景與結構解讀區塊 (請確保您的 app.py 中已包含此 expander)
+    st.expander("📜 Telektonon 哲學與結構解讀", expanded=False) # 假設此 expander 在這裡
 
     d, _ = render_date_selector("king")
     
@@ -546,7 +548,6 @@ elif mode == "國王棋盤":
         maya = get_maya_calendar_info(d)
         tk = get_telektonon_info(k, maya)
         
-        # 提取 Kin 的調性和圖騰數字 (第一區塊用)
         s_id = (k - 1) % 20 + 1 
         t_id = (k - 1) % 13 + 1 
 
@@ -600,8 +601,59 @@ elif mode == "國王棋盤":
             """, unsafe_allow_html=True)
 
         # ----------------------------------------------------
-        # Zone 3, 4, 5, 6 logic...
+        # 🔌 第四區塊：水晶柱充電區
+        st.markdown("---")
+        st.subheader(f"🔌 第四區：水晶柱充電區")
+        
+        st.info(f"✨ 根據今日圖騰 **{SEALS_NAMES[s_id]}**，水晶柱應擺放在第 **{s_id}** 號位置 (1-20 陣列)。")
+
+        seal_container_html = '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 10px; background:#1f1f1f; border-radius: 8px;">'
+        
+        for seal_index in range(1, 21):
+            is_placement = (seal_index == s_id)
+            seal_name = SEALS_NAMES[seal_index]
+            img_filename = SEAL_FILES.get(seal_index)
+            img_data = get_img_b64(f"assets/seals/{img_filename}")
+            
+            border_style = "4px solid #fff" if is_placement else "1px solid #444"
+            bg_color = "rgba(212, 175, 55, 0.5)" if is_placement else "transparent"
+            img_tag = f"<img src='data:image/png;base64,{img_data}' width='30'>" if img_data else '🔮'
+            
+            html_card = f"""
+            <div style="text-align: center; border: {border_style}; border-radius: 6px; padding: 5px; background:{bg_color}; transition: all 0.2s;">
+                <p style="font-size: 10px; color: #aaa; margin: 0; line-height: 1.1;">No. {seal_index}</p>
+                {img_tag}
+                <p style="font-size: 10px; color: #fff; margin: 0; line-height: 1.1;">{seal_name}</p>
+            </div>
+            """
+            seal_container_html += html_card
+            
+        seal_container_html += '</div>'
+        st.markdown(seal_container_html, unsafe_allow_html=True)
         # ----------------------------------------------------
+        
+        # 顯示 Zone 3 (綠烏龜行動)
+        st.markdown("---")
+        st.subheader("🐢 第三區：戰士 16 天立方體之旅")
+        
+        st.markdown("""
+        <div class='concept-text' style='border-left: 4px solid red; font-size: 13px;'>
+            🔴 紅色啟動 | ⚪ 白色提煉 | 🔵 藍色蛻變 | 🟡 黃色收穫 (所有週期的共同律動)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # ... (此處省略 Zone 3 的動態邏輯，但它應在您的 app.py 中) ...
+
+        # 顯示 Zone 5 (國王皇后)
+        st.markdown("---")
+        st.subheader(f"👸 第五區：國王(黃)與皇后(白)業力淨化之旅")
+        # ... (此處省略 Zone 5 的動態邏輯) ...
+
+        # 顯示 Zone 6 (金字塔)
+        st.markdown("---")
+        st.subheader(f"🟢 第六區：五大神諭金字塔擺放")
+        # ... (此處省略 Zone 6 的動態邏輯) ...
+
 
         # 顯示計算結果 (維持原版)
         c1, c2 = st.columns(2)
@@ -631,4 +683,3 @@ elif mode == "通訊錄/合盤":
     # ... (此處代碼維持不變) ...
     pass
 # ... (省略其餘模組代碼) ...
-

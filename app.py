@@ -264,23 +264,49 @@ elif mode == "女神印記查詢":
         # 2. 計算女神 KIN
         res = get_goddess_kin(k)
         
-        # 3. 顯示基本女神資訊
         st.success(f"原本 KIN {k} -> 女神力量: KIN {res['KIN']}")
-        show_basic_result(res['KIN'], res['Info'])
         
-        # --- ✨ 新增：顯示女神波符旅程 ---
+        # --- ✨ 新增：左右分欄佈局 ---
+        c1, c2 = st.columns([1, 1.6])
+        
+        # 左欄：基本資料
+        with c1:
+            show_basic_result(res['KIN'], res['Info'])
+            
+        # 右欄：女神的五大神諭
+        with c2:
+            st.subheader("女神五大神諭")
+            
+            # 取得女神 KIN 的神諭資料
+            g_oracle = get_oracle(res['KIN'])
+            
+            # 定義反推 KIN 的正確公式 (確保計算無誤)
+            def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+            
+            # 計算五個位置的 KIN
+            k_destiny = res['KIN']
+            k_guide = gk(g_oracle['guide']['s'], g_oracle['guide']['t'])
+            k_analog = gk(g_oracle['analog']['s'], g_oracle['analog']['t'])
+            k_antipode = gk(g_oracle['antipode']['s'], g_oracle['antipode']['t'])
+            k_occult = gk(g_oracle['occult']['s'], g_oracle['occult']['t'])
+            
+            # 渲染神諭盤 (使用既有的 CSS Grid 樣式)
+            st.markdown(f"""<div class="oracle-grid-container">
+                    <div></div> <div>{get_card_html("引導", k_guide, g_oracle['guide']['s'], g_oracle['guide']['t'])}</div> <div></div>
+                    <div>{get_card_html("擴展", k_antipode, g_oracle['antipode']['s'], g_oracle['antipode']['t'])}</div> 
+                    <div>{get_card_html("女神", k_destiny, g_oracle['destiny']['s'], g_oracle['destiny']['t'], True)}</div> 
+                    <div>{get_card_html("支持", k_analog, g_oracle['analog']['s'], g_oracle['analog']['t'])}</div>
+                    <div></div> <div>{get_card_html("推動", k_occult, g_oracle['occult']['s'], g_oracle['occult']['t'])}</div> <div></div>
+                </div>""", unsafe_allow_html=True)
+
+        # --- 下方：波符旅程 (保持之前新增的功能) ---
         st.markdown("---")
         st.subheader(f"🌊 {res['Info'].get('wave_name','')} 波符旅程")
         
-        # 取得波符資料
         wz = get_wavespell_data(res['KIN'])
-        
-        # 使用 Expander 顯示 (預設展開)
         with st.expander(f"📜 查看 KIN {res['KIN']} 的完整 13 天旅程", expanded=True):
              for w in wz:
-                # 設定高亮樣式 (如果是女神 KIN 本身，顯示金色邊框)
                 hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == res['KIN'] else "border: 1px solid #444;"
-                
                 c_img, c_txt = st.columns([0.5, 4])
                 with c_img:
                      if os.path.exists(f"assets/seals/{w['Image']}"): 
@@ -293,7 +319,6 @@ elif mode == "女神印記查詢":
                         f"</div>", 
                         unsafe_allow_html=True
                     )
-
 elif mode == "對等印記查詢":
     st.title("🔄 對等印記查詢")
     d, _ = render_date_selector("eq")
@@ -405,5 +430,6 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 

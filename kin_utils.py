@@ -172,17 +172,25 @@ def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
+        # 建立可能的日期字串格式，對應 CSV 的 "國曆生日" 或 "月日" 欄位
+        # 例如 7月26日 -> ["07月26日", "7月26日"]
         qs = [date_obj.strftime("%m月%d日"), f"{date_obj.month}月{date_obj.day}日"]
+        
         for q in qs:
-            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (q,)).fetchone()
+            # 查詢 PSI_Bank 表格
+            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ? OR 國曆生日 = ?", (q, q)).fetchone()
             if row:
                 p = int(row['PSI印記'])
-                res = {"KIN": p, "Info": get_full_kin_data(p), "Matrix": row.get('矩陣位置','-')}
+                res = {
+                    "KIN": p, 
+                    "Info": get_full_kin_data(p), 
+                    "Matrix": row.get('矩陣位置', '-'),
+                    "Maya_Date": row.get('瑪雅生日', '-')  # ✨ 新增：讀取瑪雅生日 (如 01.01)
+                }
                 break
     except: pass
     finally: conn.close()
     return res
-
 def get_kin_from_seal_tone(s, t):
     """
     輔助函式：將圖騰(1-20)與調性(1-13)轉回 KIN(1-260)
@@ -413,5 +421,6 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 

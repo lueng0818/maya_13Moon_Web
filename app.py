@@ -698,8 +698,9 @@ elif mode == "通訊錄/合盤":
                      for w in wz:
                         hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == ck else "border: 1px solid #444;"
                         
-                        # ✨ 關鍵修改：將提問中的「我」全部替換成「我們」
-                        relation_question = w['Question'].replace("我", "我們")
+                        # ✨ 關鍵修改：針對新文案，將「你」替換為「你們」
+                        # 這樣 "你的靈魂..." 就會變成 "你們的靈魂..."
+                        relation_question = w['Question'].replace("你", "你們")
                         
                         c_img, c_txt = st.columns([0.5, 4])
                         with c_img:
@@ -729,6 +730,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

@@ -399,6 +399,7 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
+       # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
@@ -410,29 +411,55 @@ elif mode == "52流年城堡":
                             inf = r['Info']
                             is_current = (r['Year'] == current_year)
                             
+                            # 樣式與顏色邏輯
                             if is_current:
+                                # 今年：深色背景，白色文字
                                 border = "2px solid #d4af37"
-                                bg = "#444444" 
-                                txt_col = "#ffffff"
+                                bg = "#333333" 
+                                txt_hex = "#ffffff"
                                 box_shadow = "0 0 15px #d4af37"
                             else:
+                                # 其他年份：淺色背景，強制黑色文字
                                 border = "1px solid #999"
                                 bg = r['Color']
-                                txt_col = "#000000"
+                                txt_hex = "#000000" # 純黑
                                 box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
+                            # 圖片處理
                             img_filename = inf.get("seal_img", "")
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
+                            # 🚨 關鍵修正：
+                            # 不依賴父層 div 的 color 設定，直接在文字 span 上面加上 style='color: ...'
+                            # 這樣絕對不會被全域 CSS 覆蓋
                             st.markdown(
-                                f"""<div style='background:{bg}; border:{border}; border-radius:10px; padding:10px 5px; text-align:center; min-height:160px; box-shadow:{box_shadow}; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
-                                    <div style='font-size:14px; font-weight:bold; color:{txt_col} !important;'>{r['Age']}歲</div>
-                                    <div style='font-size:12px; color:{txt_col} !important; opacity:0.8;'>{r['Year']}</div>
+                                f"""
+                                <div style='background:{bg}; border:{border}; border-radius:10px; 
+                                    padding:10px 5px; text-align:center; min-height:160px; 
+                                    box-shadow:{box_shadow}; display:flex; flex-direction:column; 
+                                    justify-content:center; align-items:center;'>
+                                    
+                                    <span style='font-size:14px; font-weight:bold; color:{txt_hex}; display:block; margin-bottom:2px;'>
+                                        {r['Age']}歲
+                                    </span>
+                                    
+                                    <span style='font-size:12px; color:{txt_hex}; opacity:0.9; display:block; margin-bottom:5px;'>
+                                        {r['Year']}
+                                    </span>
+                                    
                                     {img_html}
-                                    <div style='font-size:13px; font-weight:bold; color:{txt_col} !important;'>KIN {r['KIN']}</div>
-                                    <div style='font-size:12px; color:{txt_col} !important; margin-top:2px;'>{inf.get('調性').replace('性','')} {inf.get('圖騰')}</div>
-                                </div>""", unsafe_allow_html=True
+                                    
+                                    <span style='font-size:13px; font-weight:bold; color:{txt_hex}; display:block; margin-top:2px;'>
+                                        KIN {r['KIN']}
+                                    </span>
+                                    
+                                    <span style='font-size:12px; color:{txt_hex}; display:block;'>
+                                        {inf.get('調性').replace('性','')} {inf.get('圖騰')}
+                                    </span>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
                             )
 
         target_data = path[:52]
@@ -810,3 +837,4 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+

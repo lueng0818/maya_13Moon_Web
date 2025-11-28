@@ -365,7 +365,7 @@ elif mode == "個人流年查詢":
                      if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
                 with c_txt:
                     st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-# 3. 52流年 (四色城堡架構版)
+# 3. 52流年 (修復版：Radio切換週期 + Tabs切換城堡)
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
     
@@ -382,7 +382,7 @@ elif mode == "52流年城堡":
         birth_info = get_full_kin_data(bk)
         family_name = birth_info.get('家族', '未知')
         
-        # 顯示家族圖片 (維持不變)
+        # 顯示家族圖片
         family_map = {
             "極性家族": "family_polar.jpg", "基本家族": "family_cardinal.jpg", 
             "主要家族": "family_cardinal.jpg", "核心家族": "family_core.jpg",
@@ -402,10 +402,9 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        # 3. 定義渲染單一城堡 (13年) 的函式
+        # 3. 定義渲染單一城堡 (13年)
         def render_13_year_castle(data_subset):
-            # 依然使用 4 欄排列，保持家族對應 (每列 4 個，共 3 列多 1 個)
-            # data_subset 長度固定為 13
+            # 使用 4 欄排列
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
                 cols = st.columns(cols_per_row)
@@ -416,7 +415,6 @@ elif mode == "52流年城堡":
                             inf = r['Info']
                             is_current = (r['Year'] == current_year)
                             
-                            # 樣式設計
                             border = "2px solid #d4af37" if is_current else "1px solid #444"
                             bg = "#444" if is_current else r['Color']
                             txt_col = "#fff" if is_current else "#333"
@@ -427,7 +425,7 @@ elif mode == "52流年城堡":
                             st.markdown(
                                 f"""
                                 <div style='background:{bg}; border:{border}; border-radius:10px; 
-                                    padding:10px 5px; text-align:center; min-height:150px; 
+                                    padding:10px 5px; text-align:center; min-height:160px; 
                                     box-shadow:{box_shadow}; display:flex; flex-direction:column; 
                                     justify-content:center; align-items:center;'>
                                     
@@ -437,9 +435,7 @@ elif mode == "52流年城堡":
                                     <div style='font-size:12px; color:{txt_col}; opacity:0.8;'>
                                         {r['Year']}
                                     </div>
-                                    
                                     {img}
-                                    
                                     <div style='font-size:13px; font-weight:bold; color:{txt_col};'>
                                         KIN {r['KIN']}
                                     </div>
@@ -451,64 +447,59 @@ elif mode == "52流年城堡":
                                 unsafe_allow_html=True
                             )
 
-        # 4. 定義顯示 52 年週期的主控台 (分為四個城堡 Tabs)
-        def render_52_cycle_tabs(cycle_data, base_age):
-            # 切割資料
-            red_data = cycle_data[0:13]
-            white_data = cycle_data[13:26]
-            blue_data = cycle_data[26:39]
-            yellow_data = cycle_data[39:52]
-            
-            # 建立 Tabs
-            c_tabs = st.tabs([
-                "🔴 紅色東方城堡 (0-12)", 
-                "⚪ 白色北方城堡 (13-25)", 
-                "🔵 藍色西方城堡 (26-38)", 
-                "🟡 黃色南方城堡 (39-51)"
-            ])
-            
-            # 紅色城堡 (啟動)
-            with c_tabs[0]:
-                st.caption(f"🚀 **紅色東方城堡 (啟動之庭)** | 歲數：{base_age}~{base_age+12} 歲 | 你的生命在此啟動。")
-                render_13_year_castle(red_data)
-                
-            # 白色城堡 (淨化)
-            with c_tabs[1]:
-                st.caption(f"⚔️ **白色北方城堡 (淨化之庭)** | 歲數：{base_age+13}~{base_age+25} 歲 | 經歷磨練與跨越。")
-                render_13_year_castle(white_data)
-                
-            # 藍色城堡 (蛻變)
-            with c_tabs[2]:
-                st.caption(f"🦋 **藍色西方城堡 (蛻變之庭)** | 歲數：{base_age+26}~{base_age+38} 歲 | 轉化與魔術的發生。")
-                render_13_year_castle(blue_data)
-                
-            # 黃色城堡 (收成)
-            with c_tabs[3]:
-                st.caption(f"☀️ **黃色南方城堡 (收成之庭)** | 歲數：{base_age+39}~{base_age+51} 歲 | 享受成果與給予。")
-                render_13_year_castle(yellow_data)
-
-        # 5. 主顯示邏輯
+        # 4. 控制顯示邏輯 (修復版面崩潰的核心)
+        
+        # 預設顯示第一週期
+        target_data = path[:52]
+        base_age_offset = 0
+        
+        # 如果年齡大於 51，提供切換選項
         if current_age > 51:
             st.info(f"🎂 您目前 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
             
-            # 使用 Expander 或 Tabs 區隔兩個大週期
-            cycle_tabs = st.tabs(["🧬 第二週期 (52-103歲)", "🔄 回顧：第一週期 (0-51歲)"])
+            # 使用 Radio 替代外層 Tabs，避免 Nested Tabs 錯誤
+            cycle_choice = st.radio(
+                "請選擇要查看的生命週期：", 
+                ["🧬 第二生命荷包 (52-103歲)", "🔄 回顧：第一生命荷包 (0-51歲)"], 
+                horizontal=True
+            )
             
-            with cycle_tabs[0]:
-                st.markdown("### 🌟 第二生命荷包 (現在)")
-                render_52_cycle_tabs(path[52:104], 52)
-                
-            with cycle_tabs[1]:
-                st.markdown("### 📜 第一生命荷包 (過去)")
-                render_52_cycle_tabs(path[:52], 0)
-        else:
-            # 年輕模式 (只顯示第一週期)
-            st.markdown("### 📜 第一生命荷包 (0-51歲)")
-            render_52_cycle_tabs(path[:52], 0)
+            if "第二" in cycle_choice:
+                target_data = path[52:104]
+                base_age_offset = 52
+            else:
+                target_data = path[:52]
+                base_age_offset = 0
+        
+        st.markdown("---")
+
+        # 5. 渲染四色城堡 Tabs
+        c_tabs = st.tabs([
+            "🔴 紅色東方城堡", 
+            "⚪ 白色北方城堡", 
+            "🔵 藍色西方城堡", 
+            "🟡 黃色南方城堡"
+        ])
+        
+        # 紅色城堡 (0-12)
+        with c_tabs[0]:
+            st.caption(f"🚀 **啟動之庭** | 歲數：{base_age_offset}~{base_age_offset+12} 歲")
+            render_13_year_castle(target_data[0:13])
             
-            # 預覽未來
-            with st.expander("👀 預覽：第二生命荷包 (52歲後)"):
-                render_52_cycle_tabs(path[52:104], 52)
+        # 白色城堡 (13-25)
+        with c_tabs[1]:
+            st.caption(f"⚔️ **淨化之庭** | 歲數：{base_age_offset+13}~{base_age_offset+25} 歲")
+            render_13_year_castle(target_data[13:26])
+            
+        # 藍色城堡 (26-38)
+        with c_tabs[2]:
+            st.caption(f"🦋 **蛻變之庭** | 歲數：{base_age_offset+26}~{base_age_offset+38} 歲")
+            render_13_year_castle(target_data[26:39])
+            
+        # 黃色城堡 (39-51)
+        with c_tabs[3]:
+            st.caption(f"☀️ **收成之庭** | 歲數：{base_age_offset+39}~{base_age_offset+51} 歲")
+            render_13_year_castle(target_data[39:52])
 
 # 4. PSI/女神/對等
 # 4. PSI (升級版：含神諭與波符)
@@ -934,6 +925,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

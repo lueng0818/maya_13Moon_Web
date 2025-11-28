@@ -7,13 +7,11 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
-# --- 1. 靜態資源設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
-# --- 2. 輔助函數 ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -24,25 +22,20 @@ def get_img_b64(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
     return ""
 
-# --- 3. KIN 計算邏輯 ---
+# KIN 計算 (查表)
 def calculate_kin_v2(date_obj):
     conn = get_db()
     try:
-        res_year = conn.execute(f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}").fetchone()
-        if not res_year: return None, f"無 {date_obj.year} 年起始KIN資料"
-        start_kin = res_year['起始KIN']
+        yr = conn.execute(f"SELECT 起始KIN FROM Kin_Start WHERE 年份 = {date_obj.year}").fetchone()
+        if not yr: return None, f"無 {date_obj.year} 年資料"
         
-        res_month = conn.execute(f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}").fetchone()
-        if not res_month: return None, f"無 {date_obj.month} 月累積天數資料"
-        month_accum = res_month['累積天數']
+        mn = conn.execute(f"SELECT 累積天數 FROM Month_Accum WHERE 月份 = {date_obj.month}").fetchone()
+        if not mn: return None, f"無 {date_obj.month} 月資料"
         
-        total = start_kin + month_accum + date_obj.day
-        kin = total % 260
+        kin = (yr['起始KIN'] + mn['累積天數'] + date_obj.day) % 260
         return (260 if kin == 0 else kin), None
-    except Exception as e:
-        return None, str(e)
-    finally:
-        conn.close()
+    except Exception as e: return None, str(e)
+    finally: conn.close()
 
 def calculate_kin_math(date_obj):
     base = datetime.date(2023, 7, 26)
@@ -50,7 +43,7 @@ def calculate_kin_math(date_obj):
     kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
-# --- 4. 資料獲取核心 ---
+# 資料獲取
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
@@ -68,14 +61,14 @@ def get_full_kin_data(kin):
 
     s_num = (kin - 1) % 20 + 1
     t_num = (kin - 1) % 13 + 1
-    
     data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
-    data['調性'] = data.get('調性', TONE_NAMES[t_num])
-    data['圖騰'] = data.get('圖騰', SEALS_NAMES[s_num])
+    if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
+    if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
+    
+    wid = math.ceil(kin / 13)
     data['wave_name'] = data.get('波符', '未知') 
-    data['wave_img'] = f"瑪雅曆20波符-{str(math.ceil(kin / 13)).zfill(2)}.png"
-
+    data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
     conn.close()
     return data
 
@@ -135,7 +128,7 @@ def calculate_life_castle(birth_date):
         path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
     return path
 
-# --- 新增：曆法查詢 ---
+# --- 曆法查詢 ---
 def get_maya_calendar_info(date_obj):
     conn = get_db()
     result = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Status": "查無資料"}
@@ -173,9 +166,8 @@ def get_heptad_prayer(path_name):
     conn.close()
     return res
 
-# --- 【關鍵修正】用戶管理 (自動建表) ---
+# --- 用戶管理 (自動修復 Schema) ---
 def ensure_users_table(conn):
-    """確保 Users 表格存在，若無則建立"""
     conn.execute("""
         CREATE TABLE IF NOT EXISTS Users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,15 +181,14 @@ def ensure_users_table(conn):
 def save_user_data(name, dob_str, kin, main_sign):
     conn = get_db()
     try:
-        ensure_users_table(conn) # 自動修復
-        # 檢查是否已存在
+        ensure_users_table(conn)
         exist = conn.execute("SELECT COUNT(*) FROM Users WHERE 姓名 = ?", (name,)).fetchone()[0]
         if exist == 0:
             conn.execute("INSERT INTO Users (姓名, 生日, KIN, 主印記) VALUES (?, ?, ?, ?)", (name, dob_str, kin, main_sign))
             conn.commit()
             return True, "建檔成功"
         else:
-            return False, "此姓名已存在，請使用不同名稱"
+            return False, "此姓名已存在"
     except Exception as e:
         return False, f"存檔失敗: {e}"
     finally:
@@ -206,19 +197,15 @@ def save_user_data(name, dob_str, kin, main_sign):
 def get_user_list():
     conn = get_db()
     try:
-        ensure_users_table(conn) # 自動修復
+        ensure_users_table(conn)
         df = pd.read_sql("SELECT 姓名, 生日, KIN FROM Users", conn)
         return df
-    except Exception as e:
-        print(f"User List Error: {e}")
-        return pd.DataFrame(columns=['姓名', '生日', 'KIN'])
-    finally:
-        conn.close()
+    except: return pd.DataFrame()
+    finally: conn.close()
 
 def get_user_kin(name, df_users):
-    user_row = df_users[df_users['姓名'] == name]
-    if not user_row.empty:
-        return int(user_row.iloc[0]['KIN']), user_row.iloc[0]['生日']
+    row = df_users[df_users['姓名'] == name]
+    if not row.empty: return int(row.iloc[0]['KIN']), row.iloc[0]['生日']
     return None, None
 
 def calculate_composite(kin_a, kin_b):

@@ -183,15 +183,44 @@ def get_psi_kin(date_obj):
     finally: conn.close()
     return res
 
+def get_kin_from_seal_tone(s, t):
+    """
+    輔助函式：將圖騰(1-20)與調性(1-13)轉回 KIN(1-260)
+    公式推導：k = ((t - s) % 13) * 40 + s
+    """
+    val = ((t - s) % 13) * 40 + s
+    if val > 260: val -= 260
+    return val
+
 def get_goddess_kin(kin):
-    # 女神印記計算：隱藏印記 + 130
-    o = get_oracle(kin)
-    # 算出隱藏印記的 KIN
-    occ_kin = (o['occult']['s'] + (o['occult']['t']-1)*20 -1)%260 + 1
+    """
+    計算女神力量印記 (修正版)
+    定義：出生主印記五個印記 (主/支/擴/引/推) 的 KIN 加總
+    規則：總和除以 260 取餘數，若為 0 則為 260
+    """
+    # 1. 取得五大神諭的 圖騰(s) 與 調性(t)
+    oracle = get_oracle(kin)
     
-    g = (occ_kin + 130) % 260
-    if g==0: g=260
-    return {"KIN": g, "Info": get_full_kin_data(g), "Base_KIN": occ_kin}
+    # 2. 將五個位置轉換回 KIN 數值
+    k_destiny = kin  # 主印記本身
+    k_analog = get_kin_from_seal_tone(oracle['analog']['s'], oracle['analog']['t'])
+    k_antipode = get_kin_from_seal_tone(oracle['antipode']['s'], oracle['antipode']['t'])
+    k_guide = get_kin_from_seal_tone(oracle['guide']['s'], oracle['guide']['t'])
+    k_occult = get_kin_from_seal_tone(oracle['occult']['s'], oracle['occult']['t'])
+    
+    # 3. 加總
+    total_sum = k_destiny + k_analog + k_antipode + k_guide + k_occult
+    
+    # 4. 取餘數 (MOD 260)
+    g_kin = total_sum % 260
+    if g_kin == 0: g_kin = 260
+    
+    return {
+        "KIN": g_kin, 
+        "Info": get_full_kin_data(g_kin), 
+        "Base_KIN": kin, # 紀錄源頭 KIN
+        "Sum_Details": [k_destiny, k_analog, k_antipode, k_guide, k_occult] # (除錯用) 紀錄五個組成 KIN
+    }
 
 # --- 7. 其他應用 ---
 def calculate_equivalent_kin(kin):
@@ -384,4 +413,5 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 

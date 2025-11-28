@@ -23,7 +23,7 @@ SAFE_DATE = datetime.date(1990, 1, 1)
 st.markdown("""
 <style>
     /* ==================================
-       1. 全域背景與基礎設定 
+       1. 全域與側邊欄設定
        ================================== */
     .stApp { 
         background-color: #0e1117; 
@@ -31,17 +31,15 @@ st.markdown("""
         font-size: 18px;
     }
     
-    /* 側邊欄背景設定 */
     section[data-testid="stSidebar"] {
         background-color: #262730;
         color: #ffffff;
     }
     
-    /* 標題顏色 */
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 輸入元件標籤 (Labels)
+       2. 標題文字 (Labels)
        ================================== */
     .stSelectbox label p, 
     .stDateInput label p, 
@@ -55,53 +53,56 @@ st.markdown("""
     }
 
     /* ==================================
-       3. 單選按鈕 (Radio) - 修正看不見字的問題
+       3. 單選按鈕 (Radio) - 終極修復版
        ================================== */
     
-    /* (A) 按鈕容器設定 */
+    /* (A) 設定按鈕外觀 (圓角、邊距) */
     div[role="radiogroup"] label {
+        background-color: rgba(255, 255, 255, 0.1); /* 未選中時的底色 */
         padding: 12px 15px !important;
         margin-bottom: 8px !important;
         border-radius: 10px !important;
-        transition: all 0.3s ease;
         border: 1px solid transparent;
-        background-color: rgba(255, 255, 255, 0.05); 
-    }
-    
-    /* (B) 未選中時的文字：白色 */
-    div[role="radiogroup"] label p,
-    div[role="radiogroup"] label div {
-        color: #ffffff !important;
-        font-size: 18px !important;
+        transition: background-color 0.3s;
     }
 
-    /* (C) 滑鼠移過去 (Hover) */
+    /* (B) 修正文字顏色：未選中 -> 白色 */
+    div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
+        color: #ffffff !important;
+        font-size: 18px !important;
+        font-weight: normal;
+    }
+
+    /* (C) 滑鼠懸停效果 */
     div[role="radiogroup"] label:hover {
         background-color: #444444 !important;
     }
 
-    /* (D) ✨ 已選中 (Selected) - 金色背景 */
+    /* (D) 選中狀態 (Selected) -> 金色背景 */
     div[role="radiogroup"] label:has(input:checked) {
         background-color: #d4af37 !important;
         border: 1px solid #d4af37;
         box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
     }
 
-    /* (E) 🚨 關鍵修正：已選中時，強制所有內容變黑色 🚨 */
-    /* 使用 * 通配符，確保無論是 p, div, span 還是 markdown 內容，全部變黑 */
-    div[role="radiogroup"] label:has(input:checked) * {
+    /* (E) 選中狀態 -> 強制文字變黑色 */
+    div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
         font-weight: 900 !important;
-        font-size: 19px !important;
     }
-    
-    /* (F) 隱藏原本的小圓點 */
-    div[role="radiogroup"] label div:first-child {
-        display: none; 
+
+    /* (F) 隱藏圓點 (修正版：只隱藏圓形圖示，不隱藏文字容器) */
+    /* 透過選取不包含 stMarkdownContainer 的 div 來隱藏圓點 */
+    div[role="radiogroup"] label > div:first-child:not(:has(div[data-testid="stMarkdownContainer"])) {
+        display: none !important;
+    }
+    /* 備用方案：如果上方語法失效，將圓點寬度設為 0 */
+    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {
+        margin-left: 0 !important; /* 修正文字縮排 */
     }
 
     /* ==================================
-       4. 其他既有樣式
+       4. 其他樣式 (維持不變)
        ================================== */
     div[data-baseweb="select"] div { font-size: 18px !important; }
     input[type="text"], input[type="number"] { font-size: 18px !important; }
@@ -512,6 +513,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

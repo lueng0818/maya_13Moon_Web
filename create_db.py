@@ -20,21 +20,20 @@ def read_csv_robust(file_path, **kwargs):
         except: continue
     return None
 
-# 修改 create_db.py 的 init_db 函式
-
 def init_db():
     print(f"🚀 開始建置資料庫: {DB_NAME}...")
     conn = sqlite3.connect(DB_NAME)
     
-    # 1. 參照表 (加入新成員：對應瑪雅生日)
+    # 1. 參照表設定 (包含關鍵的 13:28 對照表)
+    # 格式: (CSV關鍵字, 資料庫表名, 索引欄位)
     tables_config = [
         ("kin_start_year", "Kin_Start", '年份'), 
         ("month_day_accum", "Month_Accum", '月份'), 
         ("kin_basic_info", "Kin_Basic", 'KIN'), 
         ("PSI印記對照表", "PSI_Bank", '月日'),
         ("女神印記", "Goddess_Seal", 'KIN'),
-        # ✨ 新增這行：載入 13:28 對照表
-        ("對應瑪雅生日", "Maya_1328_Map", "月日")
+        # 👇 關鍵！一定要有這一行，程式才會去讀新的 CSV
+        ("對應瑪雅生日", "Maya_1328_Map", "月日") 
     ]
 
     for kw, table, idx in tables_config:
@@ -43,28 +42,26 @@ def init_db():
             print(f"處理檔案: {f} -> 表格: {table}")
             df = read_csv_robust(f)
             if df is not None:
-                # 清理欄位名稱
+                # 清理欄位名稱 (移除前後空白)
                 df.columns = [str(c).strip() for c in df.columns]
                 
-                # 數值欄位處理
+                # 數值欄位轉型 (避免數字變文字)
                 if 'PSI印記' in df.columns:
                     df['PSI印記'] = pd.to_numeric(df['PSI印記'], errors='coerce').fillna(0).astype(int)
                 if 'KIN' in df.columns: 
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
                 df.to_sql(table, conn, if_exists="replace", index=False)
-                # 建立索引加快查詢
                 if idx in df.columns: 
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table} ON {table} ({idx})")
         else:
-            print(f"⚠️ 找不到關鍵字 '{kw}' 的 CSV 檔案！")
+            print(f"⚠️ 找不到關鍵字 '{kw}' 的 CSV 檔案，將跳過建立 {table}！")
 
-    # 2. 核心資料
+    # 2. 核心資料 (卓爾金曆、矩陣、易經...)
     for kw, table in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing"), ("星際年", "Star_Years")]:
         f = find_file(kw)
         if f:
             if kw == "矩陣": 
-                # 矩陣特殊處理邏輯 (簡化版，沿用您之前的邏輯或保持現狀)
                 try:
                     df = read_csv_robust(f, header=[0, 1])
                     new_cols = []
@@ -91,7 +88,7 @@ def init_db():
                 if kw != "矩陣": df.columns = [str(c).strip() for c in df.columns]
                 df.to_sql(table, conn, if_exists="replace", index=False)
                 
-    # 3. 通訊錄 (保留資料)
+    # 3. 確保使用者表格存在
     conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
     
     conn.close()
@@ -99,4 +96,3 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-

@@ -232,6 +232,7 @@ def get_goddess_kin(kin):
 def get_maya_calendar_info(date_obj):
     conn = get_db()
     
+    # 預設回傳值
     res = {
         "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
         "Heptad_Path": "-", "Plasma": "-", "Vinal": "-",
@@ -239,47 +240,60 @@ def get_maya_calendar_info(date_obj):
     }
 
     try:
-        # 1. 製作查詢鑰匙
-        m = date_obj.month
-        d = date_obj.day
-        keys = [
-            f"{m}月{d}日",                 
-            date_obj.strftime("%m月%d日"),
-            f"{m}/{d}",
-            f"{m:02d}/{d:02d}",
-            f"{m}-{d}"
-        ]
+        # 1. 讀取目標日期
+        target_m = date_obj.month
+        target_d = date_obj.day
         
-        # 2. 查詢 Maya_1328_Map
-        placeholders = ','.join(['?'] * len(keys))
-        sql = f"""
-            SELECT * FROM Maya_1328_Map 
-            WHERE 月日 IN ({placeholders}) 
-            OR 國曆生日 IN ({placeholders})
-        """
-        params = tuple(keys) + tuple(keys)
+        # 2. 嘗試讀取資料表 (核彈級解法：直接抓出來用 Python 解析)
+        # 檢查表格是否存在
+        check_table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Maya_1328_Map'").fetchone()
         
-        row = conn.execute(sql, params).fetchone()
+        found_row = None
         
-        if row:
+        if check_table:
+            df = pd.read_sql("SELECT * FROM Maya_1328_Map", conn)
+            
+            for _, row in df.iterrows():
+                # 抓取日期文字 (優先看 '月日', 次看 '國曆生日')
+                raw_text = str(row.get('月日', row.get('國曆生日', '')))
+                
+                # 使用正規表達式抓數字 (忽略中文、斜線、空格)
+                # 例如 "07月26日" -> ['07', '26']
+                numbers = re.findall(r'\d+', raw_text)
+                
+                if len(numbers) >= 2:
+                    m = int(numbers[0])
+                    d = int(numbers[1])
+                    
+                    if m == target_m and d == target_d:
+                        found_row = row
+                        break
+        else:
+            print("⚠️ 警告：資料庫中找不到 Maya_1328_Map 表格，請執行強制重建！")
+
+        # 3. 填入資料
+        if found_row is not None:
             res.update({
-                "Maya_Date": row.get('瑪雅生日', '-'),
-                "Maya_Month": row.get('瑪雅月', '-'),
-                "Maya_Week": row.get('瑪雅週', '-'),
-                "Heptad_Path": row.get('七價路徑', '-').replace('\n', ' '), 
-                "Plasma": row.get('等離子日', '-').replace('\n', ' '),
-                "Vinal": row.get('Vinal 肯定句', '-'),
+                "Maya_Date": found_row.get('瑪雅生日', '-'),
+                "Maya_Month": found_row.get('瑪雅月', '-'),
+                "Maya_Week": found_row.get('瑪雅週', '-'),
+                "Heptad_Path": found_row.get('七價路徑', '-').replace('\n', ' '), 
+                "Plasma": found_row.get('等離子日', '-').replace('\n', ' '),
+                "Vinal": found_row.get('Vinal 肯定句', '-'),
                 "Status": "查詢成功"
             })
         else:
-            if m == 2 and d == 29:
+            # 處理特殊日期 (若 CSV 沒寫)
+            if target_m == 2 and target_d == 29:
                 res.update({"Maya_Date": "0.0.Hunab Ku", "Maya_Month": "無時間月"})
-            elif m == 7 and d == 25:
+            elif target_m == 7 and target_d == 25:
                 res.update({"Maya_Date": "Day Out of Time", "Maya_Month": "無時間日"})
+            else:
+                print(f"13:28 查無對應日期: {target_m}/{target_d}")
 
-        # 3. 查詢星際年
+        # 4. 查詢星際年 (維持不變)
         start_year = date_obj.year
-        if (m < 7) or (m == 7 and d < 26): start_year -= 1
+        if (target_m < 7) or (target_m == 7 and target_d < 26): start_year -= 1
         
         try:
             row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
@@ -462,4 +476,5 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 

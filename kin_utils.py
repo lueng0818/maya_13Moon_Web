@@ -3,24 +3,21 @@ import datetime
 import math
 import base64
 import os
-import re
-
-# 判斷是否在 Railway 環境 (通常 Railway 不會特別設這個，但我們可以偵測路徑)
-if os.path.exists("/app/storage"):
-    DB_PATH = "/app/storage/13moon.db"
-else:
-    DB_PATH = "13moon.db" # 本地開發用
 import pandas as pd
+import re  # 用於 PSI 暴力搜尋
 
 DB_PATH = "13moon.db"
 
-# --- 1. 靜態資源設定 ---
-SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
+# --- 1. 靜態資源與常數設定 ---
+SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
+# 注意：SEALS_NAMES 索引 0 為空字串，方便對應 1-20
+
+# 建立圖檔對照表
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
-# ✨ 更新後的波符十三問
+# 波符十三問 (更新版)
 TONE_QUESTIONS = {
     1: "生命的方向：靈魂的方向，前進的目標。也可以說使命和任務最重要的起始點。",
     2: "生命的挑戰：靈魂的黑暗面，包括心理陰影，比較恐懼的方面是什麼？",
@@ -37,7 +34,7 @@ TONE_QUESTIONS = {
     13: "靈魂的目的地：你要成為什麼狀態的你、如何分享愛呢？"
 }
 
-# --- 2. 輔助函數 ---
+# --- 2. 資料庫與基礎函數 ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -53,11 +50,9 @@ def get_year_range():
     try:
         conn = get_db()
         res = conn.execute("SELECT MIN(年份), MAX(年份) FROM Kin_Start").fetchone()
+        conn.close()
         if res and res[0]: return int(res[0]), int(res[1])
     except: pass
-    finally: 
-        try: conn.close() 
-        except: pass
     return default_min, default_max
 
 # --- 3. KIN 計算邏輯 ---
@@ -118,8 +113,11 @@ def get_full_kin_data(kin):
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
-    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
-    data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
+    
+    # 修正圖檔對應，避免 KeyError
+    data['seal_img'] = SEAL_FILES.get(s_num, f"{str(s_num).zfill(2)}.png")
+    data['tone_img'] = TONE_FILES.get(t_num, f"tone-{t_num}.png")
+    
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
@@ -137,32 +135,22 @@ def get_main_sign_text(kin_num):
     finally: conn.close()
     return "查無印記名稱"
 
-# --- 5. 五大神諭 (關鍵修正) ---
+# --- 5. 五大神諭 (修正版) ---
 def get_oracle(kin):
-    """
-    計算五大神諭 (Corrected Logic)
-    - Guide, Analog, Antipode 調性相同 (t)
-    - Occult 調性互補 (sum=14)
-    """
-    s = (kin - 1) % 20 + 1  # 主圖騰 (1-20)
-    t = (kin - 1) % 13 + 1  # 主調性 (1-13)
+    s = (kin - 1) % 20 + 1  
+    t = (kin - 1) % 13 + 1  
     
-    # 1. 支持 (Analog): 圖騰相加 19, 調性相同
     ana_s = 19 - s
     if ana_s <= 0: ana_s += 20
     ana_t = t
     
-    # 2. 擴展 (Antipode): 圖騰相差 10, 調性相同
     anti_s = (s + 10) % 20
     if anti_s == 0: anti_s = 20
     anti_t = t
     
-    # 3. 推動/隱藏 (Occult): 圖騰相加 21, 調性相加 14
     occ_s = 21 - s
     occ_t = 14 - t
     
-    # 4. 引導 (Guide): 調性相同, 圖騰依調性公式計算
-    # 規則: 調性除以5的餘數決定位移 (0, 12, 4, 16, 8)
     offset_map = {1:0, 2:12, 3:4, 4:16, 0:8} 
     offset = offset_map[t % 5]
     guide_s = (s + offset) % 20
@@ -177,32 +165,33 @@ def get_oracle(kin):
         "guide": {"s":guide_s, "t":guide_t} 
     }
 
-# --- 6. PSI 與 女神 ---
+def get_kin_from_seal_tone(s, t):
+    """將圖騰與調性轉回 KIN"""
+    val = ((t - s) % 13) * 40 + s
+    if val > 260: val -= 260
+    return val
+
+# --- 6. PSI 與 女神 (包含暴力搜尋與總和修正) ---
 def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        # 🎯 核彈級解法：不依賴 SQL 字串比對，直接把整張表抓出來 (才366筆，速度很快)
+        # 核彈級解法：直接把 PSI_Bank 抓出來用 Python 解析
+        # 避免資料庫日期格式不統一的問題
         df = pd.read_sql("SELECT * FROM PSI_Bank", conn)
         
         target_m = date_obj.month
         target_d = date_obj.day
-        
         found_row = None
         
-        # 逐行檢查，只看數字，不看中文或符號
         for _, row in df.iterrows():
-            # 優先檢查 '月日' 欄位，沒有就檢查 '國曆生日'
             raw_text = str(row.get('月日', row.get('國曆生日', '')))
-            
-            # 使用正規表達式抓出所有數字 (例如 "04月14日" -> ['04', '14'])
+            # 抓出字串中所有數字
             numbers = re.findall(r'\d+', raw_text)
             
             if len(numbers) >= 2:
                 m = int(numbers[0])
                 d = int(numbers[1])
-                
-                # 如果月和日都對上了，就是這一筆！
                 if m == target_m and d == target_d:
                     found_row = row
                     break
@@ -216,53 +205,94 @@ def get_psi_kin(date_obj):
                 "Maya_Date": found_row.get('瑪雅生日', '-')
             }
         else:
-            print(f"PSI 暴力搜尋失敗: {target_m}/{target_d}")
-
+            print(f"PSI 查詢失敗: {target_m}/{target_d}")
+            
     except Exception as e:
-        print(f"PSI 查詢錯誤: {e}")
+        print(f"PSI Error: {e}")
     finally: conn.close()
     return res
-    
-def get_kin_from_seal_tone(s, t):
-    """
-    輔助函式：將圖騰(1-20)與調性(1-13)轉回 KIN(1-260)
-    公式推導：k = ((t - s) % 13) * 40 + s
-    """
-    val = ((t - s) % 13) * 40 + s
-    if val > 260: val -= 260
-    return val
 
 def get_goddess_kin(kin):
-    """
-    計算女神力量印記 (修正版)
-    定義：出生主印記五個印記 (主/支/擴/引/推) 的 KIN 加總
-    規則：總和除以 260 取餘數，若為 0 則為 260
-    """
-    # 1. 取得五大神諭的 圖騰(s) 與 調性(t)
+    """女神力量：五大神諭 KIN 之和"""
     oracle = get_oracle(kin)
     
-    # 2. 將五個位置轉換回 KIN 數值
-    k_destiny = kin  # 主印記本身
+    k_destiny = kin
     k_analog = get_kin_from_seal_tone(oracle['analog']['s'], oracle['analog']['t'])
     k_antipode = get_kin_from_seal_tone(oracle['antipode']['s'], oracle['antipode']['t'])
     k_guide = get_kin_from_seal_tone(oracle['guide']['s'], oracle['guide']['t'])
     k_occult = get_kin_from_seal_tone(oracle['occult']['s'], oracle['occult']['t'])
     
-    # 3. 加總
     total_sum = k_destiny + k_analog + k_antipode + k_guide + k_occult
-    
-    # 4. 取餘數 (MOD 260)
     g_kin = total_sum % 260
     if g_kin == 0: g_kin = 260
     
-    return {
-        "KIN": g_kin, 
-        "Info": get_full_kin_data(g_kin), 
-        "Base_KIN": kin, # 紀錄源頭 KIN
-        "Sum_Details": [k_destiny, k_analog, k_antipode, k_guide, k_occult] # (除錯用) 紀錄五個組成 KIN
+    return {"KIN": g_kin, "Info": get_full_kin_data(g_kin), "Base_KIN": kin}
+
+# --- 7. 13:28 曆法 (查表版) ---
+def get_maya_calendar_info(date_obj):
+    conn = get_db()
+    
+    res = {
+        "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
+        "Heptad_Path": "-", "Plasma": "-", "Vinal": "-",
+        "Solar_Year": "未知", "Status": "查無資料"
     }
 
-# --- 7. 其他應用 ---
+    try:
+        # 1. 製作查詢鑰匙
+        m = date_obj.month
+        d = date_obj.day
+        keys = [
+            f"{m}月{d}日",                 
+            date_obj.strftime("%m月%d日"),
+            f"{m}/{d}",
+            f"{m:02d}/{d:02d}",
+            f"{m}-{d}"
+        ]
+        
+        # 2. 查詢 Maya_1328_Map
+        placeholders = ','.join(['?'] * len(keys))
+        sql = f"""
+            SELECT * FROM Maya_1328_Map 
+            WHERE 月日 IN ({placeholders}) 
+            OR 國曆生日 IN ({placeholders})
+        """
+        params = tuple(keys) + tuple(keys)
+        
+        row = conn.execute(sql, params).fetchone()
+        
+        if row:
+            res.update({
+                "Maya_Date": row.get('瑪雅生日', '-'),
+                "Maya_Month": row.get('瑪雅月', '-'),
+                "Maya_Week": row.get('瑪雅週', '-'),
+                "Heptad_Path": row.get('七價路徑', '-').replace('\n', ' '), 
+                "Plasma": row.get('等離子日', '-').replace('\n', ' '),
+                "Vinal": row.get('Vinal 肯定句', '-'),
+                "Status": "查詢成功"
+            })
+        else:
+            if m == 2 and d == 29:
+                res.update({"Maya_Date": "0.0.Hunab Ku", "Maya_Month": "無時間月"})
+            elif m == 7 and d == 25:
+                res.update({"Maya_Date": "Day Out of Time", "Maya_Month": "無時間日"})
+
+        # 3. 查詢星際年
+        start_year = date_obj.year
+        if (m < 7) or (m == 7 and d < 26): start_year -= 1
+        
+        try:
+            row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
+            if row_y: res['Solar_Year'] = row_y['對應星際年']
+            else: res['Solar_Year'] = f"NS 1.{start_year - 1987 + 30}"
+        except: pass
+
+    except Exception as e:
+        print(f"13:28 Error: {e}")
+    finally: conn.close()
+    return res
+
+# --- 8. 其他應用 (對等、波符、合盤) ---
 def calculate_equivalent_kin(kin):
     conn = get_db()
     res = {}
@@ -287,97 +317,6 @@ def get_bmu_from_coord(coord):
         return row[0] if row else 0
     except: return 0
     finally: conn.close()
-
-def get_maya_calendar_info(date_obj):
-    conn = get_db()
-    
-    # 預設回傳值
-    res = {
-        "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
-        "Heptad_Path": "-", "Plasma": "-", "Vinal": "-", # 新增 Vinal
-        "Solar_Year": "未知", "Status": "查無資料"
-    }
-
-    try:
-        # 1. 製作查詢鑰匙 (相容各種日期寫法)
-        m = date_obj.month
-        d = date_obj.day
-        keys = [
-            f"{m}月{d}日",                 # 7月26日
-            date_obj.strftime("%m月%d日"),  # 07月26日
-            f"{m}/{d}",
-            f"{m:02d}/{d:02d}",
-            f"{m}-{d}"
-        ]
-        
-        # 2. 查詢 Maya_1328_Map 表格
-        placeholders = ','.join(['?'] * len(keys))
-        sql = f"""
-            SELECT * FROM Maya_1328_Map 
-            WHERE 月日 IN ({placeholders}) 
-            OR 國曆生日 IN ({placeholders})
-        """
-        params = tuple(keys) + tuple(keys)
-        
-        row = conn.execute(sql, params).fetchone()
-        
-        if row:
-            # 成功查到資料，填入結果
-            res.update({
-                "Maya_Date": row.get('瑪雅生日', '-'),
-                "Maya_Month": row.get('瑪雅月', '-'),
-                "Maya_Week": row.get('瑪雅週', '-'),
-                "Heptad_Path": row.get('七價路徑', '-').replace('\n', ' '), # 處理換行符號
-                "Plasma": row.get('等離子日', '-').replace('\n', ' '),
-                "Vinal": row.get('Vinal 肯定句', '-'), # 讀取新欄位
-                "Status": "查詢成功"
-            })
-        else:
-            # 處理特殊日期 (如 2/29 若 CSV 沒寫)
-            if m == 2 and d == 29:
-                res.update({"Maya_Date": "0.0.Hunab Ku", "Maya_Month": "無時間月"})
-            elif m == 7 and d == 25:
-                res.update({"Maya_Date": "Day Out of Time", "Maya_Month": "無時間日"})
-            else:
-                res['Status'] = "資料庫無此日期"
-
-        # 3. 查詢星際年 (維持不變)
-        start_year = date_obj.year
-        if (m < 7) or (m == 7 and d < 26): start_year -= 1
-        
-        try:
-            row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
-            if row_y: res['Solar_Year'] = row_y['對應星際年']
-            else: res['Solar_Year'] = f"NS 1.{start_year - 1987 + 30}"
-        except: pass
-
-    except Exception as e:
-        print(f"13:28 查表錯誤: {e}")
-    finally:
-        conn.close()
-        
-    return res
-
-        # 4. 查詢流年名稱 (維持資料庫查詢，或若無資料則顯示 NS 年份)
-        # 嘗試從資料庫抓取 "星際年" (如果有該表格)
-        try:
-            row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
-            if row_y:
-                res['Solar_Year'] = row_y['對應星際年']
-            else:
-                # 備用顯示
-                res['Solar_Year'] = f"NS 1.{start_year - 1987 + 30}" # 簡單推算
-        except:
-            pass
-
-    except Exception as e:
-        print(f"13:28 計算錯誤: {e}")
-        res['Status'] = "計算失敗"
-        
-    finally:
-        conn.close()
-        
-    return res
 
 def get_week_key_sentence(week_name):
     conn = get_db()
@@ -430,7 +369,7 @@ def get_telektonon_info(kin, maya_cal):
         res['Warrior_Cube'] = f"圖騰 {s_id} ({SEALS_NAMES[s_id]})"
         
         m_day = maya_cal.get('Maya_Date', '').split('.')[-1]
-        if m_day and m_day != '-':
+        if m_day and m_day.isdigit():
             dn = int(m_day)
             res['Turtle_Day'] = f"第 {dn} 天"
             
@@ -482,7 +421,7 @@ def calculate_life_castle(birth_date):
 def save_user_data(name, dob_str, kin, main_sign):
     conn = get_db()
     try:
-        conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
         if conn.execute("SELECT COUNT(*) FROM Users WHERE 姓名=?", (name,)).fetchone()[0] == 0:
             conn.execute("INSERT INTO Users (姓名, 生日, KIN, 主印記) VALUES (?, ?, ?, ?)", (name, dob_str, kin, main_sign))
             conn.commit(); return True, "成功"
@@ -510,7 +449,7 @@ def delete_user_data(names):
 def get_user_list():
     conn = get_db()
     try:
-        conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
         return pd.read_sql("SELECT 姓名, 生日, KIN, 主印記 FROM Users", conn)
     except: return pd.DataFrame()
     finally: conn.close()
@@ -523,12 +462,3 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
-
-
-
-
-
-
-
-
-

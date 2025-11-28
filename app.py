@@ -379,7 +379,7 @@ elif mode == "個人流年查詢":
                 with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                 with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 
-# 3. 52流年 (四色城堡 + 家族輪替 + Radio修復版)
+# 3. 52流年 (四色城堡 + 最終版面修復)
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
     
@@ -388,10 +388,10 @@ elif mode == "52流年城堡":
     with col_y: sy = st.number_input("起始年份 (通常為出生年)", 1900, 2100, d.year)
     
     if st.button("計算生命城堡"):
+        # 1. 基礎計算與資料獲取
         start_date = datetime.date(sy, d.month, d.day)
         bk, _ = calculate_kin_v2(start_date)
         if not bk: bk = calculate_kin_math(start_date)
-        
         birth_info = get_full_kin_data(bk)
         family_name = birth_info.get('家族', '未知')
         
@@ -413,11 +413,12 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版 (使用 span tags)
+        # 3. 定義渲染單一城堡 (13年) - 最終修復版 (使用 span tags)
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
-                cols = st.columns(cols_per_row)
+                # 每一行新的 st.columns(4)
+                cols = st.columns(cols_per_row) 
                 for j in range(cols_per_row):
                     if i + j < 13:
                         r = data_subset[i + j]
@@ -442,7 +443,7 @@ elif mode == "52流年城堡":
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
-                            # 🚨 最終修正：使用 <span> 標籤鎖定顏色 (確保文字在淺色背景上顯示黑色)
+                            # 🚨 關鍵：使用 <span> 標籤鎖定顏色 (解決白字隱形)
                             st.markdown(
                                 f"""<div style='background:{bg}; border:{border}; border-radius:10px; padding:10px 5px; text-align:center; min-height:160px; box-shadow:{box_shadow}; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
                                     
@@ -469,6 +470,7 @@ elif mode == "52流年城堡":
         target_data = path[:52]
         base_age_offset = 0
         
+        # 4. 週期選擇 (Radio Button)
         if current_age > 51:
             st.info(f"🎂 您目前 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
             cycle_choice = st.radio("請選擇要查看的生命週期：", ["🧬 第二生命荷包 (52-103歲)", "🔄 回顧：第一生命荷包 (0-51歲)"], horizontal=True)
@@ -480,20 +482,23 @@ elif mode == "52流年城堡":
                 base_age_offset = 0
         
         st.markdown("---")
-        c_tabs = st.tabs(["🔴 紅色東方城堡", "⚪ 白色北方城堡", "🔵 藍色西方城堡", "🟡 黃色南方城堡"])
         
-        with c_tabs[0]:
-            st.caption(f"🚀 **啟動之庭** | 歲數：{base_age_offset}~{base_age_offset+12} 歲")
-            render_13_year_castle(target_data[0:13])
-        with c_tabs[1]:
-            st.caption(f"⚔️ **淨化之庭** | 歲數：{base_age_offset+13}~{base_age_offset+25} 歲")
-            render_13_year_castle(target_data[13:26])
-        with c_tabs[2]:
-            st.caption(f"🦋 **蛻變之庭** | 歲數：{base_age_offset+26}~{base_age_offset+38} 歲")
-            render_13_year_castle(target_data[26:39])
-        with c_tabs[3]:
-            st.caption(f"☀️ **收成之庭** | 歲數：{base_age_offset+39}~{base_age_offset+51} 歲")
-            render_13_year_castle(target_data[39:52])
+        # 5. 城堡分頁 (Tabs)
+        with st.container(): # 🚨 關鍵：用 container 包住，幫助 Streamlit 計算寬度 🚨
+            c_tabs = st.tabs(["🔴 紅色東方城堡", "⚪ 白色北方城堡", "🔵 藍色西方城堡", "🟡 黃色南方城堡"])
+            
+            with c_tabs[0]:
+                st.caption(f"🚀 **啟動之庭** | 歲數：{base_age_offset}~{base_age_offset+12} 歲")
+                render_13_year_castle(target_data[0:13])
+            with c_tabs[1]:
+                st.caption(f"⚔️ **淨化之庭** | 歲數：{base_age_offset+13}~{base_age_offset+25} 歲")
+                render_13_year_castle(target_data[13:26])
+            with c_tabs[2]:
+                st.caption(f"🦋 **蛻變之庭** | 歲數：{base_age_offset+26}~{base_age_offset+38} 歲")
+                render_13_year_castle(target_data[26:39])
+            with c_tabs[3]:
+                st.caption(f"☀️ **收成之庭** | 歲數：{base_age_offset+39}~{base_age_offset+51} 歲")
+                render_13_year_castle(target_data[39:52])
 
 # 4. PSI (含神諭波符)
 elif mode == "PSI查詢":
@@ -868,4 +873,5 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+
 

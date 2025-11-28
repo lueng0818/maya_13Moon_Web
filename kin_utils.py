@@ -327,20 +327,117 @@ def get_maya_calendar_info(date_obj):
     return res
 
 # --- 8. 其他應用 (對等、波符、合盤) ---
-def calculate_equivalent_kin(kin):
+def get_matrix_val_by_pos(table, pos):
+    """給定座標，查數值"""
     conn = get_db()
-    res = {}
     try:
-        row = conn.execute("SELECT 時間矩陣_矩陣位置, 空間矩陣_矩陣位置, 共時矩陣_矩陣位置 FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
-        if row:
-            tc, sc, sync = row['時間矩陣_矩陣位置'], row['空間矩陣_矩陣位置'], row['共時矩陣_矩陣位置']
-            bt, bs, bsyn = get_bmu_from_coord(tc), get_bmu_from_coord(sc), get_bmu_from_coord(sync)
-            tfi = bt + bs + bsyn
-            eq = tfi % 260
-            if eq==0 and tfi>0: eq=260
-            res = {"TFI": tfi, "Eq_Kin": eq, "Eq_Info": get_full_kin_data(eq), "Coords": [tc, sc, sync], "BMUs": [bt, bs, bsyn]}
-    except: pass
+        row = conn.execute(f"SELECT Value FROM {table} WHERE Position = ?", (pos,)).fetchone()
+        return row['Value'] if row else 0
+    except: return 0
     finally: conn.close()
+
+def get_matrix_pos_by_val(table, val):
+    """給定數值，查座標"""
+    conn = get_db()
+    try:
+        row = conn.execute(f"SELECT Position FROM {table} WHERE Value = ?", (val,)).fetchone()
+        return row['Position'] if row else None
+    except: return None
+    finally: conn.close()
+
+def calculate_equivalent_kin_new(kin, maya_date_str):
+    """
+    全新對等印記算法：
+    1. 瑪雅生日 -> 時間矩陣座標 -> 三矩陣加總 (Sum1)
+    2. KIN -> 空間矩陣座標 -> 三矩陣加總 (Sum2)
+    3. KIN -> 共時矩陣座標 -> 三矩陣加總 (Sum3)
+    4. 總和 MOD 260
+    """
+    conn = get_db()
+    logs = [] # 紀錄計算過程
+    res = {}
+    
+    try:
+        # --- 步驟 1: 處理瑪雅生日 ---
+        # 格式標準化: 移除前導零 (例如 "01.01" -> "1.1") 以符合對照表
+        try:
+            m_part, d_part = maya_date_str.split('.')
+            clean_maya_date = f"{int(m_part)}.{int(d_part)}"
+        except:
+            clean_maya_date = maya_date_str # fallback
+
+        # 查表: 瑪雅生日 -> 時間矩陣位置
+        row = conn.execute("SELECT 時間矩陣位置 FROM Maya_Time_Map WHERE 瑪雅生日 = ?", (clean_maya_date,)).fetchone()
+        
+        if not row:
+            return {"Error": f"找不到瑪雅生日 {clean_maya_date} 的對應矩陣位置"}
+            
+        pos_1 = row['時間矩陣位置']
+        
+        # 取得三矩陣數值
+        v1_t = get_matrix_val_by_pos("Matrix_Time", pos_1)
+        v1_s = get_matrix_val_by_pos("Matrix_Space", pos_1)
+        v1_y = get_matrix_val_by_pos("Matrix_Sync", pos_1)
+        sum_1 = v1_t + v1_s + v1_y
+        
+        logs.append(f"1️⃣ **時間矩陣路徑**")
+        logs.append(f"瑪雅生日 {clean_maya_date} ➜ 座標 `{pos_1}`")
+        logs.append(f"數值：{v1_t} (時) + {v1_s} (空) + {v1_y} (共) = **{sum_1}**")
+        
+        # --- 步驟 2: 處理 KIN (空間矩陣) ---
+        # 查表: KIN -> 空間矩陣位置
+        pos_2 = get_matrix_pos_by_val("Matrix_Space", kin)
+        
+        if not pos_2:
+            # 備案：如果 KIN 找不到 (極少見)，嘗試找 KIN+260 或其他 BMU 對應，這裡先回傳 0
+            pos_2 = "未知"
+            sum_2 = 0
+            logs.append(f"⚠️ KIN {kin} 在空間矩陣中找不到對應座標")
+        else:
+            v2_t = get_matrix_val_by_pos("Matrix_Time", pos_2)
+            v2_s = get_matrix_val_by_pos("Matrix_Space", pos_2)
+            v2_y = get_matrix_val_by_pos("Matrix_Sync", pos_2)
+            sum_2 = v2_t + v2_s + v2_y
+            
+            logs.append(f"2️⃣ **空間矩陣路徑**")
+            logs.append(f"KIN {kin} ➜ 座標 `{pos_2}`")
+            logs.append(f"數值：{v2_t} (時) + {v2_s} (空) + {v2_y} (共) = **{sum_2}**")
+
+        # --- 步驟 3: 處理 KIN (共時矩陣) ---
+        # 查表: KIN -> 共時矩陣位置
+        pos_3 = get_matrix_pos_by_val("Matrix_Sync", kin)
+        
+        if not pos_3:
+            pos_3 = "未知"
+            sum_3 = 0
+            logs.append(f"⚠️ KIN {kin} 在共時矩陣中找不到對應座標")
+        else:
+            v3_t = get_matrix_val_by_pos("Matrix_Time", pos_3)
+            v3_s = get_matrix_val_by_pos("Matrix_Space", pos_3)
+            v3_y = get_matrix_val_by_pos("Matrix_Sync", pos_3)
+            sum_3 = v3_t + v3_s + v3_y
+            
+            logs.append(f"3️⃣ **共時矩陣路徑**")
+            logs.append(f"KIN {kin} ➜ 座標 `{pos_3}`")
+            logs.append(f"數值：{v3_t} (時) + {v3_s} (空) + {v3_y} (共) = **{sum_3}**")
+
+        # --- 步驟 4: 總結 ---
+        total = sum_1 + sum_2 + sum_3
+        eq_kin = total % 260
+        if eq_kin == 0: eq_kin = 260
+        
+        res = {
+            "Eq_Kin": eq_kin,
+            "Eq_Info": get_full_kin_data(eq_kin),
+            "Logs": logs,
+            "Total": total,
+            "Sums": [sum_1, sum_2, sum_3]
+        }
+        
+    except Exception as e:
+        res = {"Error": str(e)}
+    finally: conn.close()
+    
     return res
 
 def get_bmu_from_coord(coord):
@@ -521,6 +618,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

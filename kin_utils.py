@@ -184,22 +184,28 @@ def get_psi_kin(date_obj):
         m = date_obj.month
         d = date_obj.day
         
-        # 產生各種可能的日期寫法，讓程式更聰明地去對照資料庫
-        qs = [
-            date_obj.strftime("%m月%d日"),  # 04月14日
-            f"{m}月{d}日",                 # 4月14日
+        # 製作 6 把鑰匙 (各種可能的日期寫法)
+        keys = [
+            f"{m}月{d}日",                 # 4月14日 (最常見)
+            date_obj.strftime("%m月%d日"),  # 04月14日 (補零)
             f"{m}/{d}",                    # 4/14
             f"{m:02d}/{d:02d}",            # 04/14
             f"{m}-{d}",                    # 4-14
-            date_obj.strftime("%Y-%m-%d")  # 1969-04-14 (萬一CSV含年份)
+            f"{m:02d}-{d:02d}"             # 04-14
         ]
         
-        # 組合 SQL 查詢語句 (動態產生 OR 條件)
-        placeholders = ' OR '.join(['月日 = ?'] * len(qs))
-        sql = f"SELECT * FROM PSI_Bank WHERE {placeholders} OR 國曆生日 IN ({','.join(['?']*len(qs))})"
+        # 製作 SQL 語法：只要「月日」或是「國曆生日」欄位符合任何一把鑰匙，就抓出來
+        # 這裡用 IN 語法比較簡潔
+        placeholders = ','.join(['?'] * len(keys))
+        sql = f"""
+            SELECT * FROM PSI_Bank 
+            WHERE 月日 IN ({placeholders}) 
+            OR 國曆生日 IN ({placeholders})
+        """
         
-        # 執行查詢 (參數要重複兩次，因為有兩個 IN/OR 區塊)
-        params = tuple(qs) + tuple(qs)
+        # 參數要給兩份 (因為有兩個 IN)
+        params = tuple(keys) + tuple(keys)
+        
         row = conn.execute(sql, params).fetchone()
         
         if row:
@@ -210,6 +216,10 @@ def get_psi_kin(date_obj):
                 "Matrix": row.get('矩陣位置', '-'),
                 "Maya_Date": row.get('瑪雅生日', '-')
             }
+        else:
+            # 萬一還是找不到，印出除錯訊息 (可選)
+            print(f"PSI 查無資料: 嘗試過 {keys}")
+
     except Exception as e:
         print(f"PSI 查詢錯誤: {e}")
     finally: conn.close()
@@ -445,6 +455,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

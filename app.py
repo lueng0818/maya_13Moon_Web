@@ -366,20 +366,74 @@ elif mode == "個人流年查詢":
                 with c_txt:
                     st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 # 3. 52流年
+# 3. 52流年 (智慧延伸版)
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
+    
     col_d, col_y = st.columns([1.5, 1.5])
-    with col_d: d, _ = render_date_selector("castle")
-    with col_y: sy = st.number_input("起始年", 1800, 2100, d.year)
-    if st.button("計算"):
-        path = calculate_life_castle(datetime.date(sy, d.month, d.day))
+    with col_d: d, u = render_date_selector("castle")
+    # 預設起始年為出生年
+    with col_y: sy = st.number_input("起始年份 (通常為出生年)", 1900, 2100, d.year)
+    
+    if st.button("計算生命城堡"):
+        # 1. 取得完整 105 年的資料
+        # 注意：這裡傳入 sy (起始年) 作為基準，確保 KIN 計算正確
+        start_date = datetime.date(sy, d.month, d.day)
+        path = calculate_life_castle(start_date)
+        
+        # 2. 計算目前年齡 (用於判斷是否顯示第二週期)
+        current_year = datetime.date.today().year
+        current_age = current_year - sy
+        
         st.subheader(f"週期起始：{sy} 年")
-        cols = st.columns(4)
-        for i, r in enumerate(path[:52]):
-            with cols[i%4]:
-                inf = r['Info']
-                img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
-                st.markdown(f"<div style='background:{r['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;'><b>{r['Age']}歲</b><br><span style='color:#b8860b'>KIN {r['KIN']}</span><br>{img}<br>{inf.get('波符','')} | {inf.get('主印記','')}</div>", unsafe_allow_html=True)
+        
+        # 3. 準備顯示內容
+        # 定義一個內部函式來渲染卡片迴圈，避免程式碼重複
+        def render_castle_cycle(data_list, start_age_offset):
+            cols = st.columns(4)
+            for i, r in enumerate(data_list):
+                with cols[i % 4]:
+                    inf = r['Info']
+                    
+                    # 判斷是否為「今年」 (高亮顯示)
+                    is_current = (r['Year'] == current_year)
+                    bg_style = "border: 2px solid #d4af37; box-shadow: 0 0 10px #d4af37;" if is_current else f"background:{r['Color']};"
+                    text_color = "#ffffff" if is_current else "#333333" # 高亮時白字，普通時黑字(因為背景是淺色)
+                    if is_current: bg_style += "background: #444;" # 高亮時深色背景
+                    
+                    img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
+                    
+                    st.markdown(
+                        f"""<div style='{bg_style} padding:5px; border-radius:8px; margin-bottom:10px; color:{text_color}; text-align:center; font-size:12px; min-height:100px;'>
+                        <b>{r['Age']}歲 ({r['Year']})</b><br>
+                        <span style='color:#b8860b; font-weight:bold;'>KIN {r['KIN']}</span><br>
+                        {img}<br>
+                        {inf.get('波符','')}波<br>{inf.get('主印記','')}
+                        </div>""", 
+                        unsafe_allow_html=True
+                    )
+
+        # 4. 判斷顯示模式
+        # 如果年齡超過 51，顯示兩個分頁；否則只顯示第一週期
+        if current_age > 51:
+            st.info(f"🎂 您目前約 {current_age} 歲，已進入生命的第二個 52 年螺旋。")
+            tab1, tab2 = st.tabs(["🔄 第一週期 (0-51歲)", "🧬 第二週期 (52-103歲)"])
+            
+            with tab1:
+                st.caption(f"📅 年份：{sy} ~ {sy+51}")
+                render_castle_cycle(path[:52], 0)
+                
+            with tab2:
+                st.caption(f"📅 年份：{sy+52} ~ {sy+103} (第二生命荷包)")
+                render_castle_cycle(path[52:104], 52)
+        else:
+            # 年輕人模式：只顯示第一週期
+            st.caption(f"📅 第一週期：{sy} ~ {sy+51}")
+            render_castle_cycle(path[:52], 0)
+            
+            # 雖然沒超過 51，但也給個按鈕可以偷看未來
+            with st.expander("👀 預覽第二週期 (52-103歲)"):
+                render_castle_cycle(path[52:104], 52)
 
 # 4. PSI/女神/對等
 # 4. PSI (升級版：含神諭與波符)
@@ -786,6 +840,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

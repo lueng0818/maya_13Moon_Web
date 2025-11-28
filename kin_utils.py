@@ -290,23 +290,98 @@ def get_bmu_from_coord(coord):
 
 def get_maya_calendar_info(date_obj):
     conn = get_db()
-    res = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Solar_Year": "未知", "Status": "查無資料"}
+    
+    # 預設回傳值
+    res = {
+        "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
+        "Heptad_Path": "-", "Plasma": "-", 
+        "Solar_Year": "未知", "Status": "計算中"
+    }
+
+    MOON_NAMES = ['', '磁性之月', '月亮之月', '電力之月', '自我存在之月', '超頻之月', '韻律之月', '共振之月', '銀河星系之月', '太陽之月', '行星之月', '光譜之月', '水晶之月', '宇宙之月']
+    PLASMA_NAMES = ['Dali 達利', 'Seli 瑟利', 'Gamma 伽馬', 'Kali 卡利', 'Alpha 阿爾法', 'Limi 利米', 'Silio 西利歐']
+    WEEK_NAMES = ['紅色啟動之週', '白色淨化之週', '藍色蛻變之週', '黃色收成之週']
+
     try:
-        qs = [date_obj.strftime('%m月%d日'), f"{date_obj.month}月{date_obj.day}日", date_obj.strftime('%Y-%m-%d')]
-        for q in qs:
-            row = conn.execute("SELECT * FROM Calendar_Converter WHERE 國曆生日 = ?", (q,)).fetchone()
-            if row:
+        # 1. 處理特殊日期：2/29 (Hunab Ku)
+        if date_obj.month == 2 and date_obj.day == 29:
+            res.update({
+                "Maya_Date": "0.0.Hunab Ku",
+                "Maya_Month": "無時間月",
+                "Maya_Week": "-",
+                "Plasma": "-",
+                "Heptad_Path": "-"
+            })
+        
+        # 2. 處理特殊日期：7/25 (無時間日)
+        elif date_obj.month == 7 and date_obj.day == 25:
+            res.update({
+                "Maya_Date": "Day Out of Time",
+                "Maya_Month": "無時間日",
+                "Maya_Week": "-",
+                "Plasma": "-",
+                "Heptad_Path": "-"
+            })
+            
+        else:
+            # 3. 一般日期計算
+            # 判斷星際年起始點 (每年 7/26)
+            start_year = date_obj.year
+            if (date_obj.month < 7) or (date_obj.month == 7 and date_obj.day < 26):
+                start_year -= 1
+            
+            start_date = datetime.date(start_year, 7, 26)
+            
+            # 計算經過天數 (Day of Year)
+            delta = (date_obj - start_date).days
+            
+            # 修正閏年影響：如果是閏年，且日期在 2/29 之後，天數要減 1 (因為 13月亮曆不計 2/29)
+            # 判斷該星際年是否跨越了閏日 (即 start_year 的隔年是閏年)
+            next_year = start_year + 1
+            is_leap = (next_year % 4 == 0 and next_year % 100 != 0) or (next_year % 400 == 0)
+            if is_leap and date_obj > datetime.date(next_year, 2, 29):
+                delta -= 1
+
+            # 計算月 (1-13) 與 日 (1-28)
+            moon_idx = (delta // 28) + 1
+            day_idx = (delta % 28) + 1
+            
+            # 計算週 (0-3) 與 等離子 (0-6)
+            week_idx = (day_idx - 1) // 7
+            plasma_idx = (day_idx - 1) % 7
+            
+            # 計算七價路徑 (1-52)
+            heptad_path = (moon_idx - 1) * 4 + week_idx + 1
+
+            # 填入結果
+            if 1 <= moon_idx <= 13:
                 res.update({
-                    'Maya_Date': row.get('瑪雅生日','-'), 'Maya_Month': row.get('瑪雅月','-'), 
-                    'Maya_Week': row.get('瑪雅週','-'), 'Heptad_Path': row.get('七價路徑','-'), 
-                    'Plasma': row.get('等離子日','-'), 'Status': "查詢成功"
+                    "Maya_Date": f"{moon_idx}.{day_idx}", # 格式: 月.日
+                    "Maya_Month": f"{MOON_NAMES[moon_idx]} (第{day_idx}天)",
+                    "Maya_Week": WEEK_NAMES[week_idx],
+                    "Plasma": PLASMA_NAMES[plasma_idx],
+                    "Heptad_Path": f"路徑 {heptad_path}"
                 })
-                y = date_obj.year - 1 if (date_obj.month<7 or (date_obj.month==7 and date_obj.day<26)) else date_obj.year
-                s_row = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (y,)).fetchone()
-                res['Solar_Year'] = s_row['對應星際年'] if s_row else f"NS 1.{y-1987+30}"
-                break
-    except: pass
-    finally: conn.close()
+
+        # 4. 查詢流年名稱 (維持資料庫查詢，或若無資料則顯示 NS 年份)
+        # 嘗試從資料庫抓取 "星際年" (如果有該表格)
+        try:
+            row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
+            if row_y:
+                res['Solar_Year'] = row_y['對應星際年']
+            else:
+                # 備用顯示
+                res['Solar_Year'] = f"NS 1.{start_year - 1987 + 30}" # 簡單推算
+        except:
+            pass
+
+    except Exception as e:
+        print(f"13:28 計算錯誤: {e}")
+        res['Status'] = "計算失敗"
+        
+    finally:
+        conn.close()
+        
     return res
 
 def get_week_key_sentence(week_name):
@@ -453,6 +528,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

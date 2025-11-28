@@ -4,16 +4,19 @@ import math
 import base64
 import os
 import pandas as pd
-import re  # 用於 PSI 與 13:28 暴力搜尋
+import re
 
 DB_PATH = "13moon.db"
 
 # --- 1. 靜態資源與常數設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
-
-SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
-TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
+
+# ✨ 關鍵修改：對應新的數字檔名 (01.png ~ 20.png)
+SEAL_FILES = { i: f"{str(i).zfill(2)}.png" for i in range(1, 21) }
+
+# ✨ 關鍵修改：對應新的調性檔名 (tone-1.png ~ tone-13.png)
+TONE_FILES = { i: f"tone-{i}.png" for i in range(1, 14) }
 
 TONE_QUESTIONS = {
     1: "生命的方向：靈魂的方向，前進的目標。也可以說使命和任務最重要的起始點。",
@@ -110,6 +113,7 @@ def get_full_kin_data(kin):
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
     
+    # 圖片對應 (現在使用純數字檔名，非常穩定)
     data['seal_img'] = SEAL_FILES.get(s_num, f"{str(s_num).zfill(2)}.png")
     data['tone_img'] = TONE_FILES.get(t_num, f"tone-{t_num}.png")
     
@@ -283,10 +287,8 @@ def get_maya_calendar_info(date_obj):
     finally: conn.close()
     return res
 
-# --- 8. 對等印記 (高階矩陣算法) ---
-
+# --- 8. 對等印記 (矩陣V5-V17限定) ---
 def get_matrix_val_by_pos(table, pos):
-    """給定座標，查數值"""
     conn = get_db()
     try:
         row = conn.execute(f"SELECT Value FROM {table} WHERE Position = ?", (pos,)).fetchone()
@@ -295,7 +297,6 @@ def get_matrix_val_by_pos(table, pos):
     finally: conn.close()
 
 def get_matrix_pos_by_val(table, val):
-    """給定數值，查座標 (一般用)"""
     conn = get_db()
     try:
         row = conn.execute(f"SELECT Position FROM {table} WHERE Value = ?", (val,)).fetchone()
@@ -304,19 +305,11 @@ def get_matrix_pos_by_val(table, val):
     finally: conn.close()
 
 def calculate_equivalent_kin_new(kin, maya_date_str):
-    """
-    全新對等印記算法 (含 V5-V17 範圍過濾)：
-    1. 瑪雅生日 -> 時間矩陣座標 -> 三矩陣加總 (Sum1)
-    2. KIN -> 空間矩陣座標 -> 三矩陣加總 (Sum2)
-    3. KIN -> 共時矩陣座標 (限 V5-V17) -> 三矩陣加總 (Sum3)
-    4. 總和 MOD 260
-    """
     conn = get_db()
     logs = [] 
     res = {}
     
     try:
-        # 步驟 1: 瑪雅生日路徑
         try:
             m_part, d_part = maya_date_str.split('.')
             clean_maya_date = f"{int(m_part)}.{int(d_part)}"
@@ -338,7 +331,6 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
         logs.append(f"瑪雅生日 {clean_maya_date} ➜ 座標 `{pos_1}`")
         logs.append(f"數值：{v1_t} (時) + {v1_s} (空) + {v1_y} (共) = **{sum_1}**")
         
-        # 步驟 2: 空間矩陣路徑
         pos_2 = get_matrix_pos_by_val("Matrix_Space", kin)
         if not pos_2:
             sum_2 = 0
@@ -352,20 +344,14 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
             logs.append(f"KIN {kin} ➜ 座標 `{pos_2}`")
             logs.append(f"數值：{v2_t} (時) + {v2_s} (空) + {v2_y} (共) = **{sum_2}**")
 
-        # 步驟 3: 共時矩陣路徑 (✨ 關鍵修正：限定 V5-V17 範圍)
-        # 先抓出該 KIN 在共時矩陣的所有位置
         rows_3 = conn.execute("SELECT Position FROM Matrix_Sync WHERE Value = ?", (kin,)).fetchall()
         pos_3 = None
-        
         for r in rows_3:
-            p_str = r['Position'] # 例如 "V11:H2"
-            # 解析 V 數值
+            p_str = r['Position']
             try:
-                # 假設格式 V{num}:H{num}
-                v_part = p_str.split(':')[0] # V11
+                v_part = p_str.split(':')[0] 
                 if v_part.startswith('V'):
                     v_val = int(v_part[1:])
-                    # 範圍檢查
                     if 5 <= v_val <= 17:
                         pos_3 = p_str
                         break
@@ -383,7 +369,6 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
             logs.append(f"KIN {kin} ➜ 座標 `{pos_3}` (V5-V17 區間)")
             logs.append(f"數值：{v3_t} (時) + {v3_s} (空) + {v3_y} (共) = **{sum_3}**")
 
-        # 步驟 4: 總結
         total = sum_1 + sum_2 + sum_3
         eq_kin = total % 260
         if eq_kin == 0: eq_kin = 260

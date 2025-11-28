@@ -557,7 +557,8 @@ elif mode == "國王棋盤":
         with c2: st.success(f"🐢 {tk['Turtle_Color']} | {tk['Turtle_Day']}\n\n{tk.get('Turtle_Desc','')}")
 
 # 6. 人員管理
-with t3:
+elif mode == "人員生日管理":
+    with t3:
         st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
         up = st.file_uploader("匯入 CSV", type="csv")
         
@@ -644,6 +645,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

@@ -6,6 +6,7 @@ import sqlite3
 import base64
 from create_db import init_db
 from kin_utils import *
+import math # 確保 math 函式可用
 
 # --- 1. 頁面基本設定 ---
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
@@ -69,7 +70,7 @@ st.markdown("""
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
 
     /* ==================================
-       3. 按鈕樣式修復 (解決白字白底)
+       3. 按鈕樣式修復
        ================================== */
     .stButton > button {
         background-color: #262730 !important;
@@ -412,12 +413,11 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        # 3. 定義渲染單一城堡 (13年) - 終極顏色與結構修復版
+        # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版 (使用 span tags)
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
-                # 每一行新的 st.columns(4)
-                cols = st.columns(cols_per_row) 
+                cols = st.columns(cols_per_row)
                 for j in range(cols_per_row):
                     if i + j < 13:
                         r = data_subset[i + j]
@@ -434,15 +434,15 @@ elif mode == "52流年城堡":
                             else:
                                 border = "1px solid #999"
                                 bg = r['Color']
-                                txt_col = "#000000" # 強制黑色
+                                txt_col = "#000000" # <-- 強制黑色
                                 box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
-                            # 圖片處理 (確保正確的容錯)
+                            # 圖片處理
                             img_filename = inf.get("seal_img", "")
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
-                            # 🚨 關鍵修正：使用 <span> 標籤鎖定顏色 (確保文字在淺色背景上顯示黑色)
+                            # 🚨 最終修正：使用 <span> 標籤鎖定顏色 (確保文字在淺色背景上顯示黑色)
                             st.markdown(
                                 f"""<div style='background:{bg}; border:{border}; border-radius:10px; padding:10px 5px; text-align:center; min-height:160px; box-shadow:{box_shadow}; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
                                     
@@ -841,4 +841,3 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
-

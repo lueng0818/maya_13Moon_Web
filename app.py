@@ -289,9 +289,8 @@ if mode == "個人星系解碼":
                     **📜 說明：** {data.get('說明','-')}
                     """, unsafe_allow_html=True)
 
-                with st.expander("🧬 441 矩陣"):
-                    st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
-            
+                # ❌ 已移除 🧬 441 矩陣 區塊
+
             with tc2:
                 st.subheader("五大神諭盤")
                 def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
@@ -320,14 +319,10 @@ if mode == "個人星系解碼":
             with st.expander("📜 查看完整 13 天波符"):
                  for w in wz:
                     hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == kin else "border: 1px solid #444;"
-                    
-                    # 圖片容錯
                     img_data = get_img_b64(f"assets/seals/{w['Image']}")
                     img_tag = f'<img src="data:image/png;base64,{img_data}" width="40">' if img_data else '🔮'
-
                     c_img, c_txt = st.columns([0.5, 4])
-                    with c_img:
-                         st.markdown(img_tag, unsafe_allow_html=True)
+                    with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                     with c_txt:
                         st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 
@@ -872,5 +867,6 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+
 
 

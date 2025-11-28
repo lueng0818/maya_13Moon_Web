@@ -24,7 +24,7 @@ def read_csv_robust(file_path, **kwargs):
     return None
 
 def process_matrix_csv(file_path):
-    """處理矩陣表 (雙層標題與去重複欄位)"""
+    """處理矩陣表"""
     try:
         df = read_csv_robust(file_path, header=[0, 1])
         if df is None: return None
@@ -35,7 +35,6 @@ def process_matrix_csv(file_path):
             clean_bottom = str(bottom).replace('\n', '').strip()
             new_columns.append(f"{last_top}_{clean_bottom}")
         
-        # 去重複
         final_cols = []
         counts = {}
         for col in new_columns:
@@ -54,14 +53,16 @@ def init_db():
     if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
-    # 1. 計算與參照表
+    # ----------------------------------------------------
+    # 1. 計算用參照表
+    # ----------------------------------------------------
     ref_tables = [
         ("kin_start_year", "Kin_Start", '年份'), 
         ("month_day_accum", "Month_Accum", '月份'), 
         ("kin_basic_info", "Kin_Basic", 'KIN'), 
         ("PSI印記對照表", "PSI_Bank", '月日'), 
         ("女神印記", "Goddess_Seal", 'KIN'),
-        ("對應瑪雅生日", "Calendar_Converter", '國曆生日'),
+        ("對應瑪雅生日", "Calendar_Converter", '國曆生日'), # 關鍵表格
         ("七價路徑對應祈禱文", "Heptad_Prayer", '七價路徑'),
         ("瑪亞週關鍵句", "Maya_Week_Key", '瑪雅週'),
         ("八度音階", "Octave_Scale", '八度音符')
@@ -73,19 +74,33 @@ def init_db():
             print(f"🔹 匯入 {table_name}: {os.path.basename(f)}")
             df = read_csv_robust(f)
             if df is not None: 
+                # 清理欄位名
                 df.columns = [str(c).strip() for c in df.columns]
+                
+                # 特殊處理：Calendar_Converter 資料清洗
+                if table_name == "Calendar_Converter":
+                    # 確保 '國曆生日' 欄位存在
+                    if '國曆生日' not in df.columns:
+                        df.rename(columns={df.columns[0]: '國曆生日'}, inplace=True)
+                    # 清理資料中的空白 (Trim values)
+                    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+                # KIN 轉數字
                 if 'KIN' in df.columns:
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
                 if index_col in df.columns:
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name.lower()} ON {table_name} ({index_col})")
+            else:
+                print(f"❌ 警告：{table_name} 讀取失敗 (編碼錯誤?)")
+        else:
+            print(f"⚠️ 提醒：找不到包含 '{keyword}' 的 CSV 檔案！")
 
-    # 2. 核心資料 (矩陣、易經、卓爾金)
+    # 2. 核心資料
     for keyword, table_name in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing")]:
         f = find_file(keyword)
         if f:
-            print(f"🔹 匯入 {table_name}: {os.path.basename(f)}")
             if keyword == "矩陣": df = process_matrix_csv(f)
             else: df = read_csv_robust(f)
             
@@ -93,26 +108,9 @@ def init_db():
                 if keyword != "矩陣": df.columns = [str(c).replace('\n', '').strip() for c in df.columns]
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
 
-    # 3. 國王預言棋盤 (NEW)
-    f_king = find_file("國王預言棋盤")
-    if f_king:
-        print(f"🔹 匯入國王棋盤: {os.path.basename(f_king)}")
-        # 棋盤結構較特殊，直接匯入不做太多處理，供前端直接顯示
-        df = read_csv_robust(f_king)
-        if df is not None: df.to_sql("King_Prophecy", conn, if_exists="replace", index=False)
-
-    # 4. 通訊錄 (Users)
+    # 3. 通訊錄
     print("🔹 建立 Users 表格...")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS Users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            姓名 TEXT,
-            生日 TEXT,
-            KIN INTEGER,
-            主印記 TEXT
-        )
-    """)
-    
+    conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
     f_user = find_file("通訊錄")
     if f_user:
         df = read_csv_robust(f_user)
@@ -120,16 +118,13 @@ def init_db():
             try:
                 col_map = {'名字': '姓名', 'Name': '姓名'}
                 df.rename(columns=col_map, inplace=True)
-                required_cols = ['出生年', '出生月', '出生日']
-                if '姓名' in df.columns and all(c in df.columns for c in required_cols):
-                    for c in required_cols: df[c] = pd.to_numeric(df[c], errors='coerce')
-                    df_clean = df.dropna(subset=required_cols).copy()
-                    df_clean['生日'] = df_clean.apply(lambda x: f"{int(x['出生年'])}-{int(x['出生月'])}-{int(x['出生日'])}", axis=1)
-                    
-                    valid_cols = ['姓名', '生日', 'KIN', '主印記']
-                    for vc in valid_cols: 
-                        if vc not in df_clean.columns: df_clean[vc] = None
-                    df_clean[valid_cols].to_sql("Users", conn, if_exists="append", index=False)
+                req = ['出生年', '出生月', '出生日']
+                if '姓名' in df.columns and all(c in df.columns for c in req):
+                    for c in req: df[c] = pd.to_numeric(df[c], errors='coerce')
+                    df = df.dropna(subset=req)
+                    df['生日'] = df.apply(lambda x: f"{int(x['出生年'])}-{int(x['出生月'])}-{int(x['出生日'])}", axis=1)
+                    valid = [c for c in ['姓名','生日','KIN','主印記'] if c in df.columns]
+                    df[valid].to_sql("Users", conn, if_exists="append", index=False)
             except: pass
 
     conn.close()

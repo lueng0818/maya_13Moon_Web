@@ -24,7 +24,7 @@ def read_csv_robust(file_path, **kwargs):
     return None
 
 def process_matrix_csv(file_path):
-    """處理矩陣表 (雙層標題與去重複)"""
+    """處理矩陣表 (雙層標題與去重複欄位)"""
     try:
         df = read_csv_robust(file_path, header=[0, 1])
         if df is None: return None
@@ -35,7 +35,7 @@ def process_matrix_csv(file_path):
             clean_bottom = str(bottom).replace('\n', '').strip()
             new_columns.append(f"{last_top}_{clean_bottom}")
         
-        # 強力去重複
+        # 去重複
         final_cols = []
         counts = {}
         for col in new_columns:
@@ -54,7 +54,7 @@ def init_db():
     if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
-    # 1. 計算用參照表
+    # 1. 計算與參照表
     ref_tables = [
         ("kin_start_year", "Kin_Start", '年份'), 
         ("month_day_accum", "Month_Accum", '月份'), 
@@ -64,26 +64,16 @@ def init_db():
         ("對應瑪雅生日", "Calendar_Converter", '國曆生日'),
         ("七價路徑對應祈禱文", "Heptad_Prayer", '七價路徑'),
         ("瑪亞週關鍵句", "Maya_Week_Key", '瑪雅週'),
-        ("八度音階", "Octave_Scale", '八度音符'),
-        ("Base_Matrix_441", "Base_Matrix_441", 'KIN')
+        ("八度音階", "Octave_Scale", '八度音符')
     ]
 
     for keyword, table_name, index_col in ref_tables:
         f = find_file(keyword)
         if f:
             print(f"🔹 匯入 {table_name}: {os.path.basename(f)}")
-            if table_name == "Base_Matrix_441":
-                 df = read_csv_robust(f, header=1) # Base Matrix 標題在第2行
-                 if df is not None:
-                     df.columns = ['KIN', '矩陣位置', '八度音符', '對應腦部'] + [f'Col_{i}' for i in range(len(df.columns)-4)]
-                     df = df[['KIN', '矩陣位置', '八度音符', '對應腦部']]
-            else:
-                df = read_csv_robust(f)
-
+            df = read_csv_robust(f)
             if df is not None: 
                 df.columns = [str(c).strip() for c in df.columns]
-                if table_name == "Calendar_Converter" and '國曆生日' not in df.columns:
-                    df.rename(columns={df.columns[0]: '國曆生日'}, inplace=True)
                 if 'KIN' in df.columns:
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
@@ -91,7 +81,7 @@ def init_db():
                 if index_col in df.columns:
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name.lower()} ON {table_name} ({index_col})")
 
-    # 2. 核心資料
+    # 2. 核心資料 (矩陣、易經、卓爾金)
     for keyword, table_name in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing")]:
         f = find_file(keyword)
         if f:
@@ -103,7 +93,15 @@ def init_db():
                 if keyword != "矩陣": df.columns = [str(c).replace('\n', '').strip() for c in df.columns]
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
 
-    # 3. 通訊錄 (Users) - 資料清洗
+    # 3. 國王預言棋盤 (NEW)
+    f_king = find_file("國王預言棋盤")
+    if f_king:
+        print(f"🔹 匯入國王棋盤: {os.path.basename(f_king)}")
+        # 棋盤結構較特殊，直接匯入不做太多處理，供前端直接顯示
+        df = read_csv_robust(f_king)
+        if df is not None: df.to_sql("King_Prophecy", conn, if_exists="replace", index=False)
+
+    # 4. 通訊錄 (Users)
     print("🔹 建立 Users 表格...")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS Users (
@@ -117,7 +115,6 @@ def init_db():
     
     f_user = find_file("通訊錄")
     if f_user:
-        print(f"🔹 處理通訊錄: {os.path.basename(f_user)}")
         df = read_csv_robust(f_user)
         if df is not None:
             try:

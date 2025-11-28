@@ -23,106 +23,92 @@ SAFE_DATE = datetime.date(1990, 1, 1)
 st.markdown("""
 <style>
     /* ==================================
-       1. 全域與側邊欄設定
+       1. 全域與基礎設定
        ================================== */
     .stApp { 
         background-color: #0e1117; 
         color: #ffffff; 
         font-size: 18px;
     }
-    
     section[data-testid="stSidebar"] {
         background-color: #262730;
         color: #ffffff;
     }
-    
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 標題與選項樣式
+       2. 標題與按鈕優化
        ================================== */
-    .stSelectbox label p, 
-    .stDateInput label p, 
-    .stTextInput label p, 
-    .stNumberInput label p,
-    .stRadio label p {
-        color: #ffffff !important;
-        font-weight: bold;
-        font-size: 20px !important;
-        margin-bottom: 8px;
+    .stSelectbox label p, .stDateInput label p, .stTextInput label p, .stNumberInput label p, .stRadio label p {
+        color: #ffffff !important; font-weight: bold; font-size: 20px !important; margin-bottom: 8px;
     }
 
-    /* 單選按鈕優化 */
+    /* 單選按鈕 (Radio) */
     div[role="radiogroup"] label {
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 12px 15px !important;
-        margin-bottom: 8px !important;
-        border-radius: 10px !important;
-        border: 1px solid transparent;
+        background-color: rgba(255, 255, 255, 0.1); padding: 12px 15px !important;
+        margin-bottom: 8px !important; border-radius: 10px !important; border: 1px solid transparent;
         transition: background-color 0.3s;
     }
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
-        color: #ffffff !important;
-        font-size: 18px !important;
-        font-weight: normal;
+        color: #ffffff !important; font-size: 18px !important; font-weight: normal;
     }
-    div[role="radiogroup"] label:hover {
-        background-color: #444444 !important;
-    }
+    div[role="radiogroup"] label:hover { background-color: #444444 !important; }
     div[role="radiogroup"] label:has(input:checked) {
-        background-color: #d4af37 !important;
-        border: 1px solid #d4af37;
+        background-color: #d4af37 !important; border: 1px solid #d4af37;
         box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
     }
     div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownContainer"] p {
-        color: #000000 !important;
-        font-weight: 900 !important;
+        color: #000000 !important; font-weight: 900 !important;
     }
     div[role="radiogroup"] label > div:first-child:not(:has(div[data-testid="stMarkdownContainer"])) {
         display: none !important;
     }
-    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {
-        margin-left: 0 !important;
-    }
+    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
 
     /* ==================================
-       3. 🚨 神諭盤版面修正 (關鍵修改) 🚨
+       3. 🚨 神諭盤版面 (彈性修正版) 🚨
        ================================== */
     
-    /* (A) 擴大格子的寬度與高度 */
     .oracle-grid-container {
         display: grid; 
-        /* 寬度：從 100px 增加到 130px，避免文字折行 */
+        /* 寬度：維持 130px 確保不換行 */
         grid-template-columns: 130px 130px 130px;
-        /* 高度：從 100px 增加到 170px (上下排) 和 200px (中間排) */
-        /* 這樣才有足夠空間放 圖騰(70px) + 調性(30px) + 文字 */
-        grid-template-rows: 170px 200px 170px; 
-        gap: 10px; 
+        /* 🚨 高度改為 auto：讓內容自己決定高度，不再切切切 */
+        grid-template-rows: auto auto auto; 
+        gap: 15px; /* 增加間距 */
         justify-content: center; 
         align-items: center;
+        padding: 10px;
     }
 
-    /* (B) 卡片內容排版優化 */
     .kin-card-grid {
         display: flex; 
         flex-direction: column; 
         align-items: center; 
-        justify-content: center; /* 內容垂直置中 */
+        justify-content: center;
         background: #262730; 
         border: 1px solid #444; 
         border-radius: 12px;
-        padding: 10px; /* 增加內距 */
+        padding: 15px 5px; /* 上下內距加大，確保東西不貼邊 */
         width: 100%; 
-        height: 100%; 
+        /* 🚨 移除 height: 100%，改用 min-height */
+        min-height: 180px; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
-    /* (C) 卡片內的文字大小控制 */
-    /* 避免全域 18px 字體導致卡片內文字太大而爆開 */
+    /* 🚨 確保卡片內的文字一定是白色且大小適中 */
     .kin-card-grid div {
-        font-size: 15px !important; /* 強制設定卡片內文字大小 */
-        line-height: 1.4;
-        margin-top: 5px;
+        color: #ffffff !important;
+        font-size: 16px !important;
+        line-height: 1.5;
+        margin-top: 8px;
+        font-weight: bold;
+    }
+    
+    /* 確保圖片不會太大也不會太小 */
+    .kin-card-grid img {
+        max-width: 100%;
+        object-fit: contain;
     }
 
     /* ==================================
@@ -788,6 +774,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

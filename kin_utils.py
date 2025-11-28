@@ -3,6 +3,7 @@ import datetime
 import math
 import base64
 import os
+import re
 
 # 判斷是否在 Railway 環境 (通常 Railway 不會特別設這個，但我們可以偵測路徑)
 if os.path.exists("/app/storage"):
@@ -181,44 +182,41 @@ def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        m = date_obj.month
-        d = date_obj.day
+        # 🎯 核彈級解法：不依賴 SQL 字串比對，直接把整張表抓出來 (才366筆，速度很快)
+        df = pd.read_sql("SELECT * FROM PSI_Bank", conn)
         
-        # 製作 6 把鑰匙 (各種可能的日期寫法)
-        keys = [
-            f"{m}月{d}日",                 # 4月14日 (最常見)
-            date_obj.strftime("%m月%d日"),  # 04月14日 (補零)
-            f"{m}/{d}",                    # 4/14
-            f"{m:02d}/{d:02d}",            # 04/14
-            f"{m}-{d}",                    # 4-14
-            f"{m:02d}-{d:02d}"             # 04-14
-        ]
+        target_m = date_obj.month
+        target_d = date_obj.day
         
-        # 製作 SQL 語法：只要「月日」或是「國曆生日」欄位符合任何一把鑰匙，就抓出來
-        # 這裡用 IN 語法比較簡潔
-        placeholders = ','.join(['?'] * len(keys))
-        sql = f"""
-            SELECT * FROM PSI_Bank 
-            WHERE 月日 IN ({placeholders}) 
-            OR 國曆生日 IN ({placeholders})
-        """
+        found_row = None
         
-        # 參數要給兩份 (因為有兩個 IN)
-        params = tuple(keys) + tuple(keys)
+        # 逐行檢查，只看數字，不看中文或符號
+        for _, row in df.iterrows():
+            # 優先檢查 '月日' 欄位，沒有就檢查 '國曆生日'
+            raw_text = str(row.get('月日', row.get('國曆生日', '')))
+            
+            # 使用正規表達式抓出所有數字 (例如 "04月14日" -> ['04', '14'])
+            numbers = re.findall(r'\d+', raw_text)
+            
+            if len(numbers) >= 2:
+                m = int(numbers[0])
+                d = int(numbers[1])
+                
+                # 如果月和日都對上了，就是這一筆！
+                if m == target_m and d == target_d:
+                    found_row = row
+                    break
         
-        row = conn.execute(sql, params).fetchone()
-        
-        if row:
-            p = int(row['PSI印記'])
+        if found_row is not None:
+            p = int(found_row['PSI印記'])
             res = {
                 "KIN": p, 
                 "Info": get_full_kin_data(p), 
-                "Matrix": row.get('矩陣位置', '-'),
-                "Maya_Date": row.get('瑪雅生日', '-')
+                "Matrix": found_row.get('矩陣位置', '-'),
+                "Maya_Date": found_row.get('瑪雅生日', '-')
             }
         else:
-            # 萬一還是找不到，印出除錯訊息 (可選)
-            print(f"PSI 查無資料: 嘗試過 {keys}")
+            print(f"PSI 暴力搜尋失敗: {target_m}/{target_d}")
 
     except Exception as e:
         print(f"PSI 查詢錯誤: {e}")
@@ -455,6 +453,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

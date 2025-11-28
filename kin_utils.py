@@ -116,7 +116,6 @@ def get_full_kin_data(kin):
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
-    # 嘗試抓取圖騰詳細對應資料
     try:
         seal_name = SEALS_NAMES[s_num]
         row_seal = conn.execute("SELECT * FROM Seal_Info_Map WHERE 圖騰 = ?", (seal_name,)).fetchone()
@@ -296,7 +295,7 @@ def get_matrix_val_by_pos(table, pos):
     finally: conn.close()
 
 def get_matrix_pos_by_val(table, val):
-    """給定數值，查座標"""
+    """給定數值，查座標 (一般用)"""
     conn = get_db()
     try:
         row = conn.execute(f"SELECT Position FROM {table} WHERE Value = ?", (val,)).fetchone()
@@ -306,10 +305,10 @@ def get_matrix_pos_by_val(table, val):
 
 def calculate_equivalent_kin_new(kin, maya_date_str):
     """
-    全新對等印記算法：
+    全新對等印記算法 (含 V5-V17 範圍過濾)：
     1. 瑪雅生日 -> 時間矩陣座標 -> 三矩陣加總 (Sum1)
     2. KIN -> 空間矩陣座標 -> 三矩陣加總 (Sum2)
-    3. KIN -> 共時矩陣座標 -> 三矩陣加總 (Sum3)
+    3. KIN -> 共時矩陣座標 (限 V5-V17) -> 三矩陣加總 (Sum3)
     4. 總和 MOD 260
     """
     conn = get_db()
@@ -353,18 +352,35 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
             logs.append(f"KIN {kin} ➜ 座標 `{pos_2}`")
             logs.append(f"數值：{v2_t} (時) + {v2_s} (空) + {v2_y} (共) = **{sum_2}**")
 
-        # 步驟 3: 共時矩陣路徑
-        pos_3 = get_matrix_pos_by_val("Matrix_Sync", kin)
+        # 步驟 3: 共時矩陣路徑 (✨ 關鍵修正：限定 V5-V17 範圍)
+        # 先抓出該 KIN 在共時矩陣的所有位置
+        rows_3 = conn.execute("SELECT Position FROM Matrix_Sync WHERE Value = ?", (kin,)).fetchall()
+        pos_3 = None
+        
+        for r in rows_3:
+            p_str = r['Position'] # 例如 "V11:H2"
+            # 解析 V 數值
+            try:
+                # 假設格式 V{num}:H{num}
+                v_part = p_str.split(':')[0] # V11
+                if v_part.startswith('V'):
+                    v_val = int(v_part[1:])
+                    # 範圍檢查
+                    if 5 <= v_val <= 17:
+                        pos_3 = p_str
+                        break
+            except: continue
+            
         if not pos_3:
             sum_3 = 0
-            logs.append(f"⚠️ KIN {kin} 在共時矩陣中找不到對應座標")
+            logs.append(f"⚠️ KIN {kin} 在共時矩陣 V5~V17 範圍內找不到對應座標")
         else:
             v3_t = get_matrix_val_by_pos("Matrix_Time", pos_3)
             v3_s = get_matrix_val_by_pos("Matrix_Space", pos_3)
             v3_y = get_matrix_val_by_pos("Matrix_Sync", pos_3)
             sum_3 = v3_t + v3_s + v3_y
             logs.append(f"3️⃣ **共時矩陣路徑**")
-            logs.append(f"KIN {kin} ➜ 座標 `{pos_3}`")
+            logs.append(f"KIN {kin} ➜ 座標 `{pos_3}` (V5-V17 區間)")
             logs.append(f"數值：{v3_t} (時) + {v3_s} (空) + {v3_y} (共) = **{sum_3}**")
 
         # 步驟 4: 總結
@@ -388,7 +404,6 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
 
 # --- 9. 其他功能 ---
 def calculate_equivalent_kin(kin):
-    # 這是舊的函式，可以保留做備用，或直接讓它呼叫新的
     return {"Error": "請使用 calculate_equivalent_kin_new"}
 
 def get_week_key_sentence(week_name):

@@ -387,6 +387,11 @@ elif mode == "52流年城堡":
         birth_info = get_full_kin_data(bk)
         family_name = birth_info.get('家族', '未知')
         
+        # 🚨 DEBUG 輸出：確認程式正在找的檔名 🚨
+        test_s_num = (bk - 1) % 20 + 1
+        test_file = SEAL_FILES.get(test_s_num)
+        st.caption(f"DEBUG: 程式預期圖騰檔名 (Seal {test_s_num}): assets/seals/{test_file}")
+        
         family_map = {
             "極性家族": "family_polar.jpg", "基本家族": "family_cardinal.jpg", 
             "主要家族": "family_cardinal.jpg", "核心家族": "family_core.jpg",
@@ -839,6 +844,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+
 
 
 

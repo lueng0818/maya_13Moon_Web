@@ -232,10 +232,22 @@ if mode == "個人星系解碼":
                 
                 # ❌ 已移除女神印記顯示區塊 (goddess-box)
 
-                with st.expander("✨ 進階星際密碼"):
-                    st.markdown(f"**原型**：{data.get('星際原型','-')}<br>**BMU**：{data.get('BMU','-')}<br>**行星**：{data.get('行星','-')}<br>**家族**：{data.get('家族','-')}", unsafe_allow_html=True)
-                with st.expander("🧬 441 矩陣"):
-                    st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
+                # 在 app.py 的 個人星系解碼 區塊中
+
+                with st.expander("✨ 進階星際密碼 (圖騰能量)", expanded=True):
+                    # 使用 Markdown 表格排版，整齊顯示
+                    st.markdown(f"""
+                    | 屬性 | 內容 |
+                    | :--- | :--- |
+                    | **星際原型** | {data.get('星際原型','-')} |
+                    | **家族** | {data.get('家族','-')} |
+                    | **行星** | {data.get('行星','-')} |
+                    | **BMU** | {data.get('BMU','-')} |
+                    | **電路** | {data.get('電路','-')} |
+                    | **流** | {data.get('流','-')} |
+                    
+                    **📜 說明：** {data.get('說明','-')}
+                    """, unsafe_allow_html=True)
             
             with tc2:
                 st.subheader("五大神諭盤")
@@ -774,6 +786,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

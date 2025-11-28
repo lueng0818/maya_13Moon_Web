@@ -276,9 +276,22 @@ if mode == "個人星系解碼":
         with t2:
             st.markdown("<div class='concept-text'><b>13:28 時間循環：</b>13個月x28天+無時間日，與自然韻律同步。</div>", unsafe_allow_html=True)
             lc1, lc2 = st.columns(2)
+            
             with lc1:
-                st.markdown(f"<div class='lunar-bg'><h3>{maya['Solar_Year']}</h3><h2>{maya['Maya_Date']}</h2><p><b>月</b>：{maya['Maya_Month']}<br><b>週</b>：{maya['Maya_Week']}</p></div>", unsafe_allow_html=True)
+                # ✨ 新增：顯示 Vinal 肯定句
+                st.markdown(f"""
+                <div class='lunar-bg'>
+                    <h3>{maya['Solar_Year']}</h3>
+                    <h2>{maya['Maya_Date']}</h2>
+                    <p><b>月</b>：{maya['Maya_Month']}<br>
+                    <b>週</b>：{maya['Maya_Week']}</p>
+                    <hr style='margin: 10px 0; border-color: rgba(255,255,255,0.2);'>
+                    <p style='font-size: 14px; color: #ffd700;'><b>🌟 Vinal 肯定句：</b><br>{maya['Vinal']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
                 if wk: st.info(f"🔑 **週金句**：{wk}")
+
             with lc2:
                 st.subheader("🛣️ 調頻")
                 st.success(f"**等離子**：{maya['Plasma']}\n\n**路徑**：{maya['Heptad_Path']}")
@@ -762,6 +775,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

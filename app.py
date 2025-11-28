@@ -558,7 +558,7 @@ elif mode == "女神印記查詢":
                         f"</div>", 
                         unsafe_allow_html=True
                     )
-# 5. 對等印記 (三段式矩陣加總版)
+# 5. 對等印記 (矩陣高階版 + 地圖顯示)
 elif mode == "對等印記查詢":
     st.title("🔄 對等印記查詢 (矩陣高階版)")
     d, _ = render_date_selector("eq")
@@ -568,7 +568,7 @@ elif mode == "對等印記查詢":
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
         
-        # 2. 取得瑪雅生日 (X.X 格式)
+        # 2. 取得瑪雅生日
         maya_info = get_maya_calendar_info(d)
         maya_date = maya_info.get('Maya_Date', '1.1')
         
@@ -585,7 +585,7 @@ elif mode == "對等印記查詢":
             # 顯示結果
             st.success(f"🎉 原始 KIN {k} (瑪雅生日 {maya_date}) ➜ 對等 KIN {eq_k}")
             
-            # 顯示計算細節 (使用 Expander 收合)
+            # 顯示計算細節
             with st.expander("🧮 查看詳細計算過程", expanded=True):
                 for log in res['Logs']:
                     st.write(log)
@@ -593,7 +593,22 @@ elif mode == "對等印記查詢":
                 st.markdown(f"**總和**：{res['Sums'][0]} + {res['Sums'][1]} + {res['Sums'][2]} = **{res['Total']}**")
                 st.markdown(f"**對等印記**：{res['Total']} % 260 = **KIN {eq_k}**")
 
-            # --- 佈局開始 (維持原本的豐富顯示) ---
+            # --- 顯示矩陣地圖 (新增功能) ---
+            st.markdown("### 🗺️ 矩陣地圖參考")
+            st.info("您可以在下方地圖中找到計算過程提到的座標位置 (例如 V11:H2)。")
+            
+            map_tabs = st.tabs(["1️⃣ 時間矩陣", "2️⃣ 空間矩陣", "3️⃣ 共時矩陣"])
+            
+            with map_tabs[0]:
+                st.image("assets/441timematrix.png", caption="Time Matrix (時間矩陣)", use_container_width=True)
+            with map_tabs[1]:
+                st.image("assets/441spacematrix.png", caption="Space Matrix (空間矩陣)", use_container_width=True)
+            with map_tabs[2]:
+                st.image("assets/441synchronicmatrix.png", caption="Synchronic Matrix (共時矩陣)", use_container_width=True)
+
+            st.markdown("---")
+
+            # --- 結果佈局 ---
             c1, c2 = st.columns([1, 1.6])
             
             with c1:
@@ -629,7 +644,7 @@ elif mode == "對等印記查詢":
                          if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
                     with c_txt:
                         st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
+                        
 # 5. 高階功能
 elif mode == "全腦調頻":
     st.title("🧠 全腦調頻")
@@ -857,6 +872,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

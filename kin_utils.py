@@ -181,25 +181,40 @@ def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        # 建立可能的日期字串格式，對應 CSV 的 "國曆生日" 或 "月日" 欄位
-        # 例如 7月26日 -> ["07月26日", "7月26日"]
-        qs = [date_obj.strftime("%m月%d日"), f"{date_obj.month}月{date_obj.day}日"]
+        m = date_obj.month
+        d = date_obj.day
         
-        for q in qs:
-            # 查詢 PSI_Bank 表格
-            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ? OR 國曆生日 = ?", (q, q)).fetchone()
-            if row:
-                p = int(row['PSI印記'])
-                res = {
-                    "KIN": p, 
-                    "Info": get_full_kin_data(p), 
-                    "Matrix": row.get('矩陣位置', '-'),
-                    "Maya_Date": row.get('瑪雅生日', '-')  # ✨ 新增：讀取瑪雅生日 (如 01.01)
-                }
-                break
-    except: pass
+        # 產生各種可能的日期寫法，讓程式更聰明地去對照資料庫
+        qs = [
+            date_obj.strftime("%m月%d日"),  # 04月14日
+            f"{m}月{d}日",                 # 4月14日
+            f"{m}/{d}",                    # 4/14
+            f"{m:02d}/{d:02d}",            # 04/14
+            f"{m}-{d}",                    # 4-14
+            date_obj.strftime("%Y-%m-%d")  # 1969-04-14 (萬一CSV含年份)
+        ]
+        
+        # 組合 SQL 查詢語句 (動態產生 OR 條件)
+        placeholders = ' OR '.join(['月日 = ?'] * len(qs))
+        sql = f"SELECT * FROM PSI_Bank WHERE {placeholders} OR 國曆生日 IN ({','.join(['?']*len(qs))})"
+        
+        # 執行查詢 (參數要重複兩次，因為有兩個 IN/OR 區塊)
+        params = tuple(qs) + tuple(qs)
+        row = conn.execute(sql, params).fetchone()
+        
+        if row:
+            p = int(row['PSI印記'])
+            res = {
+                "KIN": p, 
+                "Info": get_full_kin_data(p), 
+                "Matrix": row.get('矩陣位置', '-'),
+                "Maya_Date": row.get('瑪雅生日', '-')
+            }
+    except Exception as e:
+        print(f"PSI 查詢錯誤: {e}")
     finally: conn.close()
     return res
+    
 def get_kin_from_seal_tone(s, t):
     """
     輔助函式：將圖騰(1-20)與調性(1-13)轉回 KIN(1-260)
@@ -430,6 +445,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

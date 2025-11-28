@@ -40,7 +40,7 @@ st.markdown("""
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 標題與按鈕優化
+       2. 標題與選項優化
        ================================== */
     .stSelectbox label p, .stDateInput label p, .stTextInput label p, .stNumberInput label p, .stRadio label p, .stMultiSelect label p {
         color: #ffffff !important; font-weight: bold; font-size: 20px !important; margin-bottom: 8px;
@@ -69,7 +69,34 @@ st.markdown("""
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
 
     /* ==================================
-       3. 神諭盤版面 (彈性高度修正版)
+       3. 按鈕樣式修復 (解決白字白底)
+       ================================== */
+    .stButton > button {
+        background-color: #262730 !important;
+        color: #ffffff !important;
+        border: 1px solid #444 !important;
+        font-size: 18px !important;
+        padding: 10px 20px !important;
+    }
+    .stButton > button:hover {
+        border-color: #d4af37 !important;
+        color: #d4af37 !important;
+    }
+    div.stButton > button[kind="primary"] {
+        background-color: #d4af37 !important;
+        color: #000000 !important;
+        border: none !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #e6c253 !important;
+        color: #000000 !important;
+    }
+    div.stButton > button[kind="primary"]:focus {
+        color: #000000 !important;
+    }
+
+    /* ==================================
+       4. 神諭盤版面 (彈性高度修正版)
        ================================== */
     .oracle-grid-container {
         display: grid; 
@@ -95,7 +122,6 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
-    /* 強制卡片內文字為白色 */
     .kin-card-grid div {
         color: #ffffff !important;
         font-size: 16px !important;
@@ -104,13 +130,10 @@ st.markdown("""
         font-weight: bold;
     }
     
-    .kin-card-grid img {
-        max-width: 100%;
-        object-fit: contain;
-    }
+    .kin-card-grid img { max-width: 100%; object-fit: contain; }
 
     /* ==================================
-       4. 其他樣式
+       5. 其他樣式
        ================================== */
     div[data-baseweb="select"] div { font-size: 18px !important; }
     input[type="text"], input[type="number"] { font-size: 18px !important; }
@@ -140,14 +163,12 @@ mode = st.sidebar.radio("功能導航", [
 
 # --- 4. 共用函式 ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
-    # 使用新版 kin_utils 的檔案對應 (純數字檔名)
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
     
     img_s = get_img_b64(f"assets/seals/{s_f}")
     img_t = get_img_b64(f"assets/tones/{t_f}")
     
-    # 圖片容錯：若讀不到，顯示 emoji
     html_s = f'<img src="data:image/png;base64,{img_s}" style="width:70px; margin-bottom:5px;">' if img_s else '<div style="font-size:40px;">🔮</div>'
     html_t = f'<img src="data:image/png;base64,{img_t}" style="width:30px; filter:invert(1); margin:0 auto 5px auto;">' if img_t else '<div style="font-size:20px;">🎵</div>'
 
@@ -194,7 +215,6 @@ def render_date_selector(key_prefix=""):
     return d, u
 
 def show_basic_result(kin, data):
-    # 圖片容錯顯示
     img_b64 = get_img_b64(f"assets/seals/{data.get('seal_img','')}")
     if img_b64:
         st.markdown(f'<img src="data:image/png;base64,{img_b64}" width="150">', unsafe_allow_html=True)
@@ -253,9 +273,6 @@ if mode == "個人星系解碼":
                     | **流** | {data.get('流','-')} |
                     **📜 說明：** {data.get('說明','-')}
                     """, unsafe_allow_html=True)
-
-                with st.expander("🧬 441 矩陣"):
-                    st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
             
             with tc2:
                 st.subheader("五大神諭盤")
@@ -285,14 +302,10 @@ if mode == "個人星系解碼":
             with st.expander("📜 查看完整 13 天波符"):
                  for w in wz:
                     hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == kin else "border: 1px solid #444;"
-                    
-                    # 圖片容錯
                     img_data = get_img_b64(f"assets/seals/{w['Image']}")
                     img_tag = f'<img src="data:image/png;base64,{img_data}" width="40">' if img_data else '🔮'
-
                     c_img, c_txt = st.columns([0.5, 4])
-                    with c_img:
-                         st.markdown(img_tag, unsafe_allow_html=True)
+                    with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                     with c_txt:
                         st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 
@@ -350,7 +363,7 @@ elif mode == "個人流年查詢":
                     <div>{get_card_html("擴展", k_antipode, fo['antipode']['s'], fo['antipode']['t'])}</div> 
                     <div>{get_card_html("流年", k_destiny, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
                     <div>{get_card_html("支持", k_analog, fo['analog']['s'], fo['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occult, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
+                    <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
             </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
@@ -399,6 +412,7 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
+        # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
@@ -410,29 +424,51 @@ elif mode == "52流年城堡":
                             inf = r['Info']
                             is_current = (r['Year'] == current_year)
                             
+                            # 樣式與顏色邏輯
                             if is_current:
                                 border = "2px solid #d4af37"
-                                bg = "#444444" 
+                                bg = "#333333" 
                                 txt_col = "#ffffff"
                                 box_shadow = "0 0 15px #d4af37"
                             else:
                                 border = "1px solid #999"
                                 bg = r['Color']
-                                txt_col = "#000000"
+                                txt_col = "#000000" # <-- 強制黑色
                                 box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
+                            # 圖片處理
                             img_filename = inf.get("seal_img", "")
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
+                            # 🚨 關鍵修正：使用 <span> 標籤鎖定顏色 (這是最終修復，確保文字為黑色)
                             st.markdown(
-                                f"""<div style='background:{bg}; border:{border}; border-radius:10px; padding:10px 5px; text-align:center; min-height:160px; box-shadow:{box_shadow}; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
-                                    <div style='font-size:14px; font-weight:bold; color:{txt_col} !important;'>{r['Age']}歲</div>
-                                    <div style='font-size:12px; color:{txt_col} !important; opacity:0.8;'>{r['Year']}</div>
+                                f"""
+                                <div style='background:{bg}; border:{border}; border-radius:10px; 
+                                    padding:10px 5px; text-align:center; min-height:160px; 
+                                    box-shadow:{box_shadow}; display:flex; flex-direction:column; 
+                                    justify-content:center; align-items:center;'>
+                                    
+                                    <span style='font-size:14px; font-weight:bold; color:{txt_col}; display:block; margin-bottom:2px;'>
+                                        {r['Age']}歲
+                                    </span>
+                                    
+                                    <span style='font-size:12px; color:{txt_col}; opacity:0.9; display:block; margin-bottom:5px;'>
+                                        {r['Year']}
+                                    </span>
+                                    
                                     {img_html}
-                                    <div style='font-size:13px; font-weight:bold; color:{txt_col} !important;'>KIN {r['KIN']}</div>
-                                    <div style='font-size:12px; color:{txt_col} !important; margin-top:2px;'>{inf.get('調性').replace('性','')} {inf.get('圖騰')}</div>
-                                </div>""", unsafe_allow_html=True
+                                    
+                                    <span style='font-size:13px; font-weight:bold; color:{txt_col}; display:block; margin-top:2px;'>
+                                        KIN {r['KIN']}
+                                    </span>
+                                    
+                                    <span style='font-size:12px; color:{txt_col}; display:block;'>
+                                        {inf.get('調性').replace('性','')} {inf.get('圖騰')}
+                                    </span>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
                             )
 
         target_data = path[:52]

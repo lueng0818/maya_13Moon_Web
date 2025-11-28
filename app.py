@@ -29,48 +29,130 @@ st.markdown("""
     /* ==================================
        1. 全域與基礎設定
        ================================== */
-    .stApp { background-color: #0e1117; color: #ffffff; font-size: 18px; }
-    section[data-testid="stSidebar"] { background-color: #262730; color: #ffffff; }
+    .stApp { 
+        background-color: #0e1117; 
+        color: #ffffff; 
+        font-size: 18px;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #262730;
+        color: #ffffff;
+    }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 🚨 52流年 Grid 容器 (完全擺脫 st.columns) 🚨
+       2. 標題與選項優化
        ================================== */
+    .stSelectbox label p, .stDateInput label p, .stTextInput label p, .stNumberInput label p, .stRadio label p, .stMultiSelect label p {
+        color: #ffffff !important; font-weight: bold; font-size: 20px !important; margin-bottom: 8px;
+    }
+
+    /* 單選按鈕 (Radio) */
+    div[role="radiogroup"] label {
+        background-color: rgba(255, 255, 255, 0.1); padding: 12px 15px !important;
+        margin-bottom: 8px !important; border-radius: 10px !important; border: 1px solid transparent;
+        transition: background-color 0.3s;
+    }
+    div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
+        color: #ffffff !important; font-size: 18px !important; font-weight: normal;
+    }
+    div[role="radiogroup"] label:hover { background-color: #444444 !important; }
+    div[role="radiogroup"] label:has(input:checked) {
+        background-color: #d4af37 !important; border: 1px solid #d4af37;
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+    }
+    div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownContainer"] p {
+        color: #000000 !important; font-weight: 900 !important;
+    }
+    div[role="radiogroup"] label > div:first-child:not(:has(div[data-testid="stMarkdownContainer"])) {
+        display: none !important;
+    }
+    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
+
+    /* ==================================
+       3. 按鈕樣式修復
+       ================================== */
+    .stButton > button {
+        background-color: #262730 !important;
+        color: #ffffff !important;
+        border: 1px solid #444 !important;
+        font-size: 18px !important;
+        padding: 10px 20px !important;
+    }
+    .stButton > button:hover {
+        border-color: #d4af37 !important;
+        color: #d4af37 !important;
+    }
+    div.stButton > button[kind="primary"] {
+        background-color: #d4af37 !important;
+        color: #000000 !important;
+        border: none !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #e6c253 !important;
+        color: #000000 !important;
+    }
+    div.stButton > button[kind="primary"]:focus {
+        color: #000000 !important;
+    }
+
+    /* ==================================
+       4. 🚨 52流年 Grid & Oracle 佈局 🚨
+       ================================== */
+    /* 52流年專用 Grid 容器 (繞過 st.columns 內部計算 bug) */
     .castle-grid-container {
-        display: grid;
-        /* 強制 4 等份的欄位寬度 */
+        display: grid; 
         grid-template-columns: repeat(4, 1fr); 
-        gap: 15px 10px; /* 增加間距 */
+        gap: 15px 10px; 
         padding: 10px 0;
         width: 100%;
     }
-    .castle-card-content {
-        display: flex;
-        flex-direction: column;
+
+    /* 神諭盤 Grid */
+    .oracle-grid-container {
+        display: grid; 
+        grid-template-columns: 130px 130px 130px;
+        grid-template-rows: auto auto auto; 
+        gap: 15px;
+        justify-content: center; 
         align-items: center;
-        justify-content: center;
-        padding: 10px 5px;
-        border-radius: 10px;
-        min-height: 160px;
-    }
-    /* 🚨 終極文字顏色修正：確保淺色背景卡片上的文字是黑色 🚨 */
-    .castle-card-content * {
-        color: inherit !important; /* 讓內層文字繼承父層顏色，防止被全局白色覆蓋 */
+        padding: 10px;
     }
 
-
-    /* ==================================
-       3. 其他樣式 (維持不變)
-       ================================== */
-    .kin-card-grid {
+    /* 所有卡片基礎樣式 */
+    .kin-card-grid, .castle-card-content {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         background: #262730; border: 1px solid #444; border-radius: 12px;
         padding: 15px 5px; width: 100%; min-height: 180px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-    .oracle-grid-container {
-        display: grid; grid-template-columns: 130px 130px 130px; grid-template-rows: auto auto auto; gap: 15px; justify-content: center; align-items: center; padding: 10px;
+    .kin-card-grid div, .castle-card-content span {
+        color: #ffffff !important;
+        font-size: 16px !important;
+        line-height: 1.5;
+        margin-top: 8px;
+        font-weight: bold;
     }
-    /* ... (其他卡片樣式維持不變) ... */
+    
+    .kin-card-grid img { max-width: 100%; object-fit: contain; }
+
+    /* ==================================
+       5. 其他樣式 (維持不變)
+       ================================== */
+    div[data-baseweb="select"] div { font-size: 18px !important; }
+    input[type="text"], input[type="number"] { font-size: 18px !important; }
+    
+    .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
+    .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
+    .lunar-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 15px; border-radius: 10px; color: white; margin-bottom: 15px; }
+    .matrix-data {
+        font-family: monospace; color: #00ff00; background: #000;
+        padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
+    }
+    .concept-text {
+        font-size: 16px; color: #ddd; background-color: #1f1f1f; 
+        padding: 12px; border-left: 4px solid #d4af37; margin-bottom: 20px;
+        border-radius: 4px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,9 +164,7 @@ mode = st.sidebar.radio("功能導航", [
     "人員生日管理", "通訊錄/合盤", "八度音階查詢", "系統檢查員"
 ])
 
-# --- 4. 共用函式 (省略，但代碼中會使用) ---
-# ... (這裡省略了 get_card_html, user_selector, render_date_selector, show_basic_result 等，但它們必須在 app.py 裡定義) ...
-
+# --- 4. 共用函式 (請確保 kin_utils.py 已正確更新) ---
 def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
     t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
@@ -337,11 +417,10 @@ elif mode == "52流年城堡":
         
         # 3. 定義渲染單一城堡 (13年) - 最終顏色與結構修復版
         def render_13_year_castle(data_subset):
-            # 這是新的 Grid Layout，取代 st.columns()
+            # 🚨 關鍵：使用 Raw CSS Grid 佈局取代 st.columns() 解決版面混亂
             html_content = '<div class="castle-grid-container">'
             
-            for i in range(len(data_subset)):
-                r = data_subset[i]
+            for r in data_subset:
                 inf = r['Info']
                 is_current = (r['Year'] == current_year)
                 
@@ -362,7 +441,7 @@ elif mode == "52流年城堡":
                 b64_data = get_img_b64(f"assets/seals/{img_filename}")
                 img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
-                # 🚨 關鍵：使用 <span> 標籤鎖定顏色 (解決白字隱形)
+                # 🚨 關鍵修正：使用 <span> 標籤鎖定顏色 (解決白字隱形)
                 card_html = f"""
                 <div class="castle-card-content" style='background:{bg}; border:{border}; box-shadow:{box_shadow};'>
                     <span style='font-size:14px; font-weight:bold; color:{txt_col}; display:block; margin-bottom:2px;'>
@@ -400,7 +479,7 @@ elif mode == "52流年城堡":
                 base_age_offset = 0
         
         st.markdown("---")
-        with st.container(): # 使用 container 包裹 tabs
+        with st.container():
             c_tabs = st.tabs(["🔴 紅色東方城堡", "⚪ 白色北方城堡", "🔵 藍色西方城堡", "🟡 黃色南方城堡"])
             
             with c_tabs[0]:
@@ -532,233 +611,3 @@ elif mode == "對等印記查詢":
                 for log in res['Logs']: st.write(log)
                 st.markdown("---")
                 st.markdown(f"**總和**：{res['Sums'][0]} + {res['Sums'][1]} + {res['Sums'][2]} = **{res['Total']}**")
-                st.markdown(f"**對等印記**：{res['Total']} % 260 = **KIN {eq_k}**")
-
-            c1, c2 = st.columns([1, 1.6])
-            with c1: show_basic_result(eq_k, eq_info)
-            with c2:
-                st.subheader("對等印記五大神諭")
-                eo = get_oracle(eq_k)
-                def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
-                k_destiny = eq_k
-                k_guide = gk(eo['guide']['s'], eo['guide']['t'])
-                k_analog = gk(eo['analog']['s'], eo['analog']['t'])
-                k_antipode = gk(eo['antipode']['s'], eo['antipode']['t'])
-                k_occult = gk(eo['occult']['s'], eo['occult']['t'])
-                
-                st.markdown(f"""<div class="oracle-grid-container">
-                        <div></div> <div>{get_card_html("引導", k_guide, eo['guide']['s'], eo['guide']['t'])}</div> <div></div>
-                        <div>{get_card_html("擴展", k_antipode, eo['antipode']['s'], eo['antipode']['t'])}</div> 
-                        <div>{get_card_html("對等", k_destiny, eo['destiny']['s'], eo['destiny']['t'], True)}</div> 
-                        <div>{get_card_html("支持", k_analog, eo['analog']['s'], eo['analog']['t'])}</div>
-                        <div></div> <div>{get_card_html("推動", k_occult, eo['occult']['s'], eo['occult']['t'])}</div> <div></div>
-                </div>""", unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.subheader(f"🌊 {eq_info.get('wave_name','')} 波符旅程")
-            wz = get_wavespell_data(eq_k)
-            with st.expander(f"📜 查看 KIN {eq_k} 的完整 13 天旅程", expanded=True):
-                 for w in wz:
-                    hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == eq_k else "1px solid #444;"
-                    img_data = get_img_b64(f"assets/seals/{w['Image']}")
-                    img_tag = f'<img src="data:image/png;base64,{img_data}" width="40">' if img_data else '🔮'
-                    c_img, c_txt = st.columns([0.5, 4])
-                    with c_img: st.markdown(img_tag, unsafe_allow_html=True)
-                    with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
-# 7. 全腦調頻
-elif mode == "全腦調頻":
-    st.title("🧠 全腦調頻")
-    data = get_whole_brain_tuning()
-    if data:
-        for item in data:
-            with st.expander(f"{item['Part']}"): st.write(item['Text'])
-    else: st.warning("無資料")
-
-# 8. 國王棋盤
-elif mode == "國王棋盤":
-    st.title("👑 國王預言棋盤")
-    d, _ = render_date_selector("king")
-    if st.button("讀取"):
-        k, _ = calculate_kin_v2(d)
-        if not k: k = calculate_kin_math(d)
-        maya = get_maya_calendar_info(d)
-        tk = get_telektonon_info(k, maya)
-        c1, c2 = st.columns(2)
-        with c1: st.info(f"水晶: {tk['Crystal_Battery']}\n\n立方: {tk['Warrior_Cube']}")
-        with c2: st.success(f"🐢 {tk['Turtle_Color']} | {tk['Turtle_Day']}\n\n{tk.get('Turtle_Desc','')}")
-
-# 9. 人員管理
-elif mode == "人員生日管理":
-    st.title("👤 人員管理")
-    t1, t2, t3 = st.tabs(["新增", "列表/編輯", "匯入/匯出"])
-    
-    with t1:
-        c1, c2 = st.columns(2)
-        n = c1.text_input("姓名")
-        db = c2.date_input("生日", SAFE_DATE)
-        if st.button("存檔"):
-            k, _ = calculate_kin_v2(db)
-            if k:
-                ok, m = save_user_data(n, db.strftime('%Y-%m-%d'), k, get_main_sign_text(k))
-                if ok: st.success(m)
-                else: st.error(m)
-    
-    with t2:
-        df = get_user_list()
-        st.dataframe(df)
-        if not df.empty:
-            sel = st.selectbox("編輯對象", df['姓名'])
-            if sel:
-                r = df[df['姓名']==sel].iloc[0]
-                nn = st.text_input("新姓名", value=sel)
-                try:
-                    def_date = datetime.datetime.strptime(r['生日'], "%Y-%m-%d").date()
-                except:
-                    def_date = SAFE_DATE
-                nd = st.date_input("新生日", value=def_date)
-                c_up, c_del = st.columns(2)
-                if c_up.button("更新"):
-                    nk, _ = calculate_kin_v2(nd)
-                    from kin_utils import update_user_data
-                    update_user_data(sel, nn, nd.strftime('%Y-%m-%d'), nk, get_main_sign_text(nk))
-                    st.success("更新成功"); st.rerun()
-                if c_del.button("刪除"):
-                    from kin_utils import delete_user_data
-                    delete_user_data([sel])
-                    st.success("已刪除"); st.rerun()
-    
-    with t3:
-        st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
-        up = st.file_uploader("匯入 CSV", type="csv")
-        if up and st.button("開始匯入"):
-            try:
-                try:
-                    d_in = pd.read_csv(up)
-                except UnicodeDecodeError:
-                    up.seek(0)
-                    d_in = pd.read_csv(up, encoding='cp950')
-                
-                success_count = 0
-                for _, r in d_in.iterrows():
-                    dd = None
-                    name = r.get('姓名', r.get('名字', '未命名'))
-                    if '生日' in d_in.columns:
-                        try:
-                            d_str = str(r['生日']).strip().replace('/', '-').split(' ')[0]
-                            parts = d_str.split('-')
-                            if len(parts) == 3: dd = datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
-                        except: pass
-                    elif '出生年' in d_in.columns:
-                        try: dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
-                        except: pass
-
-                    if dd:
-                        kk, _ = calculate_kin_v2(dd)
-                        if not kk: kk = calculate_kin_math(dd)
-                        save_user_data(name, dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
-                        success_count += 1
-                
-                if success_count > 0:
-                    st.success(f"🎉 成功匯入 {success_count} 筆資料！")
-                    st.rerun()
-                else: st.warning("⚠️ 匯入失敗")
-            except Exception as e: st.error(f"❌ 錯誤: {str(e)}")
-
-# 10. 合盤 (多選 + 關係文案優化)
-elif mode == "通訊錄/合盤":
-    st.title("❤️ 關係/團隊合盤")
-    df = get_user_list()
-    
-    if df.empty:
-        st.warning("📭 通訊錄目前是空的，請先至「人員生日管理」新增資料。")
-    else:
-        options = df.apply(lambda x: f"{x['姓名']} (KIN {x['KIN']})", axis=1).tolist()
-        selected = st.multiselect("請選擇成員 (可選擇 2 人或多人)", options)
-        
-        if st.button("計算合盤能量"):
-            if len(selected) < 2:
-                st.warning("⚠️ 請至少選擇 2 位成員才能計算合盤喔！")
-            else:
-                total_kin_sum = 0
-                members_names = []
-                for item in selected:
-                    name = item.split(" (")[0]
-                    k, _ = get_user_kin(name, df)
-                    if k:
-                        total_kin_sum += k
-                        members_names.append(name)
-                
-                ck = total_kin_sum % 260
-                if ck == 0: ck = 260
-                ci = get_full_kin_data(ck)
-                
-                st.success(f"🎉 成員：{' + '.join(members_names)}\n\n✨ 共同合盤 KIN {ck}")
-                c1, c2 = st.columns([1, 1.6])
-                with c1:
-                    show_basic_result(ck, ci)
-                    st.info("💡 這個印記代表你們能量疊加後，共同顯化出的關係/團隊本質。")
-                
-                with c2:
-                    st.subheader("關係五大神諭")
-                    co = get_oracle(ck)
-                    def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
-                    k_destiny = ck
-                    k_guide = gk(co['guide']['s'], co['guide']['t'])
-                    k_analog = gk(co['analog']['s'], co['analog']['t'])
-                    k_antipode = gk(co['antipode']['s'], co['antipode']['t'])
-                    k_occult = gk(co['occult']['s'], co['occult']['t'])
-                    
-                    st.markdown(f"""<div class="oracle-grid-container">
-                            <div></div> <div>{get_card_html("關係引導", k_guide, co['guide']['s'], co['guide']['t'])}</div> <div></div>
-                            <div>{get_card_html("關係挑戰", k_antipode, co['antipode']['s'], co['antipode']['t'])}</div> 
-                            <div>{get_card_html("關係合盤", k_destiny, co['destiny']['s'], co['destiny']['t'], True)}</div> 
-                            <div>{get_card_html("關係支持", k_analog, co['analog']['s'], co['analog']['t'])}</div>
-                            <div></div> <div>{get_card_html("關係推動", k_occult, co['occult']['s'], co['occult']['t'])}</div> <div></div>
-                    </div>""", unsafe_allow_html=True)
-
-                st.markdown("---")
-                st.subheader(f"🌊 關係波符旅程：{ci.get('wave_name','')} 波符")
-                wz = get_wavespell_data(ck)
-                with st.expander(f"📜 查看這段關係的完整 13 天旅程", expanded=True):
-                     for w in wz:
-                        hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == ck else "1px solid #444;"
-                        relation_question = w['Question'].replace("你", "你們").replace("我", "我們")
-                        img_data = get_img_b64(f"assets/seals/{w['Image']}")
-                        img_tag = f'<img src="data:image/png;base64,{img_data}" width="40">' if img_data else '🔮'
-                        c_img, c_txt = st.columns([0.5, 4])
-                        with c_img: st.markdown(img_tag, unsafe_allow_html=True)
-                        with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{relation_question}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
-# 11. 八度音階
-elif mode == "八度音階查詢":
-    st.title("🎵 八度音階")
-    note = st.selectbox("音符", ['Do','Re','Mi','Fa','Sol','La','Si',"Do'"])
-    if st.button("查詢"):
-        st.dataframe(pd.DataFrame(get_octave_positions(note)))
-
-# 12. 系統檢查
-elif mode == "系統檢查員":
-    st.title("🔍 系統檢查")
-    st.info("如果您上傳了新的 CSV 檔案，但查詢不到資料，請點擊下方按鈕重建資料庫。")
-    
-    if st.button("🔄 強制重建資料庫 (讀取新 CSV)", type="primary"):
-        with st.spinner("正在重新讀取所有 CSV 檔案..."):
-            init_db()
-        st.success("✅ 資料庫重建完成！請重新載入網頁。")
-        st.rerun()
-
-    st.divider()
-    if os.path.exists("13moon.db"):
-        conn = sqlite3.connect("13moon.db")
-        st.success("資料庫連線正常 (13moon.db)")
-        tables = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn)
-        st.write("📊 目前資料庫中的表格：")
-        table_stats = []
-        for t in tables['name']:
-            count = pd.read_sql(f"SELECT COUNT(*) FROM {t}", conn).iloc[0,0]
-            table_stats.append({"表格名稱": t, "資料筆數": count})
-        st.table(pd.DataFrame(table_stats))
-        conn.close()
-    else:
-        st.error("❌ 資料庫遺失")

@@ -412,11 +412,12 @@ elif mode == "52流年城堡":
         current_year = datetime.date.today().year
         current_age = current_year - sy
         
-        # 3. 定義渲染單一城堡 (13年) - 終極顏色修復版
+        # 3. 定義渲染單一城堡 (13年) - 終極顏色與結構修復版
         def render_13_year_castle(data_subset):
             cols_per_row = 4
             for i in range(0, 13, cols_per_row):
-                cols = st.columns(cols_per_row)
+                # 每一行新的 st.columns(4)
+                cols = st.columns(cols_per_row) 
                 for j in range(cols_per_row):
                     if i + j < 13:
                         r = data_subset[i + j]
@@ -433,21 +434,17 @@ elif mode == "52流年城堡":
                             else:
                                 border = "1px solid #999"
                                 bg = r['Color']
-                                txt_col = "#000000" # <-- 強制黑色
+                                txt_col = "#000000" # 強制黑色
                                 box_shadow = "0 2px 5px rgba(0,0,0,0.1)"
                             
-                            # 圖片處理
+                            # 圖片處理 (確保正確的容錯)
                             img_filename = inf.get("seal_img", "")
                             b64_data = get_img_b64(f"assets/seals/{img_filename}")
                             img_html = f'<img src="data:image/png;base64,{b64_data}" width="45" style="margin: 8px 0;">' if b64_data else '<div style="font-size:30px; margin: 8px 0;">🔮</div>'
 
-                            # 🚨 關鍵修正：使用 <span> 標籤鎖定顏色 (這是最終修復，確保文字為黑色)
+                            # 🚨 關鍵修正：使用 <span> 標籤鎖定顏色 (確保文字在淺色背景上顯示黑色)
                             st.markdown(
-                                f"""
-                                <div style='background:{bg}; border:{border}; border-radius:10px; 
-                                    padding:10px 5px; text-align:center; min-height:160px; 
-                                    box-shadow:{box_shadow}; display:flex; flex-direction:column; 
-                                    justify-content:center; align-items:center;'>
+                                f"""<div style='background:{bg}; border:{border}; border-radius:10px; padding:10px 5px; text-align:center; min-height:160px; box-shadow:{box_shadow}; display:flex; flex-direction:column; justify-content:center; align-items:center;'>
                                     
                                     <span style='font-size:14px; font-weight:bold; color:{txt_col}; display:block; margin-bottom:2px;'>
                                         {r['Age']}歲
@@ -466,9 +463,7 @@ elif mode == "52流年城堡":
                                     <span style='font-size:12px; color:{txt_col}; display:block;'>
                                         {inf.get('調性').replace('性','')} {inf.get('圖騰')}
                                     </span>
-                                </div>
-                                """, 
-                                unsafe_allow_html=True
+                                </div>""", unsafe_allow_html=True
                             )
 
         target_data = path[:52]
@@ -846,3 +841,4 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+

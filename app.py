@@ -39,7 +39,7 @@ st.markdown("""
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 標題文字 (Labels)
+       2. 標題與選項樣式
        ================================== */
     .stSelectbox label p, 
     .stDateInput label p, 
@@ -52,72 +52,85 @@ st.markdown("""
         margin-bottom: 8px;
     }
 
-    /* ==================================
-       3. 單選按鈕 (Radio) - 終極修復版
-       ================================== */
-    
-    /* (A) 設定按鈕外觀 (圓角、邊距) */
+    /* 單選按鈕優化 */
     div[role="radiogroup"] label {
-        background-color: rgba(255, 255, 255, 0.1); /* 未選中時的底色 */
+        background-color: rgba(255, 255, 255, 0.1);
         padding: 12px 15px !important;
         margin-bottom: 8px !important;
         border-radius: 10px !important;
         border: 1px solid transparent;
         transition: background-color 0.3s;
     }
-
-    /* (B) 修正文字顏色：未選中 -> 白色 */
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
         color: #ffffff !important;
         font-size: 18px !important;
         font-weight: normal;
     }
-
-    /* (C) 滑鼠懸停效果 */
     div[role="radiogroup"] label:hover {
         background-color: #444444 !important;
     }
-
-    /* (D) 選中狀態 (Selected) -> 金色背景 */
     div[role="radiogroup"] label:has(input:checked) {
         background-color: #d4af37 !important;
         border: 1px solid #d4af37;
         box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
     }
-
-    /* (E) 選中狀態 -> 強制文字變黑色 */
     div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownContainer"] p {
         color: #000000 !important;
         font-weight: 900 !important;
     }
-
-    /* (F) 隱藏圓點 (修正版：只隱藏圓形圖示，不隱藏文字容器) */
-    /* 透過選取不包含 stMarkdownContainer 的 div 來隱藏圓點 */
     div[role="radiogroup"] label > div:first-child:not(:has(div[data-testid="stMarkdownContainer"])) {
         display: none !important;
     }
-    /* 備用方案：如果上方語法失效，將圓點寬度設為 0 */
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {
-        margin-left: 0 !important; /* 修正文字縮排 */
+        margin-left: 0 !important;
     }
 
     /* ==================================
-       4. 其他樣式 (維持不變)
+       3. 🚨 神諭盤版面修正 (關鍵修改) 🚨
+       ================================== */
+    
+    /* (A) 擴大格子的寬度與高度 */
+    .oracle-grid-container {
+        display: grid; 
+        /* 寬度：從 100px 增加到 130px，避免文字折行 */
+        grid-template-columns: 130px 130px 130px;
+        /* 高度：從 100px 增加到 170px (上下排) 和 200px (中間排) */
+        /* 這樣才有足夠空間放 圖騰(70px) + 調性(30px) + 文字 */
+        grid-template-rows: 170px 200px 170px; 
+        gap: 10px; 
+        justify-content: center; 
+        align-items: center;
+    }
+
+    /* (B) 卡片內容排版優化 */
+    .kin-card-grid {
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; /* 內容垂直置中 */
+        background: #262730; 
+        border: 1px solid #444; 
+        border-radius: 12px;
+        padding: 10px; /* 增加內距 */
+        width: 100%; 
+        height: 100%; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    /* (C) 卡片內的文字大小控制 */
+    /* 避免全域 18px 字體導致卡片內文字太大而爆開 */
+    .kin-card-grid div {
+        font-size: 15px !important; /* 強制設定卡片內文字大小 */
+        line-height: 1.4;
+        margin-top: 5px;
+    }
+
+    /* ==================================
+       4. 其他樣式
        ================================== */
     div[data-baseweb="select"] div { font-size: 18px !important; }
     input[type="text"], input[type="number"] { font-size: 18px !important; }
     
-    .kin-card-grid {
-        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
-        background: #262730; border: 1px solid #444; border-radius: 8px;
-        padding: 5px; width: 100%; height: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-        text-align: center; gap: 0; 
-    }
-    .oracle-grid-container {
-        display: grid; grid-template-columns: 100px 100px 100px;
-        grid-template-rows: 100px 140px 100px; gap: 12px; 
-        justify-content: center; align-items: center;
-    }
     .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
     .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
     .lunar-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 15px; border-radius: 10px; color: white; margin-bottom: 15px; }
@@ -775,6 +788,7 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失 (13moon.db 不存在)")
+
 
 
 

@@ -541,12 +541,28 @@ def delete_user_data(names):
     except Exception as e: return False, str(e)
     finally: conn.close()
 
+# 修改 kin_utils.py
+
 def get_user_list():
     conn = get_db()
     try:
+        # 確保表格存在
         conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
-        return pd.read_sql("SELECT 姓名, 生日, KIN, 主印記 FROM Users", conn)
-    except: return pd.DataFrame()
+        
+        # 讀取所有資料，即使表格是空的
+        df = pd.read_sql("SELECT 姓名, 生日, KIN, 主印記 FROM Users", conn)
+        
+        # 增加一個檢查點，以防未來表格結構變更
+        for col in ['姓名', '生日', 'KIN', '主印記']:
+            if col not in df.columns:
+                df[col] = None 
+                
+        return df[['姓名', '生日', 'KIN', '主印記']]
+        
+    except Exception as e:
+        # 如果讀取或創建表格失敗，打印錯誤並返回空的 DataFrame
+        print(f"Error accessing Users table: {e}")
+        return pd.DataFrame()
     finally: conn.close()
 
 def get_user_kin(name, df):
@@ -557,3 +573,4 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+

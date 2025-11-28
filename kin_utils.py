@@ -4,20 +4,17 @@ import math
 import base64
 import os
 import pandas as pd
-import re  # 用於 PSI 暴力搜尋
+import re  # 用於 PSI 與 13:28 暴力搜尋
 
 DB_PATH = "13moon.db"
 
 # --- 1. 靜態資源與常數設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
-# 注意：SEALS_NAMES 索引 0 為空字串，方便對應 1-20
 
-# 建立圖檔對照表
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
-# 波符十三問 (更新版)
 TONE_QUESTIONS = {
     1: "生命的方向：靈魂的方向，前進的目標。也可以說使命和任務最重要的起始點。",
     2: "生命的挑戰：靈魂的黑暗面，包括心理陰影，比較恐懼的方面是什麼？",
@@ -87,24 +84,19 @@ def get_base_matrix_data(kin_num):
     finally: conn.close()
     return result
 
-# 修改 kin_utils.py 中的 get_full_kin_data 函式
-
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
     try:
-        # 1. 抓取基本 KIN 資料
         row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
         
-        # 2. 抓取 Kin_Data 詳細資料
         row_d = conn.execute("SELECT * FROM Kin_Data WHERE KIN = ?", (kin,)).fetchone()
         if row_d:
              for k, v in dict(row_d).items():
                 if k not in data or k in ['諧波', '密碼子', '星際原型', 'BMU', '行星', '流', '電路', '說明', '家族', '對應脈輪', '電路說明']:
                     data[k] = v
 
-        # 3. 抓取 Matrix_Data 矩陣資料
         m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
         if m:
             data['Matrix_Time'] = m.get('時間矩陣_矩陣位置')
@@ -113,27 +105,22 @@ def get_full_kin_data(kin):
             data['Matrix_BMU'] = m.get('基本母體矩陣_BMU')
     except: pass
     
-    # 4. 補完資料
     data.update(get_base_matrix_data(kin))
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
     
-    # 圖片對應
     data['seal_img'] = SEAL_FILES.get(s_num, f"{str(s_num).zfill(2)}.png")
     data['tone_img'] = TONE_FILES.get(t_num, f"tone-{t_num}.png")
     
-    # 名稱對應
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
-    # ✨ 新增：從 Seal_Info_Map 抓取圖騰詳細對應資料
-    # (星際原型、BMU、行星、流、電路、說明、家族)
+    # 嘗試抓取圖騰詳細對應資料
     try:
         seal_name = SEALS_NAMES[s_num]
         row_seal = conn.execute("SELECT * FROM Seal_Info_Map WHERE 圖騰 = ?", (seal_name,)).fetchone()
         if row_seal:
-            # 將查到的資料寫入 data (若原本 Kin_Data 有相同欄位，這裡會覆蓋，以圖騰對應表為主)
             for k in ['星際原型', 'BMU', '行星', '流', '電路', '說明', '家族']:
                 if k in dict(row_seal):
                     data[k] = row_seal[k]
@@ -155,7 +142,7 @@ def get_main_sign_text(kin_num):
     finally: conn.close()
     return "查無印記名稱"
 
-# --- 5. 五大神諭 (修正版) ---
+# --- 5. 五大神諭 ---
 def get_oracle(kin):
     s = (kin - 1) % 20 + 1  
     t = (kin - 1) % 13 + 1  
@@ -186,29 +173,23 @@ def get_oracle(kin):
     }
 
 def get_kin_from_seal_tone(s, t):
-    """將圖騰與調性轉回 KIN"""
     val = ((t - s) % 13) * 40 + s
     if val > 260: val -= 260
     return val
 
-# --- 6. PSI 與 女神 (包含暴力搜尋與總和修正) ---
+# --- 6. PSI 與 女神 ---
 def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        # 核彈級解法：直接把 PSI_Bank 抓出來用 Python 解析
-        # 避免資料庫日期格式不統一的問題
         df = pd.read_sql("SELECT * FROM PSI_Bank", conn)
-        
         target_m = date_obj.month
         target_d = date_obj.day
         found_row = None
         
         for _, row in df.iterrows():
             raw_text = str(row.get('月日', row.get('國曆生日', '')))
-            # 抓出字串中所有數字
             numbers = re.findall(r'\d+', raw_text)
-            
             if len(numbers) >= 2:
                 m = int(numbers[0])
                 d = int(numbers[1])
@@ -233,9 +214,7 @@ def get_psi_kin(date_obj):
     return res
 
 def get_goddess_kin(kin):
-    """女神力量：五大神諭 KIN 之和"""
     oracle = get_oracle(kin)
-    
     k_destiny = kin
     k_analog = get_kin_from_seal_tone(oracle['analog']['s'], oracle['analog']['t'])
     k_antipode = get_kin_from_seal_tone(oracle['antipode']['s'], oracle['antipode']['t'])
@@ -248,11 +227,9 @@ def get_goddess_kin(kin):
     
     return {"KIN": g_kin, "Info": get_full_kin_data(g_kin), "Base_KIN": kin}
 
-# --- 7. 13:28 曆法 (查表版) ---
+# --- 7. 13:28 曆法 ---
 def get_maya_calendar_info(date_obj):
     conn = get_db()
-    
-    # 預設回傳值
     res = {
         "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
         "Heptad_Path": "-", "Plasma": "-", "Vinal": "-",
@@ -260,38 +237,23 @@ def get_maya_calendar_info(date_obj):
     }
 
     try:
-        # 1. 讀取目標日期
         target_m = date_obj.month
         target_d = date_obj.day
-        
-        # 2. 嘗試讀取資料表 (核彈級解法：直接抓出來用 Python 解析)
-        # 檢查表格是否存在
         check_table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Maya_1328_Map'").fetchone()
         
         found_row = None
-        
         if check_table:
             df = pd.read_sql("SELECT * FROM Maya_1328_Map", conn)
-            
             for _, row in df.iterrows():
-                # 抓取日期文字 (優先看 '月日', 次看 '國曆生日')
                 raw_text = str(row.get('月日', row.get('國曆生日', '')))
-                
-                # 使用正規表達式抓數字 (忽略中文、斜線、空格)
-                # 例如 "07月26日" -> ['07', '26']
                 numbers = re.findall(r'\d+', raw_text)
-                
                 if len(numbers) >= 2:
                     m = int(numbers[0])
                     d = int(numbers[1])
-                    
                     if m == target_m and d == target_d:
                         found_row = row
                         break
-        else:
-            print("⚠️ 警告：資料庫中找不到 Maya_1328_Map 表格，請執行強制重建！")
-
-        # 3. 填入資料
+        
         if found_row is not None:
             res.update({
                 "Maya_Date": found_row.get('瑪雅生日', '-'),
@@ -303,15 +265,11 @@ def get_maya_calendar_info(date_obj):
                 "Status": "查詢成功"
             })
         else:
-            # 處理特殊日期 (若 CSV 沒寫)
             if target_m == 2 and target_d == 29:
                 res.update({"Maya_Date": "0.0.Hunab Ku", "Maya_Month": "無時間月"})
             elif target_m == 7 and target_d == 25:
                 res.update({"Maya_Date": "Day Out of Time", "Maya_Month": "無時間日"})
-            else:
-                print(f"13:28 查無對應日期: {target_m}/{target_d}")
 
-        # 4. 查詢星際年 (維持不變)
         start_year = date_obj.year
         if (target_m < 7) or (target_m == 7 and target_d < 26): start_year -= 1
         
@@ -326,7 +284,8 @@ def get_maya_calendar_info(date_obj):
     finally: conn.close()
     return res
 
-# --- 8. 其他應用 (對等、波符、合盤) ---
+# --- 8. 對等印記 (高階矩陣算法) ---
+
 def get_matrix_val_by_pos(table, pos):
     """給定座標，查數值"""
     conn = get_db()
@@ -354,27 +313,23 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
     4. 總和 MOD 260
     """
     conn = get_db()
-    logs = [] # 紀錄計算過程
+    logs = [] 
     res = {}
     
     try:
-        # --- 步驟 1: 處理瑪雅生日 ---
-        # 格式標準化: 移除前導零 (例如 "01.01" -> "1.1") 以符合對照表
+        # 步驟 1: 瑪雅生日路徑
         try:
             m_part, d_part = maya_date_str.split('.')
             clean_maya_date = f"{int(m_part)}.{int(d_part)}"
         except:
-            clean_maya_date = maya_date_str # fallback
+            clean_maya_date = maya_date_str 
 
-        # 查表: 瑪雅生日 -> 時間矩陣位置
         row = conn.execute("SELECT 時間矩陣位置 FROM Maya_Time_Map WHERE 瑪雅生日 = ?", (clean_maya_date,)).fetchone()
         
         if not row:
             return {"Error": f"找不到瑪雅生日 {clean_maya_date} 的對應矩陣位置"}
             
         pos_1 = row['時間矩陣位置']
-        
-        # 取得三矩陣數值
         v1_t = get_matrix_val_by_pos("Matrix_Time", pos_1)
         v1_s = get_matrix_val_by_pos("Matrix_Space", pos_1)
         v1_y = get_matrix_val_by_pos("Matrix_Sync", pos_1)
@@ -384,13 +339,9 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
         logs.append(f"瑪雅生日 {clean_maya_date} ➜ 座標 `{pos_1}`")
         logs.append(f"數值：{v1_t} (時) + {v1_s} (空) + {v1_y} (共) = **{sum_1}**")
         
-        # --- 步驟 2: 處理 KIN (空間矩陣) ---
-        # 查表: KIN -> 空間矩陣位置
+        # 步驟 2: 空間矩陣路徑
         pos_2 = get_matrix_pos_by_val("Matrix_Space", kin)
-        
         if not pos_2:
-            # 備案：如果 KIN 找不到 (極少見)，嘗試找 KIN+260 或其他 BMU 對應，這裡先回傳 0
-            pos_2 = "未知"
             sum_2 = 0
             logs.append(f"⚠️ KIN {kin} 在空間矩陣中找不到對應座標")
         else:
@@ -398,17 +349,13 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
             v2_s = get_matrix_val_by_pos("Matrix_Space", pos_2)
             v2_y = get_matrix_val_by_pos("Matrix_Sync", pos_2)
             sum_2 = v2_t + v2_s + v2_y
-            
             logs.append(f"2️⃣ **空間矩陣路徑**")
             logs.append(f"KIN {kin} ➜ 座標 `{pos_2}`")
             logs.append(f"數值：{v2_t} (時) + {v2_s} (空) + {v2_y} (共) = **{sum_2}**")
 
-        # --- 步驟 3: 處理 KIN (共時矩陣) ---
-        # 查表: KIN -> 共時矩陣位置
+        # 步驟 3: 共時矩陣路徑
         pos_3 = get_matrix_pos_by_val("Matrix_Sync", kin)
-        
         if not pos_3:
-            pos_3 = "未知"
             sum_3 = 0
             logs.append(f"⚠️ KIN {kin} 在共時矩陣中找不到對應座標")
         else:
@@ -416,12 +363,11 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
             v3_s = get_matrix_val_by_pos("Matrix_Space", pos_3)
             v3_y = get_matrix_val_by_pos("Matrix_Sync", pos_3)
             sum_3 = v3_t + v3_s + v3_y
-            
             logs.append(f"3️⃣ **共時矩陣路徑**")
             logs.append(f"KIN {kin} ➜ 座標 `{pos_3}`")
             logs.append(f"數值：{v3_t} (時) + {v3_s} (空) + {v3_y} (共) = **{sum_3}**")
 
-        # --- 步驟 4: 總結 ---
+        # 步驟 4: 總結
         total = sum_1 + sum_2 + sum_3
         eq_kin = total % 260
         if eq_kin == 0: eq_kin = 260
@@ -440,58 +386,36 @@ def calculate_equivalent_kin_new(kin, maya_date_str):
     
     return res
 
-def get_bmu_from_coord(coord):
-    if not coord: return 0
-    conn = get_db()
-    try:
-        row = conn.execute("SELECT 基本母體矩陣_KIN FROM Matrix_Data WHERE 基本母體矩陣_矩陣位置 = ?", (coord.strip(),)).fetchone()
-        return row[0] if row else 0
-    except: return 0
-    finally: conn.close()
-
-# 修改 kin_utils.py 中的 get_week_key_sentence 函式
+# --- 9. 其他功能 ---
+def calculate_equivalent_kin(kin):
+    # 這是舊的函式，可以保留做備用，或直接讓它呼叫新的
+    return {"Error": "請使用 calculate_equivalent_kin_new"}
 
 def get_week_key_sentence(week_name):
     conn = get_db()
     try:
         if week_name:
-            # 去除可能的前後空白
             clean_week = week_name.strip()
-            
-            # 直接查詢
             row = conn.execute("SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 = ?", (clean_week,)).fetchone()
             if row: return row['關鍵句']
-            
-            # 備用方案：模糊搜尋 (例如 "紅色啟動之週" 可能被寫成 "紅色啟動")
             row = conn.execute(f"SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 LIKE ?", (f"%{clean_week}%",)).fetchone()
             if row: return row['關鍵句']
-            
-    except Exception as e:
-        print(f"週關鍵句查詢錯誤: {e}")
+    except: pass
     finally: conn.close()
     return None
-
-# 修改 kin_utils.py 中的 get_heptad_prayer 函式
 
 def get_heptad_prayer(path_name):
     conn = get_db()
     try:
         if path_name:
-            # path_name 從 app 傳來時已經是空白分隔 (例如 "紅色01 紅龍→紅蛇")
-            # 我們直接去資料庫精準查詢
-            clean_path = path_name.strip()
-            
-            row = conn.execute("SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 = ?", (clean_path,)).fetchone()
+            clean = path_name.strip()
+            row = conn.execute("SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 = ?", (clean,)).fetchone()
             if row: return row['祈禱文']
-            
-            # 備用方案：萬一精準對比失敗，嘗試模糊搜尋 (取前段 "紅色01")
-            short_key = clean_path.split(' ')[0]
+            short_key = clean.split(' ')[0] 
             if short_key:
                 row = conn.execute(f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE ?", (f"{short_key}%",)).fetchone()
                 if row: return row['祈禱文']
-                
-    except Exception as e:
-        print(f"祈禱文查詢錯誤: {e}")
+    except: pass
     finally: conn.close()
     return None
 
@@ -618,8 +542,3 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
-
-
-
-
-

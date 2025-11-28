@@ -7,11 +7,13 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
+# --- 1. 靜態資源設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
+# --- 2. 輔助函數 ---
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -31,7 +33,7 @@ def get_year_range():
     except: pass
     return 1900, 2100
 
-# 計算與數據獲取
+# --- 3. KIN 計算邏輯 ---
 def calculate_kin_v2(date_obj):
     conn = get_db()
     try:
@@ -50,6 +52,7 @@ def calculate_kin_math(date_obj):
     kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
+# --- 4. 資料獲取核心 ---
 def get_full_kin_data(kin):
     conn = get_db()
     data = {}
@@ -65,9 +68,8 @@ def get_full_kin_data(kin):
     except: pass
     
     # 補充 Base Matrix
-    try:
-        bmu = conn.execute("SELECT * FROM Octave_Scale WHERE 矩陣位置 = ?", (data.get('Matrix_BMU'),)).fetchone() # 這裡簡化查詢
-    except: pass
+    bmu_data = get_base_matrix_data(kin)
+    data.update(bmu_data)
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
@@ -80,6 +82,21 @@ def get_full_kin_data(kin):
     data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
     conn.close()
     return data
+
+def get_base_matrix_data(kin_num):
+    conn = get_db()
+    result = {}
+    try:
+        row = conn.execute("SELECT * FROM Base_Matrix_441 WHERE KIN = ?", (kin_num,)).fetchone()
+        if row:
+            result = {
+                "BMU_Position": row.get('矩陣位置', '-'),
+                "BMU_Note": row.get('八度音符', '-'),
+                "BMU_Brain": row.get('對應腦部', '-')
+            }
+    except: pass
+    finally: conn.close()
+    return result
 
 def get_main_sign_text(kin_num):
     conn = get_db()
@@ -99,15 +116,18 @@ def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        # 注意：資料庫中的日期格式可能是 "07月26日" 或 "7月26日"
-        # 我們嘗試兩種格式
-        q1 = date_obj.strftime("%m月%d日")
-        q2 = f"{date_obj.month}月{date_obj.day}日"
+        # 嘗試多種日期格式查詢
+        q_dates = [
+            date_obj.strftime("%m月%d日"), # 07月26日 (補零)
+            f"{date_obj.month}月{date_obj.day}日" # 7月26日 (不補零)
+        ]
         
-        row = conn.execute(f"SELECT * FROM PSI_Bank WHERE 月日 IN ('{q1}', '{q2}')").fetchone()
-        if row:
-            p_kin = int(row['PSI印記'])
-            res = {"KIN": p_kin, "Info": get_full_kin_data(p_kin), "Matrix": row.get('矩陣位置','-')}
+        for q in q_dates:
+            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (q,)).fetchone()
+            if row:
+                p_kin = int(row['PSI印記'])
+                res = {"KIN": p_kin, "Info": get_full_kin_data(p_kin), "Matrix": row.get('矩陣位置','-')}
+                break
     except: pass
     finally: conn.close()
     return res
@@ -119,29 +139,16 @@ def get_goddess_kin(kin):
     if g_kin == 0: g_kin = 260
     return {"KIN": g_kin, "Info": get_full_kin_data(g_kin), "Base_KIN": occ_kin}
 
-def calculate_life_castle(birth_date):
-    bk, _ = calculate_kin_v2(birth_date)
-    if not bk: bk = calculate_kin_math(birth_date)
-    path = []
-    for age in range(105):
-        ck = (bk + age*105)%260
-        if ck==0: ck=260
-        info = get_full_kin_data(ck)
-        c = age%52
-        col = "#fff0f0" if c<13 else ("#f8f8f8" if c<26 else ("#f0f8ff" if c<39 else "#fffff0"))
-        path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
-    return path
-
-# --- 修正：更強健的日期查詢 ---
+# --- 5. 瑪雅曆法查詢 (關鍵修正) ---
 def get_maya_calendar_info(date_obj):
     conn = get_db()
-    res = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Status": "查無資料"}
+    res = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Solar_Year": "-", "Status": "查無資料"}
     try:
-        # 嘗試多種日期格式匹配
+        # 【修正】針對 '07月26日' 格式進行查詢
         q_dates = [
-            date_obj.strftime('%Y-%m-%d'), # 2023-07-26
-            date_obj.strftime('%Y/%m/%d'), # 2023/07/26
-            f"{date_obj.month}月{date_obj.day}日" # 7月26日 (部分表單可能只存月日)
+            date_obj.strftime('%m月%d日'),       # 07月26日 (最優先)
+            f"{date_obj.month}月{date_obj.day}日", # 7月26日
+            date_obj.strftime('%Y-%m-%d')        # 2023-07-26 (備用)
         ]
         
         for q in q_dates:
@@ -155,7 +162,11 @@ def get_maya_calendar_info(date_obj):
                     'Plasma': row.get('等離子日', '-'),
                     'Status': "查詢成功"
                 })
+                # 星際年推算
+                y = date_obj.year - 1 if (date_obj.month<7 or (date_obj.month==7 and date_obj.day<26)) else date_obj.year
+                res['Solar_Year'] = f"NS 1.{y-1987+30}"
                 break
+                
     except Exception as e: res['Status'] = str(e)
     finally: conn.close()
     return res
@@ -164,7 +175,6 @@ def get_week_key_sentence(week_name):
     conn = get_db()
     res = None
     try:
-        # 模糊匹配週名稱
         if week_name:
             row = conn.execute(f"SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 LIKE '%{week_name}%'").fetchone()
             if row: res = row['關鍵句']
@@ -177,14 +187,14 @@ def get_heptad_prayer(path_name):
     res = None
     try:
         if path_name:
-            # 處理換行符號導致的查詢問題
-            clean_path = path_name.replace('\n', '').split(' ')[0] # 嘗試取前段
+            clean_path = path_name.split('\n')[0] # 取第一行
             row = conn.execute(f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE '%{clean_path}%'").fetchone()
             if row: res = row['祈禱文']
     except: pass
     finally: conn.close()
     return res
 
+# ... (其餘函數不變) ...
 def get_octave_positions(note):
     conn = get_db()
     res = []

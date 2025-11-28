@@ -369,7 +369,10 @@ elif mode == "PSI查詢":
             pk = res['KIN']
             p_info = res['Info']
             
-            st.success(f"PSI: KIN {pk} (矩陣: {res.get('Matrix','-')})")
+            # ✨ 顯示資訊增加：瑪雅生日 (13:28 座標)
+            maya_date = res.get('Maya_Date', '-')
+            matrix_loc = res.get('Matrix', '-')
+            st.success(f"PSI: KIN {pk} ( 13:28 座標: {maya_date} | 矩陣: {matrix_loc} )")
             
             # --- 佈局開始 ---
             c1, c2 = st.columns([1, 1.6])
@@ -408,7 +411,7 @@ elif mode == "PSI查詢":
                     with c_txt:
                         st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
         else:
-            st.warning("查無 PSI 資料")
+            st.warning("查無 PSI 資料，請確認日期是否正確或資料庫已更新。")
 
 elif mode == "女神印記查詢":
     st.title("💖 女神查詢")
@@ -631,6 +634,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

@@ -249,15 +249,49 @@ elif mode == "PSI查詢":
             st.info(f"矩陣: {res.get('Matrix','-')}")
         else: st.warning("無資料")
 
+# ... (前面的程式碼)
+
 elif mode == "女神印記查詢":
     st.title("💖 女神查詢")
     d, _ = render_date_selector("god")
+    
     if st.button("查詢"):
+        # 1. 計算原本的 KIN
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
+        
+        # 2. 計算女神 KIN
         res = get_goddess_kin(k)
-        st.success(f"女神: KIN {res['KIN']}")
+        
+        # 3. 顯示基本女神資訊
+        st.success(f"原本 KIN {k} -> 女神力量: KIN {res['KIN']}")
         show_basic_result(res['KIN'], res['Info'])
+        
+        # --- ✨ 新增：顯示女神波符旅程 ---
+        st.markdown("---")
+        st.subheader(f"🌊 {res['Info'].get('wave_name','')} 波符旅程")
+        
+        # 取得波符資料
+        wz = get_wavespell_data(res['KIN'])
+        
+        # 使用 Expander 顯示 (預設展開)
+        with st.expander(f"📜 查看 KIN {res['KIN']} 的完整 13 天旅程", expanded=True):
+             for w in wz:
+                # 設定高亮樣式 (如果是女神 KIN 本身，顯示金色邊框)
+                hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == res['KIN'] else "border: 1px solid #444;"
+                
+                c_img, c_txt = st.columns([0.5, 4])
+                with c_img:
+                     if os.path.exists(f"assets/seals/{w['Image']}"): 
+                         st.image(f"assets/seals/{w['Image']}", width=40)
+                with c_txt:
+                    st.markdown(
+                        f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'>"
+                        f"<b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br>"
+                        f"<span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span>"
+                        f"</div>", 
+                        unsafe_allow_html=True
+                    )
 
 elif mode == "對等印記查詢":
     st.title("🔄 對等印記查詢")
@@ -370,3 +404,4 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+

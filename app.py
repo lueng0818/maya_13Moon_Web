@@ -33,7 +33,7 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #fff; }
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
     
-    /* 五大神諭卡片通用樣式 */
+    /* 卡片通用樣式 */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -41,21 +41,34 @@ st.markdown("""
         text-align: center; gap: 0; 
     }
     
-    /* 修正後的網格高度 (解決文字遮擋) */
+    /* 五大神諭盤網格 */
     .oracle-grid-container {
         display: grid; 
         grid-template-columns: 100px 100px 100px;
-        grid-template-rows: 100px 140px 100px; /* 中央行增加到 140px */
+        grid-template-rows: 100px 140px 100px; 
         gap: 12px; 
         justify-content: center;
         align-items: center;
     }
 
-    .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
-    .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
+    /* 資訊區塊樣式 */
+    .info-box {
+        padding: 15px; border-radius: 10px; margin-top: 15px; color: white;
+    }
+    .psi-bg { background: linear-gradient(135deg, #2b1055, #7597de); }
+    .goddess-bg { background: linear-gradient(135deg, #7c244c, #d5739c); }
+    .lunar-bg { background: linear-gradient(135deg, #1e3c72, #2a5298); }
+    
     .matrix-data {
         font-family: monospace; color: #00ff00; background: #000;
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
+    }
+    
+    /* 概念說明文字 */
+    .concept-text {
+        font-size: 14px; color: #aaa; background-color: #1f1f1f; 
+        padding: 10px; border-left: 4px solid #d4af37; margin-bottom: 20px;
+        border-radius: 4px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -71,9 +84,7 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     img_s_b64 = get_img_b64(f"assets/seals/{s_f}")
     img_t_b64 = get_img_b64(f"assets/tones/{t_f}")
     
-    # 關鍵修正：透過 KIN 數字查詢精準的主印記名稱
     display_text = get_main_sign_text(kin_num)
-    
     if "查無印記名稱" in display_text:
         seal_name = SEALS_NAMES[s_id] if 0 < s_id < 21 else "未知"
         tone_name = TONE_NAMES[t_id] if 0 < t_id < 14 else "未知"
@@ -91,7 +102,7 @@ def get_card_html(label, kin_num, s_id, t_id, is_main=False):
     """
 
 # ==========================================
-# 頁面 1: 個人星系解碼 (包含雙核心分頁)
+# 頁面 1: 個人星系解碼 (雙核心架構)
 # ==========================================
 if mode == "個人星系解碼":
     st.title("🔮 個人星系印記解碼")
@@ -114,7 +125,7 @@ if mode == "個人星系解碼":
     if start_btn or st.session_state.get('run_decode'):
         st.session_state['run_decode'] = True
         
-        # 1. 計算所有數據
+        # 1. 執行計算 (13:20 核心)
         kin, err = calculate_kin_v2(date_in)
         if kin is None:
             st.error(f"⚠️ KIN計算失敗: {err} (切換為數學備案)")
@@ -124,59 +135,53 @@ if mode == "個人星系解碼":
         oracle_info = get_oracle(kin)
         psi_data = get_psi_kin(date_in)
         goddess_data = get_goddess_kin(kin)
+        
+        # 2. 執行查詢 (13:28 核心)
         maya_cal_info = get_maya_calendar_info(date_in)
-        week_key_sentence = get_week_key_sentence(maya_cal_info.get('瑪雅週', ''))
+        week_key_sentence = get_week_key_sentence(maya_cal_info.get('Maya_Week', ''))
         heptad_prayer = get_heptad_prayer(maya_cal_info.get('Heptad_Path', ''))
         
         st.divider()
         
-        # 輔助計算周邊印記的 KIN 數字 (用於顯示)
-        def get_kin_from_ids(s_id, t_id):
-            raw_kin = s_id + (t_id - 1) * 20
-            return (raw_kin - 1) % 260 + 1
-
-        guide_kin = get_kin_from_ids(oracle_info['guide']['s'], oracle_info['guide']['t'])
-        analog_kin = get_kin_from_ids(oracle_info['analog']['s'], oracle_info['analog']['t'])
-        antipode_kin = get_kin_from_ids(oracle_info['antipode']['s'], oracle_info['antipode']['t'])
-        occult_kin = get_kin_from_ids(oracle_info['occult']['s'], oracle_info['occult']['t'])
+        # --- 雙分頁架構 ---
+        tab_20, tab_28 = st.tabs(["🌌 13:20 共時序 (靈魂藍圖)", "🗓️ 13:28 週期序 (地球導航)"])
         
-        tab_20, tab_28 = st.tabs(["1️⃣3️⃣ : 2️⃣0️⃣ 共時編碼 (Tzolkin)", "1️⃣3️⃣ : 2️⃣8️⃣ 時間循環 (Solar-Lunar)"])
-        
-        # === TAB 1: 13:20 共時編碼 (KIN & Oracle) ===
+        # === TAB 1: 13:20 共時序 ===
         with tab_20:
+            st.markdown("""
+            <div class="concept-text">
+            <b>13:20 共時編碼：</b><br>
+            這個概念結合了「13 個銀河調性」和「20 個太陽圖騰」。它是一種共時性的編碼方式，用來理解時間的潛在結構與靈魂的頻率。
+            </div>
+            """, unsafe_allow_html=True)
             
             t_col1, t_col2 = st.columns([1, 1.6])
             
-            # --- 左側：主資訊 ---
+            # 左側：主資訊
             with t_col1:
-                seal_img = data.get('seal_img','')
-                s_path = f"assets/seals/{seal_img}"
+                s_path = f"assets/seals/{data.get('seal_img','')}"
                 if os.path.exists(s_path): st.image(s_path, width=180)
                 
                 st.markdown(f"## KIN {kin}")
                 st.markdown(f"### {data.get('主印記','')}")
-                
-                st.info(f"🌊 **波符**：{data.get('波符','未知')} 波符")
+                st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
                 st.caption(f"🏰 **城堡**：{data.get('城堡','未知')}")
                 
-                # PSI & 女神區塊
                 if psi_data and psi_data['KIN'] != 0:
-                    p_info = psi_data['Info']
                     st.markdown(f"""
-                    <div class="psi-box">
+                    <div class="info-box psi-bg">
                         <h4 style="margin:0">🧬 PSI 行星記憶庫</h4>
                         <h3 style="margin:5px 0 0 0; color:#ffd700">KIN {psi_data['KIN']}</h3>
-                        <div style="font-size:14px">{p_info.get('主印記','')}</div>
+                        <div style="font-size:14px">{psi_data['Info'].get('主印記','')}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
                 if goddess_data and goddess_data['KIN'] != 0:
-                    g_info = goddess_data['Info']
                     st.markdown(f"""
-                    <div class="goddess-box">
+                    <div class="info-box goddess-bg">
                         <h4 style="margin:0; color:#fbcfe8;">💖 女神力量 (Goddess Seal)</h4>
                         <h3 style="margin:5px 0 0 0; color:#ffd700">KIN {goddess_data['KIN']}</h3>
-                        <div style="font-size:14px">{g_info.get('主印記','')}</div>
+                        <div style="font-size:14px">{goddess_data['Info'].get('主印記','')}</div>
                         <div style="font-size:12px; margin-top:5px; color:#ddd">隱藏力量: KIN {goddess_data['Base_KIN']}</div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -189,10 +194,19 @@ if mode == "個人星系解碼":
                     BMU : {data.get('Matrix_BMU','-')}
                     </div>""", unsafe_allow_html=True)
 
-            # --- 右側：五大神諭盤 ---
+            # 右側：五大神諭盤
             with t_col2:
                 st.subheader("五大神諭盤")
                 
+                def get_kin_from_ids(s_id, t_id):
+                    raw_kin = s_id + (t_id - 1) * 20
+                    return (raw_kin - 1) % 260 + 1
+
+                guide_kin = get_kin_from_ids(oracle_info['guide']['s'], oracle_info['guide']['t'])
+                analog_kin = get_kin_from_ids(oracle_info['analog']['s'], oracle_info['analog']['t'])
+                antipode_kin = get_kin_from_ids(oracle_info['antipode']['s'], oracle_info['antipode']['t'])
+                occult_kin = get_kin_from_ids(oracle_info['occult']['s'], oracle_info['occult']['t'])
+
                 st.markdown(f"""
                 <div class="oracle-grid-container">
                     <div></div> <div>{get_card_html("引導", guide_kin, oracle_info['guide']['s'], oracle_info['guide']['t'])}</div> <div></div>
@@ -207,40 +221,46 @@ if mode == "個人星系解碼":
                 if 'IChing_Meaning' in data:
                     st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
                 if '祈禱文' in data:
-                    with st.expander("📜 祈禱文"):
+                    with st.expander("📜 查看主印記祈禱文"):
                         st.write(data['祈禱文'])
 
-        # === TAB 2: 13:28 時間循環 (Solar-Lunar) ===
+        # === TAB 2: 13:28 時間循環 ===
         with tab_28:
+            st.markdown("""
+            <div class="concept-text">
+            <b>13:28 時間循環：</b><br>
+            這代表一個由 13 個月，每個月 28 天所組成的循環。這個循環的總天數為 364，再加上額外的一天（無時間日），形成一個 365 天的曆法。
+            </div>
+            """, unsafe_allow_html=True)
             
-            t_col1, t_col2 = st.columns(2)
+            col_lunar, col_heptad = st.columns(2)
             
-            with t_col1:
-                st.subheader("🗓️ 瑪雅曆法對照")
-                if maya_cal_info['Status'] == "查詢成功":
-                    st.markdown(f"**國曆日期**：<span style='color:#ffd700'>{date_in.strftime('%Y-%m-%d')}</span>", unsafe_allow_html=True)
-                    st.markdown(f"**瑪雅日期**：<span style='color:#ffd700'>{maya_cal_info['Maya_Date']}</span>")
-                    st.markdown(f"**瑪雅月 (13月相)**：{maya_cal_info['Maya_Month']}")
-                    st.markdown(f"**瑪雅週 (4色循環)**：{maya_cal_info['Maya_Week']}")
-                    
-                    if week_key_sentence:
-                        st.markdown("---")
-                        st.success(f"🔑 **本週主題金句**：{week_key_sentence}")
-                else:
-                    st.error(f"⚠️ {maya_cal_info['Status']}，請檢查 Calendar_Converter 表格範圍。")
+            with col_lunar:
+                st.markdown(f"""
+                <div class="info-box lunar-bg">
+                    <h3 style="margin:0">🗓️ 瑪雅曆法日期</h3>
+                    <hr style="border-color:rgba(255,255,255,0.3)">
+                    <h2 style="color:#ffd700">{maya_cal_info['Maya_Date']}</h2>
+                    <p><b>瑪雅月：</b>{maya_cal_info['Maya_Month']}</p>
+                    <p><b>瑪雅週：</b>{maya_cal_info['Maya_Week']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if week_key_sentence:
+                    st.info(f"🔑 **本週主題**：\n\n{week_key_sentence}")
             
-            with t_col2:
+            with col_heptad:
                 st.subheader("🛣️ 七價路徑與調頻")
-                st.markdown(f"**等離子日 (7天循環)**：<span style='color:#00ff00'>{maya_cal_info['Plasma']}</span>", unsafe_allow_html=True)
+                st.markdown(f"**等離子日**：<span style='color:#00ff00'>{maya_cal_info['Plasma']}</span>", unsafe_allow_html=True)
                 st.markdown(f"**七價路徑**：{maya_cal_info['Heptad_Path']}")
                 
                 if heptad_prayer:
-                    st.info(f"**🙏 祈禱文**：{heptad_prayer}")
+                    st.success(f"**🙏 七價路徑祈禱文**：\n\n{heptad_prayer}")
                 else:
                     st.caption("查無對應的七價路徑祈禱文。")
 
 # ==========================================
-# 頁面 2: 52 流年城堡 (遇年改年)
+# 頁面 2: 52 流年城堡
 # ==========================================
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
@@ -252,7 +272,6 @@ elif mode == "52流年城堡":
     
     with col_start_year:
          st.subheader("🔁 循環起始年")
-         # 設置起始年為可選範圍
          start_year = st.number_input("計算起始西元年", min_value=1800, max_value=2100, value=d.year)
          
     with col_b:
@@ -273,7 +292,6 @@ elif mode == "52流年城堡":
                 s_p = f"assets/seals/{info.get('seal_img','')}"
                 img_html = f'<img src="data:image/png;base64,{get_img_b64(s_p)}" width="40" style="border-radius:50%">' if os.path.exists(s_p) else ""
                 
-                # 顯示 波符名稱 | 主印記名稱
                 display_name = f"{info.get('波符', '未知')} | {info.get('主印記', '')}"
                 
                 st.markdown(f"""
@@ -284,6 +302,7 @@ elif mode == "52流年城堡":
                     {display_name}
                 </div>
                 """, unsafe_allow_html=True)
+
 
 # ==========================================
 # 頁面 3: 人員生日管理
@@ -320,7 +339,7 @@ elif mode == "人員生日管理":
 
 
 # ==========================================
-# 頁面 4: 通訊錄/合盤 (整合功能)
+# 頁面 4: 通訊錄/合盤
 # ==========================================
 elif mode == "通訊錄/合盤":
     st.title("❤️ 關係合盤計算")
@@ -366,7 +385,7 @@ elif mode == "通訊錄/合盤":
             st.image(f"assets/seals/{comp_data.get('seal_img','')}", width=80)
 
 # ==========================================
-# 頁面 5: 系統檢查員 (除錯)
+# 頁面 5: 系統檢查員
 # ==========================================
 elif mode == "系統檢查員":
     st.title("🔍 系統檢查")

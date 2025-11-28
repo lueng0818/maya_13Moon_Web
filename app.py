@@ -150,7 +150,8 @@ if mode == "個人星系解碼":
                     st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
             with tc2:
                 st.subheader("五大神諭盤")
-                def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
+                # 這是正確的卓爾金曆反推公式：((調性 - 圖騰) * 40 + 圖騰)
+                def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
                 k_g = gk(oracle['guide']['s'], oracle['guide']['t'])
                 k_an = gk(oracle['analog']['s'], oracle['analog']['t'])
                 k_anti = gk(oracle['antipode']['s'], oracle['antipode']['t'])
@@ -404,4 +405,5 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 

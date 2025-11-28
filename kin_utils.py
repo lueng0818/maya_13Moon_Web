@@ -12,10 +12,9 @@ DB_PATH = "13moon.db"
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
-# ✨ 關鍵修改：對應新的數字檔名 (01.png ~ 20.png)
+# 關鍵：使用純數字檔名 (01.png ~ 20.png)
 SEAL_FILES = { i: f"{str(i).zfill(2)}.png" for i in range(1, 21) }
-
-# ✨ 關鍵修改：對應新的調性檔名 (tone-1.png ~ tone-13.png)
+# 關鍵：使用 tone-數字檔名 (tone-1.png ~ tone-13.png)
 TONE_FILES = { i: f"tone-{i}.png" for i in range(1, 14) }
 
 TONE_QUESTIONS = {
@@ -40,29 +39,26 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# 修改 kin_utils.py
-
+# ✨ 最終容錯版：支援檢查 PNG/JPG 大小寫與多種副檔名
 def get_img_b64(path):
-    # 1. 檢查原始路徑 (例如: assets/seals/01.png)
+    if not path: return ""
+
+    # 檢查原始路徑
     if os.path.exists(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
     
-    # 2. 檢查替代副檔名大小寫 (例如: assets/seals/01.PNG)
+    # 檢查替代副檔名大小寫
     base, ext = os.path.splitext(path)
+    extensions = ['.png', '.PNG', '.jpg', '.JPG', '.jpeg', '.JPEG']
     
-    # 統一檢查 PNG/JPG 大小寫的變體
-    if ext.lower() in ['.png', '.jpg', '.jpeg']:
-        # 嘗試大寫副檔名
-        alt_path = base + ext.upper()
-        if os.path.exists(alt_path):
-            with open(alt_path, "rb") as f: return base64.b64encode(f.read()).decode()
+    for check_ext in extensions:
+        if ext.lower() == check_ext.lower(): continue 
         
-        # 嘗試小寫副檔名 (確保所有情況都被檢查)
-        alt_path = base + ext.lower()
-        if os.path.exists(alt_path):
-            with open(alt_path, "rb") as f: return base64.b64encode(f.read()).decode()
-        
-    return "" # 檔案仍找不到
+        new_path = base + check_ext
+        if os.path.exists(new_path):
+            with open(new_path, "rb") as f: return base64.b64encode(f.read()).decode()
+
+    return "" 
 
 def get_year_range():
     default_min, default_max = 1800, 2100
@@ -132,7 +128,6 @@ def get_full_kin_data(kin):
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
     
-    # 圖片對應 (現在使用純數字檔名，非常穩定)
     data['seal_img'] = SEAL_FILES.get(s_num, f"{str(s_num).zfill(2)}.png")
     data['tone_img'] = TONE_FILES.get(t_num, f"tone-{t_num}.png")
     
@@ -307,6 +302,7 @@ def get_maya_calendar_info(date_obj):
     return res
 
 # --- 8. 對等印記 (矩陣V5-V17限定) ---
+
 def get_matrix_val_by_pos(table, pos):
     conn = get_db()
     try:
@@ -561,4 +557,3 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
-

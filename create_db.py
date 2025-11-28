@@ -34,9 +34,9 @@ def init_db():
         ("女神印記", "Goddess_Seal", 'KIN'),
         ("對應瑪雅生日", "Maya_1328_Map", "月日"),
         ("七價路徑對應祈禱文", "Heptad_Prayer", "七價路徑"),
-        # ✨ 新增：瑪雅週關鍵句 (請確認您的 CSV 檔名包含 '瑪亞週關鍵句')
-        # 注意：您上傳的檔名是 '瑪亞週關鍵句.csv' ('亞' vs '雅')，這裡關鍵字用 '瑪亞週' 比較保險
-        ("瑪亞週關鍵句", "Maya_Week_Key", "瑪雅週")
+        ("瑪亞週關鍵句", "Maya_Week_Key", "瑪雅週"),
+        # ✨ 新增：圖騰對應表 (星際原型、BMU、行星、流...)
+        ("圖騰對應表", "Seal_Info_Map", "圖騰")
     ]
 
     for kw, table, idx in tables_config:

@@ -10,7 +10,7 @@ DB_PATH = "13moon.db"
 # --- 1. 靜態資源設定 ---
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
-TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
+TONE_FILES = { i: f"tone-{i}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
 
 TONE_QUESTIONS = {
@@ -102,14 +102,14 @@ def get_full_kin_data(kin):
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
-    data['seal_img'] = SEAL_FILES.get(s_num, "01紅龍.png")
-    data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
+    data['seal_img'] = SEAL_FILES.get(s_num, "01.png")
+    data['tone_img'] = TONE_FILES.get(t_num, "tone-1.png")
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
     
     wid = math.ceil(kin/13)
     data['wave_name'] = data.get('波符', '未知')
-    data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
+    data['wave_img'] = f"-{str(wid).zfill(2)}.png"
     return data
 
 def get_main_sign_text(kin_num):
@@ -378,3 +378,4 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+

@@ -294,74 +294,69 @@ def get_maya_calendar_info(date_obj):
     # 預設回傳值
     res = {
         "Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", 
-        "Heptad_Path": "-", "Plasma": "-", 
-        "Solar_Year": "未知", "Status": "計算中"
+        "Heptad_Path": "-", "Plasma": "-", "Vinal": "-", # 新增 Vinal
+        "Solar_Year": "未知", "Status": "查無資料"
     }
 
-    MOON_NAMES = ['', '磁性之月', '月亮之月', '電力之月', '自我存在之月', '超頻之月', '韻律之月', '共振之月', '銀河星系之月', '太陽之月', '行星之月', '光譜之月', '水晶之月', '宇宙之月']
-    PLASMA_NAMES = ['Dali 達利', 'Seli 瑟利', 'Gamma 伽馬', 'Kali 卡利', 'Alpha 阿爾法', 'Limi 利米', 'Silio 西利歐']
-    WEEK_NAMES = ['紅色啟動之週', '白色淨化之週', '藍色蛻變之週', '黃色收成之週']
-
     try:
-        # 1. 處理特殊日期：2/29 (Hunab Ku)
-        if date_obj.month == 2 and date_obj.day == 29:
-            res.update({
-                "Maya_Date": "0.0.Hunab Ku",
-                "Maya_Month": "無時間月",
-                "Maya_Week": "-",
-                "Plasma": "-",
-                "Heptad_Path": "-"
-            })
+        # 1. 製作查詢鑰匙 (相容各種日期寫法)
+        m = date_obj.month
+        d = date_obj.day
+        keys = [
+            f"{m}月{d}日",                 # 7月26日
+            date_obj.strftime("%m月%d日"),  # 07月26日
+            f"{m}/{d}",
+            f"{m:02d}/{d:02d}",
+            f"{m}-{d}"
+        ]
         
-        # 2. 處理特殊日期：7/25 (無時間日)
-        elif date_obj.month == 7 and date_obj.day == 25:
+        # 2. 查詢 Maya_1328_Map 表格
+        placeholders = ','.join(['?'] * len(keys))
+        sql = f"""
+            SELECT * FROM Maya_1328_Map 
+            WHERE 月日 IN ({placeholders}) 
+            OR 國曆生日 IN ({placeholders})
+        """
+        params = tuple(keys) + tuple(keys)
+        
+        row = conn.execute(sql, params).fetchone()
+        
+        if row:
+            # 成功查到資料，填入結果
             res.update({
-                "Maya_Date": "Day Out of Time",
-                "Maya_Month": "無時間日",
-                "Maya_Week": "-",
-                "Plasma": "-",
-                "Heptad_Path": "-"
+                "Maya_Date": row.get('瑪雅生日', '-'),
+                "Maya_Month": row.get('瑪雅月', '-'),
+                "Maya_Week": row.get('瑪雅週', '-'),
+                "Heptad_Path": row.get('七價路徑', '-').replace('\n', ' '), # 處理換行符號
+                "Plasma": row.get('等離子日', '-').replace('\n', ' '),
+                "Vinal": row.get('Vinal 肯定句', '-'), # 讀取新欄位
+                "Status": "查詢成功"
             })
-            
         else:
-            # 3. 一般日期計算
-            # 判斷星際年起始點 (每年 7/26)
-            start_year = date_obj.year
-            if (date_obj.month < 7) or (date_obj.month == 7 and date_obj.day < 26):
-                start_year -= 1
-            
-            start_date = datetime.date(start_year, 7, 26)
-            
-            # 計算經過天數 (Day of Year)
-            delta = (date_obj - start_date).days
-            
-            # 修正閏年影響：如果是閏年，且日期在 2/29 之後，天數要減 1 (因為 13月亮曆不計 2/29)
-            # 判斷該星際年是否跨越了閏日 (即 start_year 的隔年是閏年)
-            next_year = start_year + 1
-            is_leap = (next_year % 4 == 0 and next_year % 100 != 0) or (next_year % 400 == 0)
-            if is_leap and date_obj > datetime.date(next_year, 2, 29):
-                delta -= 1
+            # 處理特殊日期 (如 2/29 若 CSV 沒寫)
+            if m == 2 and d == 29:
+                res.update({"Maya_Date": "0.0.Hunab Ku", "Maya_Month": "無時間月"})
+            elif m == 7 and d == 25:
+                res.update({"Maya_Date": "Day Out of Time", "Maya_Month": "無時間日"})
+            else:
+                res['Status'] = "資料庫無此日期"
 
-            # 計算月 (1-13) 與 日 (1-28)
-            moon_idx = (delta // 28) + 1
-            day_idx = (delta % 28) + 1
-            
-            # 計算週 (0-3) 與 等離子 (0-6)
-            week_idx = (day_idx - 1) // 7
-            plasma_idx = (day_idx - 1) % 7
-            
-            # 計算七價路徑 (1-52)
-            heptad_path = (moon_idx - 1) * 4 + week_idx + 1
+        # 3. 查詢星際年 (維持不變)
+        start_year = date_obj.year
+        if (m < 7) or (m == 7 and d < 26): start_year -= 1
+        
+        try:
+            row_y = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (start_year,)).fetchone()
+            if row_y: res['Solar_Year'] = row_y['對應星際年']
+            else: res['Solar_Year'] = f"NS 1.{start_year - 1987 + 30}"
+        except: pass
 
-            # 填入結果
-            if 1 <= moon_idx <= 13:
-                res.update({
-                    "Maya_Date": f"{moon_idx}.{day_idx}", # 格式: 月.日
-                    "Maya_Month": f"{MOON_NAMES[moon_idx]} (第{day_idx}天)",
-                    "Maya_Week": WEEK_NAMES[week_idx],
-                    "Plasma": PLASMA_NAMES[plasma_idx],
-                    "Heptad_Path": f"路徑 {heptad_path}"
-                })
+    except Exception as e:
+        print(f"13:28 查表錯誤: {e}")
+    finally:
+        conn.close()
+        
+    return res
 
         # 4. 查詢流年名稱 (維持資料庫查詢，或若無資料則顯示 NS 年份)
         # 嘗試從資料庫抓取 "星際年" (如果有該表格)
@@ -528,6 +523,7 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+
 
 
 

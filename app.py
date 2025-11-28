@@ -40,7 +40,7 @@ st.markdown("""
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
 
     /* ==================================
-       2. 標題與按鈕優化
+       2. 標題與選項優化
        ================================== */
     .stSelectbox label p, .stDateInput label p, .stTextInput label p, .stNumberInput label p, .stRadio label p, .stMultiSelect label p {
         color: #ffffff !important; font-weight: bold; font-size: 20px !important; margin-bottom: 8px;
@@ -69,7 +69,46 @@ st.markdown("""
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] { margin-left: 0 !important; }
 
     /* ==================================
-       3. 神諭盤版面 (彈性高度修正版)
+       3. 🚨 按鈕樣式修復 (關鍵新增) 🚨
+       ================================== */
+    
+    /* (A) 一般按鈕 (Secondary Button) */
+    .stButton > button {
+        background-color: #262730 !important; /* 深灰色底 */
+        color: #ffffff !important;            /* 白色字 */
+        border: 1px solid #555 !important;
+        border-radius: 8px !important;
+        font-size: 18px !important;
+        padding: 10px 20px !important;
+    }
+    .stButton > button:hover {
+        border-color: #d4af37 !important;
+        color: #d4af37 !important;
+    }
+    .stButton > button:active, .stButton > button:focus {
+        background-color: #333 !important;
+        color: #fff !important;
+    }
+
+    /* (B) 主要按鈕 (Primary Button - 如：開始解碼) */
+    /* 針對 type="primary" 的按鈕強制改為金色黑字 */
+    div.stButton > button[kind="primary"] {
+        background-color: #d4af37 !important; /* 金色底 */
+        color: #000000 !important;            /* 黑色字 */
+        border: none !important;
+        font-weight: bold !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #e6c253 !important;
+        color: #000000 !important;
+        box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+    }
+    div.stButton > button[kind="primary"]:focus {
+        color: #000000 !important;
+    }
+
+    /* ==================================
+       4. 神諭盤版面 (彈性高度)
        ================================== */
     .oracle-grid-container {
         display: grid; 
@@ -95,7 +134,6 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
-    /* 強制卡片內文字為白色 */
     .kin-card-grid div {
         color: #ffffff !important;
         font-size: 16px !important;
@@ -104,13 +142,10 @@ st.markdown("""
         font-weight: bold;
     }
     
-    .kin-card-grid img {
-        max-width: 100%;
-        object-fit: contain;
-    }
+    .kin-card-grid img { max-width: 100%; object-fit: contain; }
 
     /* ==================================
-       4. 其他樣式
+       5. 其他樣式
        ================================== */
     div[data-baseweb="select"] div { font-size: 18px !important; }
     input[type="text"], input[type="number"] { font-size: 18px !important; }
@@ -837,4 +872,5 @@ elif mode == "系統檢查員":
         conn.close()
     else:
         st.error("❌ 資料庫遺失")
+
 

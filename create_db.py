@@ -51,17 +51,10 @@ def process_matrix_csv(file_path):
 
 def init_db():
     print(f"🚀 開始建置資料庫: {DB_NAME}...")
-    
-    # 刪除舊檔確保乾淨重建
-    if os.path.exists(DB_NAME):
-        try: os.remove(DB_NAME)
-        except: pass
-
+    if os.path.exists(DB_NAME): os.remove(DB_NAME)
     conn = sqlite3.connect(DB_NAME)
     
-    # ----------------------------------------------------
-    # 1. 計算用參照表 (KIN_START, MONTH_ACCUM, KIN_BASIC)
-    # ----------------------------------------------------
+    # 1. 計算用參照表
     ref_tables = [
         ("kin_start_year", "Kin_Start", '年份'), 
         ("month_day_accum", "Month_Accum", '月份'), 
@@ -71,21 +64,26 @@ def init_db():
         ("對應瑪雅生日", "Calendar_Converter", '國曆生日'),
         ("七價路徑對應祈禱文", "Heptad_Prayer", '七價路徑'),
         ("瑪亞週關鍵句", "Maya_Week_Key", '瑪雅週'),
-        ("八度音階", "Octave_Scale", '八度音符')
+        ("八度音階", "Octave_Scale", '八度音符'),
+        ("Base_Matrix_441", "Base_Matrix_441", 'KIN')
     ]
 
     for keyword, table_name, index_col in ref_tables:
         f = find_file(keyword)
         if f:
             print(f"🔹 匯入 {table_name}: {os.path.basename(f)}")
-            df = read_csv_robust(f)
+            if table_name == "Base_Matrix_441":
+                 df = read_csv_robust(f, header=1) # Base Matrix 標題在第2行
+                 if df is not None:
+                     df.columns = ['KIN', '矩陣位置', '八度音符', '對應腦部'] + [f'Col_{i}' for i in range(len(df.columns)-4)]
+                     df = df[['KIN', '矩陣位置', '八度音符', '對應腦部']]
+            else:
+                df = read_csv_robust(f)
+
             if df is not None: 
                 df.columns = [str(c).strip() for c in df.columns]
-                
-                # 特殊修正: Calendar_Converter 欄位對應
                 if table_name == "Calendar_Converter" and '國曆生日' not in df.columns:
                     df.rename(columns={df.columns[0]: '國曆生日'}, inplace=True)
-
                 if 'KIN' in df.columns:
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
@@ -93,9 +91,7 @@ def init_db():
                 if index_col in df.columns:
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table_name.lower()} ON {table_name} ({index_col})")
 
-    # ----------------------------------------------------
-    # 2. 核心資料 (卓爾金曆, 矩陣, 易經)
-    # ----------------------------------------------------
+    # 2. 核心資料
     for keyword, table_name in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing")]:
         f = find_file(keyword)
         if f:
@@ -107,9 +103,7 @@ def init_db():
                 if keyword != "矩陣": df.columns = [str(c).replace('\n', '').strip() for c in df.columns]
                 df.to_sql(table_name, conn, if_exists="replace", index=False)
 
-    # ----------------------------------------------------
-    # 3. 通訊錄 (Users) - 【關鍵修正：資料清洗與防呆】
-    # ----------------------------------------------------
+    # 3. 通訊錄 (Users) - 資料清洗
     print("🔹 建立 Users 表格...")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS Users (
@@ -127,40 +121,19 @@ def init_db():
         df = read_csv_robust(f_user)
         if df is not None:
             try:
-                # 1. 欄位名稱標準化
                 col_map = {'名字': '姓名', 'Name': '姓名'}
                 df.rename(columns=col_map, inplace=True)
-                
-                # 2. 確保必要欄位存在
                 required_cols = ['出生年', '出生月', '出生日']
                 if '姓名' in df.columns and all(c in df.columns for c in required_cols):
-                    
-                    # 3. 【關鍵修正】強制轉為數字，無法轉換的變為 NaN
-                    for c in required_cols:
-                        df[c] = pd.to_numeric(df[c], errors='coerce')
-                    
-                    # 4. 移除任何日期不完整的資料列 (例如空行)
+                    for c in required_cols: df[c] = pd.to_numeric(df[c], errors='coerce')
                     df_clean = df.dropna(subset=required_cols).copy()
+                    df_clean['生日'] = df_clean.apply(lambda x: f"{int(x['出生年'])}-{int(x['出生月'])}-{int(x['出生日'])}", axis=1)
                     
-                    # 5. 格式化生日字串 (確保轉為整數)
-                    df_clean['生日'] = df_clean.apply(
-                        lambda x: f"{int(x['出生年'])}-{int(x['出生月'])}-{int(x['出生日'])}", 
-                        axis=1
-                    )
-                    
-                    # 6. 寫入資料庫
                     valid_cols = ['姓名', '生日', 'KIN', '主印記']
-                    # 補齊缺少的欄位
-                    for vc in valid_cols:
+                    for vc in valid_cols: 
                         if vc not in df_clean.columns: df_clean[vc] = None
-                        
                     df_clean[valid_cols].to_sql("Users", conn, if_exists="append", index=False)
-                    print(f"   ✅ 成功匯入 {len(df_clean)} 筆通訊錄資料 (已剔除無效資料)")
-                else:
-                    print("   ⚠️ 通訊錄缺少必要欄位 (姓名, 出生年, 月, 日)")
-                    
-            except Exception as e:
-                print(f"   ❌ 通訊錄處理失敗: {e}")
+            except: pass
 
     conn.close()
     print("🎉 資料庫建置完成！")

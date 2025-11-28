@@ -1,6 +1,12 @@
 import sqlite3
 import pandas as pd
 import os
+
+# 判斷是否在 Railway 環境 (通常 Railway 不會特別設這個，但我們可以偵測路徑)
+if os.path.exists("/app/storage"):
+    DB_PATH = "/app/storage/13moon.db"
+else:
+    DB_PATH = "13moon.db" # 本地開發用
 import glob
 
 DB_NAME = "13moon.db"
@@ -109,3 +115,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
+

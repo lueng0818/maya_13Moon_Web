@@ -22,8 +22,30 @@ SAFE_DATE = datetime.date(1990, 1, 1)
 
 st.markdown("""
 <style>
-    .stApp { background-color: #0e1117; color: #fff; }
+    /* 1. 全域背景與文字設定 */
+    .stApp { background-color: #0e1117; color: #ffffff; }
+    
+    /* 2. 標題顏色 */
     h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
+    
+    /* 3. 強制所有 Widget 的標籤 (Label) 為白色 (如：篩選人員、調性、人員...) */
+    .stSelectbox label p, 
+    .stRadio label p, 
+    .stDateInput label p, 
+    .stTextInput label p, 
+    .stNumberInput label p {
+        color: #ffffff !important;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    /* 4. 強制 Radio Button 的選項文字為白色 (如：📅 自訂、全部、依調性...) */
+    .stRadio div[role='radiogroup'] p {
+        color: #ffffff !important;
+        font-size: 15px;
+    }
+    
+    /* 5. 調整卡片與區塊樣式 (維持原樣) */
     .kin-card-grid {
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
         background: #262730; border: 1px solid #444; border-radius: 8px;
@@ -43,7 +65,7 @@ st.markdown("""
         padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
     }
     .concept-text {
-        font-size: 14px; color: #aaa; background-color: #1f1f1f; 
+        font-size: 14px; color: #ddd; background-color: #1f1f1f; 
         padding: 10px; border-left: 4px solid #d4af37; margin-bottom: 20px;
         border-radius: 4px;
     }
@@ -430,6 +452,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

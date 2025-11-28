@@ -5,21 +5,13 @@ import pandas as pd
 import sqlite3
 import base64
 from create_db import init_db
-from kin_utils import (
-    calculate_kin_v2, calculate_kin_math, get_full_kin_data, get_oracle, 
-    calculate_life_castle, get_img_b64, get_psi_kin, get_goddess_kin,
-    get_maya_calendar_info, get_week_key_sentence, get_heptad_prayer,
-    get_main_sign_text, save_user_data, get_user_list, get_user_kin, calculate_composite,
-    get_wavespell_data, get_octave_positions, get_year_range, get_telektonon_info,
-    get_whole_brain_tuning, get_king_prophecy,
-    SEAL_FILES, TONE_FILES, SEALS_NAMES, TONE_NAMES 
-)
+from kin_utils import *
 
-# 1. 系統初始化
+# 1. 初始化
 st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
 
 if not os.path.exists("13moon.db"):
-    with st.spinner("系統初始化中 (建立資料庫)..."):
+    with st.spinner("系統初始化中..."):
         st.cache_data.clear()
         init_db()
     st.success("完成！")
@@ -43,7 +35,7 @@ st.markdown("""
     .oracle-grid-container {
         display: grid; grid-template-columns: 100px 100px 100px;
         grid-template-rows: 100px 140px 100px; gap: 12px; 
-        justify-content: center; align-items: center;
+        justify-content: center; align_items: center;
     }
     .psi-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
     .goddess-box { background: linear-gradient(135deg, #7c244c, #d5739c); padding: 15px; border-radius: 10px; color: white; margin-top: 15px; }
@@ -88,21 +80,34 @@ def show_basic_result(kin, data):
 def user_selector(label, key):
     df = get_user_list()
     if df.empty: st.warning("通訊錄為空"); return None
-    if '主印記' not in df.columns: return st.selectbox(f"選擇 {label}", df['姓名'].unique(), key=f"{key}_simple")
-
+    # 這裡的 KeyError 已經在 ensure_users_table 和 get_user_list 處修復
+    # 如果資料庫沒有 '主印記'，程式在 get_user_list 時就會回傳不帶 '主印記' 的 DF
+    
     fm = st.radio(f"篩選 {label}", ["全部", "依調性", "依圖騰"], horizontal=True, key=f"{key}_mode")
     fdf = df
-    if fm == "依調性":
-        t = st.selectbox("調性", TONE_NAMES[1:], key=f"{key}_t")
-        fdf = df[df['主印記'].astype(str).str.contains(t, na=False)]
-    elif fm == "依圖騰":
-        s = st.selectbox("圖騰", SEALS_NAMES[1:], key=f"{key}_s")
-        fdf = df[df['主印記'].astype(str).str.contains(s, na=False)]
     
-    opts = fdf.apply(lambda x: f"{x['姓名']} ({x['主印記']})", axis=1).tolist()
+    # 篩選邏輯：如果沒有主印記欄位，只能用全部
+    if '主印記' in df.columns:
+        if fm == "依調性":
+            t = st.selectbox("調性", TONE_NAMES[1:], key=f"{key}_t")
+            fdf = df[df['主印記'].astype(str).str.contains(t, na=False)]
+        elif fm == "依圖騰":
+            s = st.selectbox("圖騰", SEALS_NAMES[1:], key=f"{key}_s")
+            fdf = df[df['主印記'].astype(str).str.contains(s, na=False)]
+    
+    # 顯示選項 (自動判斷是否有主印記)
+    if '主印記' in fdf.columns:
+        opts = fdf.apply(lambda x: f"{x['姓名']} ({x['主印記']})", axis=1).tolist()
+    else:
+        opts = fdf['姓名'].tolist() # 降級顯示
+        
     if not opts: st.warning("無符合"); return None
     sel = st.selectbox(f"選擇 {label}", opts, key=f"{key}_sel")
-    return sel.split(" (")[0] if sel else None
+    
+    # 返回姓名 (如果包含主印記，就分割)
+    if sel and "(" in sel:
+        return sel.split(" (")[0]
+    return sel if sel else None
 
 def render_date_selector(key_prefix=""):
     m = st.radio("輸入方式", ["📅 自訂", "👤 通訊錄"], horizontal=True, key=f"{key_prefix}_m")
@@ -236,7 +241,7 @@ elif mode == "52流年城堡":
                 img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
                 st.markdown(f"<div style='background:{r['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;'><b>{r['Age']}歲</b><br><span style='color:#b8860b'>KIN {r['KIN']}</span><br>{img}<br>{inf.get('波符','')} | {inf.get('主印記','')}</div>", unsafe_allow_html=True)
 
-# 4. PSI/女神/對等 (單獨查詢)
+# 4. PSI/女神/對等
 elif mode == "PSI查詢":
     st.title("🧬 PSI 查詢")
     d, _ = render_date_selector("psi")
@@ -262,8 +267,7 @@ elif mode == "對等印記查詢":
         k, _ = calculate_kin_v2(d)
         if not k: k = calculate_kin_math(d)
         res = calculate_equivalent_kin(k)
-        if res: st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}")
-        show_basic_result(res['Eq_Kin'], res['Eq_Info'])
+        if res: st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}"); show_basic_result(res['Eq_Kin'], res['Eq_Info'])
 
 # 5. 高階功能
 elif mode == "全腦調頻":
@@ -322,29 +326,28 @@ elif mode == "人員生日管理":
     with t3:
         df = get_user_list()
         st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
-        up = st.file_uploader("匯入 CSV (需含姓名、生日欄位)", type="csv")
+        up = st.file_uploader("匯入 CSV", type="csv")
         if up and st.button("開始匯入"):
             try:
+                # 關鍵修正：修復匯入邏輯
                 d_in = pd.read_csv(up)
-                
-                # --- 關鍵修正：處理生日格式 ---
-                d_in.columns = [c.strip() for c in d_in.columns]
-                if '姓名' not in d_in.columns and 'Name' in d_in.columns: d_in.rename(columns={'Name':'姓名'}, inplace=True)
-                
                 count = 0
                 for _, r in d_in.iterrows():
                     try:
-                        # 嘗試解析 '生日' 欄位，如果失敗，則嘗試 '出生年'
+                        # 嘗試從 '生日' 欄位解析
                         if '生日' in r and pd.notna(r['生日']):
-                            dob_str = str(r['生日']).replace('/','-')
-                            dd = datetime.datetime.strptime(dob_str, "%Y-%m-%d").date()
+                            dd = datetime.datetime.strptime(str(r['生日']).replace('/','-'), "%Y-%m-%d").date()
+                        # 備案：從分開的欄位解析
                         elif '出生年' in r and pd.notna(r['出生年']):
                             dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
                         else: continue # 無生日資料，跳過
                         
+                        # 修正姓名欄位
+                        name = r['姓名'] if '姓名' in r else r['名字']
+                        
                         kk, _ = calculate_kin_v2(dd)
-                        if kk:
-                            save_user_data(r['姓名'], dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
+                        if kk and name:
+                            save_user_data(name, dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
                             count += 1
                     except: pass
                 st.success(f"匯入完成：{count} 筆")
@@ -363,13 +366,13 @@ elif mode == "通訊錄/合盤":
             if k1 and k2:
                 ck = calculate_composite(k1, k2)
                 ci = get_full_kin_data(ck)
-                st.success(f"🎉 {pn1} & {p2_name} 合盤 KIN {ck}：{ci.get('主印記','')}")
+                st.success(f"🎉 {pn1} & {pn2} 合盤 KIN {ck}：{ci.get('主印記','')}")
                 show_basic_result(ck, ci)
         else: st.warning("請選擇兩位夥伴")
 
-# 8. 八度音階 (因功能精簡，此處不再顯示完整頁面，但保留邏輯)
+# 8. 八度音階
 elif mode == "八度音階查詢":
-    st.title("🎵 八度音階查詢 (功能精簡)")
+    st.title("🎵 八度音階")
     note = st.selectbox("音符", ['Do','Re','Mi','Fa','Sol','La','Si',"Do'"])
     if st.button("查詢"):
         st.dataframe(pd.DataFrame(get_octave_positions(note)))

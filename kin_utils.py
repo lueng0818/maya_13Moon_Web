@@ -150,124 +150,91 @@ def get_main_sign_text(kin_num):
 def get_oracle(kin):
     s = (kin - 1) % 20 + 1
     t = (kin - 1) % 13 + 1
-    
     ana = 19 - s; ana += 20 if ana <= 0 else 0
     anti = (s + 10) % 20; anti = 20 if anti == 0 else anti
     occ_s = 21 - s
     occ_t = 14 - t
     guide = s
-    
-    return {
-        "destiny": {"s":s, "t":t}, "analog": {"s":ana, "t":t}, "antipode": {"s":anti, "t":t},
-        "occult": {"s":occ_s, "t":occ_t}, "guide": {"s":guide, "t":t}
-    }
+    return { "destiny": {"s":s, "t":t}, "analog": {"s":ana, "t":t}, "antipode": {"s":anti, "t":t}, "occult": {"s":occ_s, "t":occ_t}, "guide": {"s":guide, "t":t} }
 
 def get_psi_kin(date_obj):
     conn = get_db()
-    psi_data = {}
+    res = {}
     try:
-        q_dates = [
-            date_obj.strftime("%m月%d日"), 
-            f"{date_obj.month}月{date_obj.day}日"
-        ]
-        
+        q_dates = [date_obj.strftime("%m月%d日"), f"{date_obj.month}月{date_obj.day}日"]
         for q in q_dates:
             row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (q,)).fetchone()
             if row:
                 p_kin = int(row['PSI印記'])
-                p_info = get_full_kin_data(p_kin)
-                psi_data = {"KIN": p_kin, "Info": p_info, "Matrix": row.get('矩陣位置','-')}
+                res = {"KIN": p_kin, "Info": get_full_kin_data(p_kin), "Matrix": row.get('矩陣位置','-')}
                 break
     except: pass
     finally: conn.close()
-    return psi_data
+    return res
 
 def get_goddess_kin(kin):
-    oracle = get_oracle(kin) 
-    occult_s = oracle['occult']['s']
-    occult_t = oracle['occult']['t']
-    occult_kin = (occult_s + (occult_t - 1) * 20 - 1) % 260 + 1
-    
-    goddess_kin = (occult_kin + 130) % 260
-    if goddess_kin == 0: goddess_kin = 260
-    
-    goddess_info = get_full_kin_data(goddess_kin)
-    
-    return {
-        "KIN": goddess_kin,
-        "Info": goddess_info,
-        "Base_KIN": occult_kin
-    }
+    o = get_oracle(kin)
+    occ_kin = (o['occult']['s'] + (o['occult']['t']-1)*20 -1)%260 + 1
+    g_kin = (occ_kin + 130) % 260
+    if g_kin == 0: g_kin = 260
+    return {"KIN": g_kin, "Info": get_full_kin_data(g_kin), "Base_KIN": occ_kin}
 
 def get_wavespell_data(kin):
-    conn = get_db()
     wave_data = []
     current_tone = (kin - 1) % 13 + 1
     start_kin = kin - (current_tone - 1)
     if start_kin <= 0: start_kin += 260 
 
-    try:
-        for i in range(13):
-            curr = start_kin + i
-            if curr > 260: curr -= 260
-            info = get_full_kin_data(curr)
-            wave_data.append({
-                "Tone": i + 1, "KIN": curr, "Question": TONE_QUESTIONS[i + 1],
-                "Seal": info.get('圖騰', '未知'), "Name": info.get('主印記', ''), "Image": info.get('seal_img', '')
-            })
-    except: pass
+    for i in range(13):
+        curr = start_kin + i
+        if curr > 260: curr -= 260
+        info = get_full_kin_data(curr)
+        wave_data.append({
+            "Tone": i + 1, "KIN": curr, "Question": TONE_QUESTIONS[i + 1],
+            "Seal": info.get('圖騰', '未知'), "Name": info.get('主印記', ''), "Image": info.get('seal_img', '')
+        })
     return wave_data
 
-# --- 8. 瑪雅曆法日期查詢 (關鍵修正) ---
+def calculate_life_castle(birth_date):
+    bk, _ = calculate_kin_v2(birth_date)
+    if not bk: bk = calculate_kin_math(birth_date)
+    path = []
+    for age in range(105):
+        ck = (bk + age*105)%260
+        if ck==0: ck=260
+        info = get_full_kin_data(ck)
+        c = age%52
+        col = "#fff0f0" if c<13 else ("#f8f8f8" if c<26 else ("#f0f8ff" if c<39 else "#fffff0"))
+        path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
+    return path
+
 def get_maya_calendar_info(date_obj):
     conn = get_db()
-    # 【關鍵修正】預設補上 Solar_Year 欄位，避免 KeyError
-    result = {
-        "Maya_Date": "-", 
-        "Maya_Month": "-", 
-        "Maya_Week": "-", 
-        "Heptad_Path": "-", 
-        "Plasma": "-", 
-        "Solar_Year": "未知年份",  # 避免前端崩潰
-        "Status": "查無資料"
-    }
-    
+    # 預設補上 Solar_Year 避免 KeyError
+    res = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Solar_Year": "未知年份", "Status": "查無資料"}
     try:
-        q_dates = [
-            date_obj.strftime('%m月%d日'),       
-            f"{date_obj.month}月{date_obj.day}日", 
-            date_obj.strftime('%Y-%m-%d')        
-        ]
-        
+        q_dates = [date_obj.strftime('%m月%d日'), f"{date_obj.month}月{date_obj.day}日", date_obj.strftime('%Y-%m-%d')]
         for q in q_dates:
             row = conn.execute("SELECT * FROM Calendar_Converter WHERE 國曆生日 = ?", (q,)).fetchone()
             if row:
-                result.update({
-                    'Maya_Date': row.get('瑪雅生日', '-'),
-                    'Maya_Month': row.get('瑪雅月', '-'),
-                    'Maya_Week': row.get('瑪雅週', '-'),
-                    'Heptad_Path': row.get('七價路徑', '-'),
-                    'Plasma': row.get('等離子日', '-'),
-                    'Status': "查詢成功"
+                res.update({
+                    'Maya_Date': row.get('瑪雅生日', '-'), 'Maya_Month': row.get('瑪雅月', '-'),
+                    'Maya_Week': row.get('瑪雅週', '-'), 'Heptad_Path': row.get('七價路徑', '-'),
+                    'Plasma': row.get('等離子日', '-'), 'Status': "查詢成功"
                 })
-                # 星際年推算
                 y = date_obj.year - 1 if (date_obj.month<7 or (date_obj.month==7 and date_obj.day<26)) else date_obj.year
-                result['Solar_Year'] = f"NS 1.{y-1987+30}"
+                res['Solar_Year'] = f"NS 1.{y-1987+30}"
                 break
-        
-    except Exception as e:
-        result['Status'] = f"Error: {e}"
-        
-    conn.close()
-    return result
+    except: pass
+    finally: conn.close()
+    return res
 
 def get_week_key_sentence(week_name):
     conn = get_db()
     res = None
     try:
         if week_name:
-            query = "SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 = ?"
-            row = conn.execute(query, (week_name,)).fetchone()
+            row = conn.execute(f"SELECT 關鍵句 FROM Maya_Week_Key WHERE 瑪雅週 LIKE '%{week_name}%'").fetchone()
             if row: res = row['關鍵句']
     except: pass
     finally: conn.close()
@@ -278,27 +245,14 @@ def get_heptad_prayer(path_name):
     res = None
     try:
         if path_name:
-            clean_path = path_name.split('\n')[0]
-            query = f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE '%{clean_path}%'"
-            row = conn.execute(query).fetchone()
+            clean = path_name.split('\n')[0]
+            row = conn.execute(f"SELECT 祈禱文 FROM Heptad_Prayer WHERE 七價路徑 LIKE '%{clean}%'").fetchone()
             if row: res = row['祈禱文']
     except: pass
     finally: conn.close()
     return res
 
-def get_octave_positions(note):
-    conn = get_db()
-    results = []
-    try:
-        query = "SELECT 矩陣位置, 行, 列 FROM Octave_Scale WHERE 八度音符 = ?"
-        rows = conn.execute(query, (note,)).fetchall()
-        for row in rows:
-            results.append({"Position": row['矩陣位置'], "Row": row['行'], "Col": row['列']})
-    except: pass
-    finally: conn.close()
-    return results
-
-# --- 用戶管理 ---
+# --- 5. 用戶管理函數 (CRUD) ---
 def ensure_users_table(conn):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS Users (
@@ -320,31 +274,43 @@ def save_user_data(name, dob_str, kin, main_sign):
             conn.commit()
             return True, "建檔成功"
         else:
-            return False, "此姓名已存在"
-    except Exception as e:
-        return False, f"存檔失敗: {e}"
-    finally:
-        conn.close()
+            return False, "姓名已存在"
+    except Exception as e: return False, str(e)
+    finally: conn.close()
+
+def update_user_data(original_name, new_name, new_dob, new_kin, new_sign):
+    conn = get_db()
+    try:
+        conn.execute("UPDATE Users SET 姓名=?, 生日=?, KIN=?, 主印記=? WHERE 姓名=?", 
+                     (new_name, new_dob, new_kin, new_sign, original_name))
+        conn.commit()
+        return True, "更新成功"
+    except Exception as e: return False, str(e)
+    finally: conn.close()
+
+def delete_user_data(names):
+    conn = get_db()
+    try:
+        placeholders = ', '.join('?' for _ in names)
+        conn.execute(f"DELETE FROM Users WHERE 姓名 IN ({placeholders})", tuple(names))
+        conn.commit()
+        return True, "刪除成功"
+    except Exception as e: return False, str(e)
+    finally: conn.close()
 
 def get_user_list():
     conn = get_db()
     try:
         ensure_users_table(conn)
-        df = pd.read_sql("SELECT 姓名, 生日, KIN FROM Users", conn)
-        return df
-    except:
-        return pd.DataFrame()
-    finally:
-        conn.close()
+        return pd.read_sql("SELECT 姓名, 生日, KIN, 主印記 FROM Users", conn)
+    except: return pd.DataFrame()
+    finally: conn.close()
 
-def get_user_kin(name, df_users):
-    if df_users.empty: return None, None
-    user_row = df_users[df_users['姓名'] == name]
-    if not user_row.empty:
-        return int(user_row.iloc[0]['KIN']), user_row.iloc[0]['生日']
+def get_user_kin(name, df):
+    row = df[df['姓名'] == name]
+    if not row.empty: return int(row.iloc[0]['KIN']), row.iloc[0]['生日']
     return None, None
 
 def calculate_composite(kin_a, kin_b):
-    total = kin_a + kin_b
-    comp = total % 260
-    return 260 if comp == 0 else comp
+    r = (kin_a + kin_b) % 260
+    return 260 if r == 0 else r

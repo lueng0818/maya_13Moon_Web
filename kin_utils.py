@@ -40,10 +40,29 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# 修改 kin_utils.py
+
 def get_img_b64(path):
+    # 1. 檢查原始路徑 (例如: assets/seals/01.png)
     if os.path.exists(path):
         with open(path, "rb") as f: return base64.b64encode(f.read()).decode()
-    return ""
+    
+    # 2. 檢查替代副檔名大小寫 (例如: assets/seals/01.PNG)
+    base, ext = os.path.splitext(path)
+    
+    # 統一檢查 PNG/JPG 大小寫的變體
+    if ext.lower() in ['.png', '.jpg', '.jpeg']:
+        # 嘗試大寫副檔名
+        alt_path = base + ext.upper()
+        if os.path.exists(alt_path):
+            with open(alt_path, "rb") as f: return base64.b64encode(f.read()).decode()
+        
+        # 嘗試小寫副檔名 (確保所有情況都被檢查)
+        alt_path = base + ext.lower()
+        if os.path.exists(alt_path):
+            with open(alt_path, "rb") as f: return base64.b64encode(f.read()).decode()
+        
+    return "" # 檔案仍找不到
 
 def get_year_range():
     default_min, default_max = 1800, 2100
@@ -542,3 +561,4 @@ def get_user_kin(name, df):
 def calculate_composite(k1, k2):
     r = (k1+k2)%260
     return 260 if r==0 else r
+

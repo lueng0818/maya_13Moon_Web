@@ -352,7 +352,7 @@ elif mode == "個人流年查詢":
             
             st.markdown(f"""<div class="oracle-grid-container">
                     <div></div> <div>{get_card_html("引導", k_guide, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_anti, fo['antipode']['s'], fo['antipode']['t'])}</div> 
+                    <div>{get_card_html("擴展", k_antipode, fo['antipode']['s'], fo['antipode']['t'])}</div> 
                     <div>{get_card_html("流年", k_destiny, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
                     <div>{get_card_html("支持", k_analog, fo['analog']['s'], fo['analog']['t'])}</div>
                     <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
@@ -369,7 +369,7 @@ elif mode == "個人流年查詢":
                 c_img, c_txt = st.columns([0.5, 4])
                 with c_img: st.markdown(img_tag, unsafe_allow_html=True)
                 with c_txt: st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
+                    
 # 3. 52流年 (此區塊已被移除，略過)
 
 # 4. PSI (含神諭波符)
@@ -631,3 +631,4 @@ elif mode == "通訊錄/合盤":
     # ... (此處代碼維持不變) ...
     pass
 # ... (省略其餘模組代碼) ...
+

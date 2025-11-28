@@ -284,37 +284,63 @@ if mode == "個人星系解碼":
                 st.success(f"**等離子**：{maya['Plasma']}\n\n**路徑**：{maya['Heptad_Path']}")
                 if pr: st.info(f"🙏 **祈禱文**：\n{pr}")
 
-# 2. 個人流年
+# 2. 個人流年 (升級版：含神諭與波符)
 elif mode == "個人流年查詢":
     st.title("📅 個人流年查詢")
     d, u = render_date_selector("flow")
     ty = st.number_input("流年年份", 1900, 2100, datetime.date.today().year)
+    
     if st.button("查詢"):
+        # 計算流年 KIN
         bk, _ = calculate_kin_v2(d)
         if not bk: bk = calculate_kin_math(d)
         age = ty - d.year
         fk = (bk + age*105)%260
         if fk==0: fk=260
-        st.subheader(f"{u or '此人'} {ty} 年 ( {age} 歲 )")
+        
+        st.success(f"{u or '此人'} {ty} 年 ( {age} 歲 ) -> 流年 KIN {fk}")
+        
         fd = get_full_kin_data(fk)
-        fo = get_oracle(fk)
+        
+        # --- 佈局開始 ---
         c1, c2 = st.columns([1, 1.6])
-        with c1: show_basic_result(fk, fd)
+        
+        # 左欄：基本資料
+        with c1:
+            show_basic_result(fk, fd)
+            
+        # 右欄：五大神諭
         with c2:
-            def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
-            k_g = gk(fo['guide']['s'], fo['guide']['t'])
-            k_an = gk(fo['analog']['s'], fo['analog']['t'])
-            k_anti = gk(fo['antipode']['s'], fo['antipode']['t'])
-            k_occ = gk(fo['occult']['s'], fo['occult']['t'])
+            st.subheader("流年五大神諭")
+            fo = get_oracle(fk)
+            def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+            
+            k_destiny = fk
+            k_guide = gk(fo['guide']['s'], fo['guide']['t'])
+            k_analog = gk(fo['analog']['s'], fo['analog']['t'])
+            k_antipode = gk(fo['antipode']['s'], fo['antipode']['t'])
+            k_occult = gk(fo['occult']['s'], fo['occult']['t'])
             
             st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html("引導", k_g, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_anti, fo['antipode']['s'], fo['antipode']['t'])}</div> 
-                    <div>{get_card_html("流年", fk, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
-                    <div>{get_card_html("支持", k_an, fo['analog']['s'], fo['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
+                    <div></div> <div>{get_card_html("引導", k_guide, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
+                    <div>{get_card_html("擴展", k_antipode, fo['antipode']['s'], fo['antipode']['t'])}</div> 
+                    <div>{get_card_html("流年", k_destiny, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
+                    <div>{get_card_html("支持", k_analog, fo['analog']['s'], fo['analog']['t'])}</div>
+                    <div></div> <div>{get_card_html("推動", k_occult, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
             </div>""", unsafe_allow_html=True)
 
+        # 下方：波符旅程
+        st.markdown("---")
+        st.subheader(f"🌊 {fd.get('wave_name','')} 波符旅程")
+        wz = get_wavespell_data(fk)
+        with st.expander(f"📜 查看 KIN {fk} 的完整 13 天旅程", expanded=True):
+             for w in wz:
+                hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == fk else "border: 1px solid #444;"
+                c_img, c_txt = st.columns([0.5, 4])
+                with c_img:
+                     if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
+                with c_txt:
+                    st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
 # 3. 52流年
 elif mode == "52流年城堡":
     st.title("🏰 52 年生命城堡")
@@ -523,6 +549,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

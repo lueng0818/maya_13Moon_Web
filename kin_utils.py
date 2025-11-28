@@ -7,12 +7,21 @@ import pandas as pd
 
 DB_PATH = "13moon.db"
 
+# 1. 靜態資源
 SEALS_NAMES = ["","紅龍","白風","藍夜","黃種子","紅蛇","白世界橋","藍手","黃星星","紅月","白狗","藍猴","黃人","紅天行者","白巫師","藍鷹","黃戰士","紅地球","白鏡","藍風暴","黃太陽"]
 SEAL_FILES = { i: f"{str(i).zfill(2)}{name}.png" for i, name in enumerate(SEALS_NAMES) if i > 0 }
 TONE_FILES = { i: f"瑪雅曆法圖騰-{i+33}.png" for i in range(1, 14) }
 TONE_NAMES = ["","磁性","月亮","電力","自我存在","超頻","韻律","共振","銀河星系","太陽","行星","光譜","水晶","宇宙"]
-TONE_QUESTIONS = {1:"我的目的是什麼？",2:"我的挑戰是什麼？",3:"我如何提供最好的服務？",4:"我採取什麼形式？",5:"我如何被授權？",6:"我如何組織平等？",7:"我如何歸於中心？",8:"我是否活出所信？",9:"我如何完成目的？",10:"我如何完美顯化？",11:"我如何釋放與放下？",12:"我如何奉獻自己？",13:"我如何活在當下？"}
 
+TONE_QUESTIONS = {
+    1: "我的目的是什麼？", 2: "我的挑戰是什麼？", 3: "我如何提供最好的服務？",
+    4: "我採取什麼形式？", 5: "我如何被授權？", 6: "我如何組織平等？",
+    7: "我如何歸於中心？", 8: "我是否活出所信？", 9: "我如何完成目的？",
+    10: "我如何完美顯化？", 11: "我如何釋放與放下？", 12: "我如何奉獻自己？",
+    13: "我如何活在當下？"
+}
+
+# 2. 輔助函數
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -35,6 +44,7 @@ def get_year_range():
         except: pass
     return default_min, default_max
 
+# 3. KIN 計算
 def calculate_kin_v2(date_obj):
     conn = get_db()
     try:
@@ -53,15 +63,21 @@ def calculate_kin_math(date_obj):
     kin = (1 + delta) % 260
     return 260 if kin == 0 else kin
 
+# 4. 資料獲取
 def get_base_matrix_data(kin_num):
     conn = get_db()
-    res = {}
+    result = {}
     try:
         row = conn.execute("SELECT * FROM Base_Matrix_441 WHERE KIN = ?", (kin_num,)).fetchone()
-        if row: res = {"BMU_Position": row['矩陣位置'], "BMU_Note": row['八度音符'], "BMU_Brain": row['對應腦部']}
+        if row:
+            result = {
+                "BMU_Position": row.get('矩陣位置', '-'),
+                "BMU_Note": row.get('八度音符', '-'),
+                "BMU_Brain": row.get('對應腦部', '-')
+            }
     except: pass
     finally: conn.close()
-    return res
+    return result
 
 def get_full_kin_data(kin):
     conn = get_db()
@@ -69,11 +85,13 @@ def get_full_kin_data(kin):
     try:
         row = conn.execute("SELECT * FROM Kin_Basic WHERE KIN = ?", (kin,)).fetchone()
         if row: data.update(dict(row))
+        
         row_d = conn.execute("SELECT * FROM Kin_Data WHERE KIN = ?", (kin,)).fetchone()
         if row_d:
              for k, v in dict(row_d).items():
-                if k not in data or k in ['諧波', '密碼子', '星際原型', 'BMU', '行星', '流', '電路', '說明', '家族', '對應脈輪']:
+                if k not in data or k in ['諧波', '密碼子', '星際原型', 'BMU', '行星', '流', '電路', '說明', '家族', '對應脈輪', '電路說明']:
                     data[k] = v
+
         m = conn.execute("SELECT * FROM Matrix_Data WHERE 時間矩陣_KIN = ?", (kin,)).fetchone()
         if m:
             data['Matrix_Time'] = m.get('時間矩陣_矩陣位置')
@@ -83,8 +101,8 @@ def get_full_kin_data(kin):
     except: pass
     conn.close()
 
-    bmu = get_base_matrix_data(kin)
-    data.update(bmu)
+    bmu_data = get_base_matrix_data(kin)
+    data.update(bmu_data)
 
     s_num = int(data.get('圖騰數字', (kin-1)%20+1))
     t_num = int(data.get('調性數字', (kin-1)%13+1))
@@ -92,8 +110,9 @@ def get_full_kin_data(kin):
     data['tone_img'] = TONE_FILES.get(t_num, "瑪雅曆法圖騰-34.png")
     if '調性' not in data: data['調性'] = TONE_NAMES[t_num]
     if '圖騰' not in data: data['圖騰'] = SEALS_NAMES[s_num]
-    wid = math.ceil(kin / 13)
-    data['wave_name'] = data.get('波符', '未知') 
+    
+    wid = math.ceil(kin/13)
+    data['wave_name'] = data.get('波符', '未知')
     data['wave_img'] = f"瑪雅曆20波符-{str(wid).zfill(2)}.png"
     return data
 
@@ -108,15 +127,19 @@ def get_main_sign_text(kin_num):
 
 def get_oracle(kin):
     s=(kin-1)%20+1; t=(kin-1)%13+1
-    return { "destiny": {"s":s, "t":t}, "analog": {"s":(19-s if 19-s>0 else 19-s+20), "t":t}, "antipode": {"s":(s+10 if s+10<=20 else s-10), "t":t}, "occult": {"s":21-s, "t":(14-t if 14-t>0 else 14-t+13)}, "guide": {"s":s, "t":t} }
+    return { 
+        "destiny": {"s":s, "t":t}, "analog": {"s":(19-s if 19-s>0 else 19-s+20), "t":t}, 
+        "antipode": {"s":(s+10 if s+10<=20 else s-10), "t":t}, "occult": {"s":21-s, "t":(14-t if 14-t>0 else 14-t+13)}, 
+        "guide": {"s":s, "t":t} 
+    }
 
 def get_psi_kin(date_obj):
     conn = get_db()
     res = {}
     try:
-        qs = [date_obj.strftime("%m月%d日"), f"{date_obj.month}月{date_obj.day}日", date_obj.strftime('%Y-%m-%d')]
-        for q in qs:
-            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (q,)).fetchone()
+        q = [date_obj.strftime("%m月%d日"), f"{date_obj.month}月{date_obj.day}日"]
+        for d in q:
+            row = conn.execute("SELECT * FROM PSI_Bank WHERE 月日 = ?", (d,)).fetchone()
             if row:
                 p = int(row['PSI印記'])
                 res = {"KIN": p, "Info": get_full_kin_data(p), "Matrix": row.get('矩陣位置','-')}
@@ -132,23 +155,38 @@ def get_goddess_kin(kin):
     if g==0: g=260
     return {"KIN": g, "Info": get_full_kin_data(g), "Base_KIN": occ}
 
+# --- 5. 關鍵修正：瑪雅曆法查詢 (整合星際年) ---
 def get_maya_calendar_info(date_obj):
     conn = get_db()
     res = {"Maya_Date": "-", "Maya_Month": "-", "Maya_Week": "-", "Heptad_Path": "-", "Plasma": "-", "Solar_Year": "未知", "Status": "查無資料"}
     try:
-        qs = [date_obj.strftime('%m月%d日'), f"{date_obj.month}月{date_obj.day}日", date_obj.strftime('%Y-%m-%d')]
-        for q in qs:
+        # 1. 查詢日期轉換
+        q_dates = [date_obj.strftime('%m月%d日'), f"{date_obj.month}月{date_obj.day}日", date_obj.strftime('%Y-%m-%d')]
+        for q in q_dates:
             row = conn.execute("SELECT * FROM Calendar_Converter WHERE 國曆生日 = ?", (q,)).fetchone()
             if row:
                 res.update({
-                    'Maya_Date': row.get('瑪雅生日','-'), 'Maya_Month': row.get('瑪雅月','-'), 
-                    'Maya_Week': row.get('瑪雅週','-'), 'Heptad_Path': row.get('七價路徑','-'), 
-                    'Plasma': row.get('等離子日','-'), 'Status': "查詢成功"
+                    'Maya_Date': row.get('瑪雅生日', '-'), 'Maya_Month': row.get('瑪雅月', '-'),
+                    'Maya_Week': row.get('瑪雅週', '-'), 'Heptad_Path': row.get('七價路徑', '-'),
+                    'Plasma': row.get('等離子日', '-'), 'Status': "查詢成功"
                 })
-                y = date_obj.year - 1 if (date_obj.month<7 or (date_obj.month==7 and date_obj.day<26)) else date_obj.year
-                res['Solar_Year'] = f"NS 1.{y-1987+30}"
                 break
-    except Exception as e: res['Status'] = str(e)
+        
+        # 2. 查詢星際年 (Solar Year)
+        # 判斷該日期屬於哪個星際年 (7/26 為界)
+        # 如果日期 < 7/26，屬於前一年的星際年
+        solar_start_year = date_obj.year
+        if (date_obj.month < 7) or (date_obj.month == 7 and date_obj.day < 26):
+            solar_start_year -= 1
+            
+        star_row = conn.execute("SELECT 對應星際年 FROM Star_Years WHERE 起始年 = ?", (solar_start_year,)).fetchone()
+        if star_row:
+            res['Solar_Year'] = star_row['對應星際年']
+        else:
+            # 若查不到，使用備用推算公式 (NS 1.36 = 2023)
+            res['Solar_Year'] = f"NS 1.{solar_start_year-1987+30}"
+
+    except Exception as e: res['Status'] = f"Error: {e}"
     finally: conn.close()
     return res
 
@@ -172,6 +210,49 @@ def get_heptad_prayer(path_name):
     except: pass
     finally: conn.close()
     return None
+
+def get_whole_brain_tuning():
+    conn = get_db()
+    res = []
+    try:
+        rows = conn.execute("SELECT 全腦調頻_對應腦部, 全腦調頻_調頻語 FROM Matrix_Data WHERE 全腦調頻_對應腦部 IS NOT NULL").fetchall()
+        seen = set()
+        for r in rows:
+            if r['全腦調頻_對應腦部'] not in seen:
+                res.append(dict(r))
+                seen.add(r['全腦調頻_對應腦部'])
+    except: pass
+    finally: conn.close()
+    return res
+
+def get_king_prophecy():
+    conn = get_db()
+    try: return pd.read_sql("SELECT * FROM King_Prophecy", conn)
+    except: return pd.DataFrame()
+    finally: conn.close()
+
+def get_telektonon_info(kin, maya_cal):
+    conn = get_db()
+    res = {"Crystal_Battery":"-", "Warrior_Cube":"-", "Turtle_Day":"-", "Turtle_Color":"-", "Rune":"-"}
+    try:
+        t_id = (kin - 1) % 13 + 1
+        s_id = (kin - 1) % 20 + 1
+        res['Crystal_Battery'] = f"調性 {t_id} ({TONE_NAMES[t_id]})"
+        res['Warrior_Cube'] = f"圖騰 {s_id} ({SEALS_NAMES[s_id]})"
+        
+        m_day = maya_cal.get('Maya_Date', '').split('.')[-1]
+        if m_day and m_day != '-':
+            dn = int(m_day)
+            res['Turtle_Day'] = f"第 {dn} 天"
+            g = conn.execute("SELECT 說明 FROM Green_Turtle_Day WHERE 第幾天 = ?", (dn,)).fetchone()
+            if g: res.update({"Turtle_Color": "綠烏龜", "Turtle_Desc": g['說明']})
+            w = conn.execute("SELECT 說明 FROM White_Turtle_Day WHERE 第幾天 = ?", (dn,)).fetchone()
+            if w: res.update({"Turtle_Color": "白烏龜", "Turtle_Desc": w['說明']})
+            y = conn.execute("SELECT 說明, 符文意涵 FROM Yellow_Turtle_Day WHERE 第幾天 = ?", (dn,)).fetchone()
+            if y: res.update({"Turtle_Color": "黃烏龜", "Turtle_Desc": y['說明'], "Rune": y['符文意涵']})
+    except: pass
+    finally: conn.close()
+    return res
 
 def get_wavespell_data(kin):
     wd = []
@@ -198,49 +279,15 @@ def get_octave_positions(note):
 def calculate_life_castle(birth_date):
     bk, _ = calculate_kin_v2(birth_date)
     if not bk: bk = calculate_kin_math(birth_date)
-    path = []
+    p = []
     for age in range(105):
         ck = (bk + age*105)%260
         if ck==0: ck=260
         info = get_full_kin_data(ck)
         c = age%52
         col = "#fff0f0" if c<13 else ("#f8f8f8" if c<26 else ("#f0f8ff" if c<39 else "#fffff0"))
-        path.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
-    return path
-
-def get_telektonon_info(kin, maya_cal):
-    res = {"Crystal_Battery":"-", "Warrior_Cube":"-", "Turtle_Day":"-", "Turtle_Color":"-", "Rune":"-"}
-    try:
-        t_id = (kin - 1) % 13 + 1
-        s_id = (kin - 1) % 20 + 1
-        res['Crystal_Battery'] = f"調性 {t_id} ({TONE_NAMES[t_id]})"
-        res['Warrior_Cube'] = f"圖騰 {s_id} ({SEALS_NAMES[s_id]})"
-        
-        m_day = maya_cal.get('Maya_Date', '').split('.')[-1]
-        if m_day and m_day != '-':
-            dn = int(m_day)
-            res['Turtle_Day'] = f"第 {dn} 天"
-            # 這裡可以加入更多烏龜日查詢邏輯
-    except: pass
-    return res
-
-def get_whole_brain_tuning():
-    conn = get_db()
-    res = []
-    try:
-        rows = conn.execute("SELECT 全腦調頻_對應腦部, 全腦調頻_調頻語 FROM Matrix_Data WHERE 全腦調頻_對應腦部 IS NOT NULL").fetchall()
-        seen = set()
-        for r in rows:
-            if r[0] not in seen: res.append(dict(r)); seen.add(r[0])
-    except: pass
-    finally: conn.close()
-    return res
-
-def get_king_prophecy():
-    conn = get_db()
-    try: return pd.read_sql("SELECT * FROM King_Prophecy", conn)
-    except: return pd.DataFrame()
-    finally: conn.close()
+        p.append({"Age":age, "Year":birth_date.year+age, "KIN":ck, "Info":info, "Color":col})
+    return p
 
 def save_user_data(name, dob_str, kin, main_sign):
     conn = get_db()
@@ -272,11 +319,12 @@ def delete_user_data(names):
 
 def get_user_list():
     conn = get_db()
-    try:
-        conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
-        return pd.read_sql("SELECT 姓名, 生日, KIN, 主印記 FROM Users", conn)
+    try: ensure_users_table(conn); return pd.read_sql("SELECT 姓名, 生日, KIN FROM Users", conn)
     except: return pd.DataFrame()
     finally: conn.close()
+
+def ensure_users_table(conn):
+    conn.execute("""CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)""")
 
 def get_user_kin(name, df):
     r = df[df['姓名']==name]

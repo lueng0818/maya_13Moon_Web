@@ -20,18 +20,21 @@ def read_csv_robust(file_path, **kwargs):
         except: continue
     return None
 
+# 修改 create_db.py 的 init_db 函式
+
 def init_db():
     print(f"🚀 開始建置資料庫: {DB_NAME}...")
     conn = sqlite3.connect(DB_NAME)
     
-    # 1. 參照表 (加入針對 PSI 的特殊處理)
-    # 定義: (關鍵字, 表格名, 索引欄位)
+    # 1. 參照表 (加入新成員：對應瑪雅生日)
     tables_config = [
         ("kin_start_year", "Kin_Start", '年份'), 
         ("month_day_accum", "Month_Accum", '月份'), 
         ("kin_basic_info", "Kin_Basic", 'KIN'), 
-        ("PSI印記對照表", "PSI_Bank", '月日'),  # 關鍵：這個檔案必須被正確讀取
-        ("女神印記", "Goddess_Seal", 'KIN')
+        ("PSI印記對照表", "PSI_Bank", '月日'),
+        ("女神印記", "Goddess_Seal", 'KIN'),
+        # ✨ 新增這行：載入 13:28 對照表
+        ("對應瑪雅生日", "Maya_1328_Map", "月日")
     ]
 
     for kw, table, idx in tables_config:
@@ -40,16 +43,17 @@ def init_db():
             print(f"處理檔案: {f} -> 表格: {table}")
             df = read_csv_robust(f)
             if df is not None:
-                # 清理欄位名稱 (移除空格)
+                # 清理欄位名稱
                 df.columns = [str(c).strip() for c in df.columns]
                 
-                # 特殊處理：如果是 PSI 表或基本資料，確保數字欄位正確
+                # 數值欄位處理
                 if 'PSI印記' in df.columns:
                     df['PSI印記'] = pd.to_numeric(df['PSI印記'], errors='coerce').fillna(0).astype(int)
                 if 'KIN' in df.columns: 
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
                 df.to_sql(table, conn, if_exists="replace", index=False)
+                # 建立索引加快查詢
                 if idx in df.columns: 
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table} ON {table} ({idx})")
         else:
@@ -95,3 +99,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
+

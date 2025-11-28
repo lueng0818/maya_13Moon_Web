@@ -645,21 +645,84 @@ elif mode == "人員生日管理":
                 st.error(f"❌ 檔案格式錯誤: {str(e)}")
 
 
-# 7. 合盤
+# 7. 合盤 (升級版：含關係神諭與關係波符)
 elif mode == "通訊錄/合盤":
     st.title("❤️ 關係合盤")
-    pn1 = user_selector("夥伴 A", "p1")
-    pn2 = user_selector("夥伴 B", "p2")
-    if st.button("計算"):
+    
+    # 選擇器佈局
+    col_p1, col_p2 = st.columns(2)
+    with col_p1: pn1 = user_selector("夥伴 A", "p1")
+    with col_p2: pn2 = user_selector("夥伴 B", "p2")
+    
+    if st.button("計算關係能量"):
         if pn1 and pn2:
             us = get_user_list()
             k1, _ = get_user_kin(pn1, us)
             k2, _ = get_user_kin(pn2, us)
+            
             if k1 and k2:
+                # 計算合盤 KIN
                 ck = calculate_composite(k1, k2)
                 ci = get_full_kin_data(ck)
-                st.success(f"🎉 {pn1} & {pn2} 合盤 KIN {ck}：{ci.get('主印記','')}")
-                show_basic_result(ck, ci)
+                
+                st.success(f"🎉 {pn1} & {pn2} -> 關係合盤 KIN {ck}")
+                
+                # --- 核心佈局 (左右分欄) ---
+                c1, c2 = st.columns([1, 1.6])
+                
+                # 左欄：關係基本資料
+                with c1:
+                    show_basic_result(ck, ci)
+                    # 可以在這裡加入合盤的額外註解
+                    st.info("💡 這個印記代表你們雙方能量疊加後，共同顯化出的關係本質。")
+                
+                # 右欄：關係五大神諭
+                with c2:
+                    st.subheader("關係五大神諭")
+                    co = get_oracle(ck)
+                    # 確保使用正確的卓爾金曆反推公式
+                    def gk(s, t): return ((t - s) * 40 + s - 1) % 260 + 1
+                    
+                    k_destiny = ck
+                    k_guide = gk(co['guide']['s'], co['guide']['t'])
+                    k_analog = gk(co['analog']['s'], co['analog']['t'])
+                    k_antipode = gk(co['antipode']['s'], co['antipode']['t'])
+                    k_occult = gk(co['occult']['s'], co['occult']['t'])
+                    
+                    # 這裡的卡片標題也可以加上 "關係" 前綴，或者維持原樣保持簡潔
+                    st.markdown(f"""<div class="oracle-grid-container">
+                            <div></div> <div>{get_card_html("關係引導", k_guide, co['guide']['s'], co['guide']['t'])}</div> <div></div>
+                            <div>{get_card_html("關係挑戰", k_antipode, co['antipode']['s'], co['antipode']['t'])}</div> 
+                            <div>{get_card_html("關係合盤", k_destiny, co['destiny']['s'], co['destiny']['t'], True)}</div> 
+                            <div>{get_card_html("關係支持", k_analog, co['analog']['s'], co['analog']['t'])}</div>
+                            <div></div> <div>{get_card_html("關係推動", k_occult, co['occult']['s'], co['occult']['t'])}</div> <div></div>
+                    </div>""", unsafe_allow_html=True)
+
+                # 下方：關係波符旅程
+                st.markdown("---")
+                st.subheader(f"🌊 關係波符旅程：{ci.get('wave_name','')} 波符")
+                wz = get_wavespell_data(ck)
+                
+                with st.expander(f"📜 查看這段關係的完整 13 天旅程", expanded=True):
+                     for w in wz:
+                        # 高亮顯示合盤 KIN 所在的位置
+                        hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == ck else "border: 1px solid #444;"
+                        
+                        # ✨ 關鍵修改：將提問前加上「關係」
+                        # 這裡將原本的 "調性 X" 改為 "關係調性 X"
+                        # 原本的問題 (w['Question']) 通常是 "我的目的是什麼？"，這裡加上前綴讓使用者帶入關係視角
+                        
+                        c_img, c_txt = st.columns([0.5, 4])
+                        with c_img:
+                             if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
+                        with c_txt:
+                            st.markdown(
+                                f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'>"
+                                f"<b style='color:#d4af37'>關係調性 {w['Tone']}：{w['Question']}</b><br>"
+                                f"<span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span>"
+                                f"</div>", 
+                                unsafe_allow_html=True
+                            )
 
 # 8. 八度音階
 elif mode == "八度音階查詢":
@@ -677,6 +740,7 @@ elif mode == "系統檢查員":
         st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
         conn.close()
     else: st.error("資料庫遺失")
+
 
 
 

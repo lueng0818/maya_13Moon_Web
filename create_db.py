@@ -24,7 +24,7 @@ def init_db():
     print(f"🚀 開始建置資料庫: {DB_NAME}...")
     conn = sqlite3.connect(DB_NAME)
     
-    # 1. 參照表設定 (包含關鍵的 13:28 對照表)
+    # 1. 參照表設定
     # 格式: (CSV關鍵字, 資料庫表名, 索引欄位)
     tables_config = [
         ("kin_start_year", "Kin_Start", '年份'), 
@@ -32,8 +32,11 @@ def init_db():
         ("kin_basic_info", "Kin_Basic", 'KIN'), 
         ("PSI印記對照表", "PSI_Bank", '月日'),
         ("女神印記", "Goddess_Seal", 'KIN'),
-        # 👇 關鍵！一定要有這一行，程式才會去讀新的 CSV
-        ("對應瑪雅生日", "Maya_1328_Map", "月日") 
+        ("對應瑪雅生日", "Maya_1328_Map", "月日"),
+        ("七價路徑對應祈禱文", "Heptad_Prayer", "七價路徑"),
+        # ✨ 新增：瑪雅週關鍵句 (請確認您的 CSV 檔名包含 '瑪亞週關鍵句')
+        # 注意：您上傳的檔名是 '瑪亞週關鍵句.csv' ('亞' vs '雅')，這裡關鍵字用 '瑪亞週' 比較保險
+        ("瑪亞週關鍵句", "Maya_Week_Key", "瑪雅週")
     ]
 
     for kw, table, idx in tables_config:
@@ -42,22 +45,26 @@ def init_db():
             print(f"處理檔案: {f} -> 表格: {table}")
             df = read_csv_robust(f)
             if df is not None:
-                # 清理欄位名稱 (移除前後空白)
+                # 清理欄位名稱
                 df.columns = [str(c).strip() for c in df.columns]
                 
-                # 數值欄位轉型 (避免數字變文字)
+                # 數值欄位轉型
                 if 'PSI印記' in df.columns:
                     df['PSI印記'] = pd.to_numeric(df['PSI印記'], errors='coerce').fillna(0).astype(int)
                 if 'KIN' in df.columns: 
                     df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce').fillna(0).astype(int)
                 
+                # 七價路徑特殊處理
+                if table == "Heptad_Prayer" and '七價路徑' in df.columns:
+                     df['七價路徑'] = df['七價路徑'].astype(str).str.replace('\n', ' ').str.strip()
+
                 df.to_sql(table, conn, if_exists="replace", index=False)
                 if idx in df.columns: 
                     conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table} ON {table} ({idx})")
         else:
             print(f"⚠️ 找不到關鍵字 '{kw}' 的 CSV 檔案，將跳過建立 {table}！")
 
-    # 2. 核心資料 (卓爾金曆、矩陣、易經...)
+    # 2. 核心資料
     for kw, table in [("卓爾金曆", "Kin_Data"), ("矩陣", "Matrix_Data"), ("銀河易經", "IChing"), ("星際年", "Star_Years")]:
         f = find_file(kw)
         if f:
@@ -88,9 +95,7 @@ def init_db():
                 if kw != "矩陣": df.columns = [str(c).strip() for c in df.columns]
                 df.to_sql(table, conn, if_exists="replace", index=False)
                 
-    # 3. 確保使用者表格存在
     conn.execute("CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, 姓名 TEXT, 生日 TEXT, KIN INTEGER, 主印記 TEXT)")
-    
     conn.close()
     print("🎉 資料庫建置完成！")
 

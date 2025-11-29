@@ -36,6 +36,17 @@ TONE_QUESTIONS = {
     "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
 }
 
+# [補回] HMP 七價路徑之門定義 (解決 KeyError)
+HEPTAD_GATE_INFO = {
+    1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
+    2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
+    3: {"plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪", "sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應"},
+    4: {"plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧"},
+    5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
+    6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
+    7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
+}
+
 CASTLES_INFO = {
     "紅色東方啟動城堡": {"range": "Kin 1-52", "color_bg": "#FFCCCB", "court": "出生之庭", "theme": "啟動與開創", "desc": "適合發起新事物的起始開創課題。", "img": "assets/tokens/pyramid_red.png"},
     "白色北方跨越城堡": {"range": "Kin 53-104", "color_bg": "#F0F3F4", "court": "死亡之庭", "theme": "跨越與淨化", "desc": "透過淨化與斷捨離，跨越舊有。", "img": "assets/tokens/pyramid_white.png"},
@@ -44,27 +55,28 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
+# 行星軌道映射 (左GK / 右SP)
 TELEKTONON_MAP = {
-    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
-    10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    1: {"planet": "海王星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    10: {"planet": "水星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
+    11: {"planet": "金星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -85,19 +97,8 @@ HEAVEN_JOURNEY = {
     27: "拆除銀河業力流 (GK) - 實踐之塔頂部", 28: "拆除銀河業力流 (GK) - 實踐之塔中部"
 }
 
-# [新增] HMP 七價大門
-HEPTAD_GATE_INFO = {
-    1: {"plasma": "Dali", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "desc": "前意識 / 原始力"},
-    2: {"plasma": "Seli", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "desc": "無意識 / 化身"},
-    3: {"plasma": "Gamma", "bmu": 144, "pos": "V11:H20", "chakra": "眉心輪", "desc": "清醒意識 / 傳承"},
-    4: {"plasma": "Kali", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "desc": "持續意識 / 啟蒙"},
-    5: {"plasma": "Alpha", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "desc": "超意識 / 時空"},
-    6: {"plasma": "Limi", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "desc": "閾下意識 / 超越"},
-    7: {"plasma": "Silio", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "desc": "全息心智 / 立方體"}
-}
-
 # ==========================================
-# 2. 資料載入層
+# 2. 資料載入層 (Data Layer)
 # ==========================================
 @st.cache_data
 def load_data():
@@ -134,22 +135,21 @@ def load_data():
     if data['month_accum'] is not None:
         data['month_accum_dict'] = dict(zip(data['month_accum']['月份'], data['month_accum']['累積天數']))
     
-    # 建立諧波與易經對照 (Harmonic 1-65 -> I Ching)
     data['harmonic_map'] = {}
     if data['iching'] is not None:
         for _, row in data['iching'].iterrows():
             try:
-                txt = str(row.get('諧波', ''))
-                match = re.search(r'諧波(\d+)', txt)
+                match = re.search(r'諧波(\d+)', str(row.get('諧波', '')))
                 if match: data['harmonic_map'][int(match.group(1))] = row.to_dict()
             except: continue
     return data
 
-# --- Google Sheets ---
+# --- Google Sheets 資料庫 ---
 def load_contacts_db():
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
         df = conn.read(worksheet="contacts", ttl=0)
+        if '生日' in df.columns: df['生日'] = df['生日'].astype(str)
         return conn, df
     except:
         return conn, pd.DataFrame(columns=["姓名", "生日", "KIN"])
@@ -335,28 +335,6 @@ def get_heptad_gate_info(day):
     week_day = (day - 1) % 7 + 1
     return HEPTAD_GATE_INFO.get(week_day, {})
 
-def get_harmonic_info(kin_num, db):
-    """
-    計算諧波並回傳對應的易經卦象資料
-    諧波公式: (Kin-1)//4 + 1
-    """
-    if not kin_num: return None, None
-    harmonic_num = (kin_num - 1) // 4 + 1
-    
-    # 第 33 諧波 (Kin 129-132) 是中空之境 (Void)
-    if harmonic_num == 33:
-        return 33, {
-            '卦象': '中空 (Void)', 
-            '意涵': '無極 / 通道', 
-            '說明': '沒有對應的卦象，這是純粹的通道與共振空間。',
-            '編碼': '000000'
-        }
-    
-    # 從資料庫查找
-    if db['harmonic_map']:
-        return harmonic_num, db['harmonic_map'].get(harmonic_num, None)
-    return harmonic_num, None
-
 def calculate_synchronotron_data(date_obj, main_kin, db):
     logs = []
     m, d = date_obj.month, date_obj.day
@@ -411,7 +389,7 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     kin_equiv = (mcf - 1) % 260 + 1
     return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
 
-# --- 輔助：圖片轉 Base64 ---
+# --- 輔助：圖片轉 Base64 函式 ---
 def image_to_base64(img_path):
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
@@ -481,40 +459,6 @@ def render_oracle_pyramid(title, kin_num, kin_info):
         t_data = get_telektonon_info(s_idx)
         st.markdown(f"""<div style="font-size:12px; line-height:1.2;">🪐 {t_data.get('planet')}<br>⚡ {t_data.get('circuit')}<br>🌊 {t_data.get('flow')}</div>""", unsafe_allow_html=True)
 
-# --- 輔助：易經卦象渲染 (Dynamic Hexagram) ---
-def render_hexagram(binary_code):
-    """
-    將二進位碼 (如 111000) 轉換為陰陽爻圖形 (HTML)
-    1 = 陽 (Solid), 0 = 陰 (Broken)
-    注意：馬雅易經通常是「由下而上」還是「由上而下」？
-    根據您的 CSV，111111 是乾卦。
-    我們假設字串順序對應 從下到上 (Bottom to Top) 或者是標準順序。
-    為了視覺美觀，我們簡單繪製。
-    """
-    if not binary_code: return ""
-    
-    lines_html = ""
-    # 通常二進位字串是從 上爻 到 初爻，或是反過來。
-    # 這裡我們直接按順序繪製，若需反轉可 binary_code[::-1]
-    # 假設 binary_code[0] 是最上層 (第6爻)
-    
-    for bit in binary_code:
-        if bit == '1': # 陽爻 (Solid)
-            lines_html += """<div style="width:100%; height:8px; background-color:#333; margin-bottom:4px;"></div>"""
-        else: # 陰爻 (Broken)
-            lines_html += """
-            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:4px;">
-                <div style="width:42%; height:8px; background-color:#333;"></div>
-                <div style="width:42%; height:8px; background-color:#333;"></div>
-            </div>
-            """
-            
-    return f"""
-    <div style="width:60px; margin: 0 auto;">
-        {lines_html}
-    </div>
-    """
-
 # ==========================================
 # 4. 前端展示層
 # ==========================================
@@ -538,8 +482,14 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("👤 使用者設定 (KIN A)")
 conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
-
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
+
+# Debug
+if st.sidebar.checkbox("🔧 檔案檢查"):
+    st.sidebar.write("Seals Path: assets/seals")
+    if os.path.exists("assets/seals"):
+        st.sidebar.write(os.listdir("assets/seals")[:5])
+    else: st.sidebar.error("Seals not found")
 
 if use_contact and not contacts_df.empty:
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])
@@ -570,7 +520,7 @@ if not use_contact:
                 st.success(f"已儲存 {new_name}")
                 st.rerun()
 
-# ---------------- 核心計算 ----------------
+# 計算
 kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
 info_A = get_kin_details(kin_A, DB)
 oracle_A = calculate_oracle(kin_A, DB)
@@ -578,16 +528,13 @@ psi_num, _ = get_psi_kin(birth_date, kin_A, DB)
 psi_info = get_kin_details(psi_num, DB)
 goddess_info = calculate_goddess_force(oracle_A, DB)
 flow_year_val, flow_year_info = calculate_flow_year_kin(birth_date, DB, ref_date=daily_date)
-
 today_date, today_kin_info = calculate_today_kin(daily_date, DB)
 moon_str, moon_num, day_num, heptad_week = get_13moon_date(daily_date)
 daily_energy = get_daily_energy(moon_num, day_num, DB)
 today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
 sync_data = calculate_synchronotron_data(daily_date, kin_A, DB)
 heptad_info = get_heptad_gate_info(day_num)
-harmonic_num, iching_info = get_harmonic_info(kin_A, DB) # [新增] 個人諧波
 
-# ---------------- 頁面標題 ----------------
 if selected_function != "👥 人員管理":
     st.title("🌌 13 Moon Synchronotron Master System")
     st.markdown(f"**歡迎來到時間法則的中心** | 設定今日: **{daily_date}** | 今日 KIN **{today_kin_info['KIN']} {today_kin_info['主印記']}**")
@@ -606,18 +553,6 @@ if selected_function == "🔮 靈魂藍圖":
         st.write(f"**波符**：{info_A.get('波符')}")
         st.info("調性 (Bar-Dot) 代表頻率，圖騰 (Seal) 代表原型能量。")
     
-    # [新增] 顯示個人諧波與易經
-    if iching_info:
-        st.markdown("---")
-        st.subheader(f"📜 諧波 {harmonic_num}：{iching_info.get('卦象')}")
-        c_hex, c_txt = st.columns([1, 4])
-        with c_hex:
-            # 顯示動態生成的卦象圖
-            st.markdown(render_hexagram(str(iching_info.get('編碼'))), unsafe_allow_html=True)
-        with c_txt:
-            st.write(f"**意涵**：{iching_info.get('意涵')}")
-            st.caption(iching_info.get('說明'))
-            
     st.markdown("---")
     st.subheader("🧩 五大神諭佈陣 (Oracle Cross)")
     bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
@@ -790,27 +725,22 @@ elif selected_function == "🧠 441 共時化科學":
             st.metric("年度路徑", f"Week {heptad_week}")
             st.info(f"當前位於年度第 {heptad_week} 條路徑，連接 Hunab Ku 21。")
             
-            # [新增] 顯示今日七價大門
             if heptad_info:
                 st.success(f"**今日大門：{heptad_info['plasma']} ({heptad_info['chakra']})**")
                 st.caption(heptad_info['desc'])
                 st.write(f"BMU {heptad_info['bmu']} | 座標 {heptad_info['pos']}")
                 st.write(f"精神球體：{heptad_info['sphere']}")
                 
-    st.markdown("---")
-    st.subheader("🧠 HMP 意識活化")
-    # 這裡可以放入 HMP 腦圖，如果有的話
-    # if os.path.exists("assets/tokens/hmp_brain.jpg"): ...
-
     if sync_data:
         mcf = sync_data['MCF']
         bmu = sync_data['BMU']
         keq = sync_data['KIN_EQUIV']
-        st.markdown("#### 核心頻率數據")
-        st.markdown(f"""<div style="background-color:#E8F8F5; padding:20px; border-radius:10px; border:2px solid #1ABC9C;">
-            <h2>MCF: {mcf}</h2><small>Master Coordinating Frequency</small><hr>
-            <h3>BMU: {bmu}</h3><small>Base Matrix Unit</small><hr>
-            <h3>對等: KIN {keq['KIN']}</h3></div>""", unsafe_allow_html=True)
+        with c_res:
+            st.markdown("#### 核心頻率數據")
+            st.markdown(f"""<div style="background-color:#E8F8F5; padding:20px; border-radius:10px; border:2px solid #1ABC9C;">
+                <h2>MCF: {mcf}</h2><small>Master Coordinating Frequency</small><hr>
+                <h3>BMU: {bmu}</h3><small>Base Matrix Unit</small><hr>
+                <h3>對等: KIN {keq['KIN']}</h3></div>""", unsafe_allow_html=True)
         with st.expander("查看 TFI 加總細節"):
             for log in sync_data['logs']: st.code(log, language="text")
 

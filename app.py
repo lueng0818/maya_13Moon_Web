@@ -36,43 +36,43 @@ TONE_QUESTIONS = {
     "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
 }
 
-# [更新] HMP 七價路徑之門完整定義
+# HMP 七價路徑之門完整定義 (已移除引用標記)
 HEPTAD_GATE_INFO = {
     1: {
         "plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", 
         "bmu": 108, "pos": "V11:H2", "chakra": "頂輪 (Crown)", 
-        [cite_start]"sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊 [cite: 703]"
-       },
+        "sphere": "第1精神球體 (前意識)", "desc": "啟動掌管「前意識」的第一精神球體，儲存與發展「超感官」的重要部位。"
+    },
     2: {
         "plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", 
         "bmu": 291, "pos": "V11:H5", "chakra": "海底輪 (Root)", 
-        [cite_start]"sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊 [cite: 703]"
-       },
+        "sphere": "第2精神球體 (潛意識)", "desc": "啟動掌管潛意識或是無意識的第二精神球體，儲存過去被意識潛抑的資訊。"
+    },
     3: {
         "plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", 
         "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪 (Third Eye)", 
-        [cite_start]"sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應 [cite: 703]"
-       },
+        "sphere": "第3精神球體 (清醒意識)", "desc": "啟動掌管清醒意識的第三精神球體，穩定日常認知反應，提升為宇宙覺知。"
+    },
     4: {
         "plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", 
         "bmu": 315, "pos": "V11:H4", "chakra": "臍輪 (Navel)", 
-        [cite_start]"sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧 [cite: 703]"
-       },
+        "sphere": "第4精神球體 (持續意識)", "desc": "啟動存在著持續意識的第四精神球體，轉化高我智慧成為自由意志力量。"
+    },
     5: {
         "plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", 
         "bmu": 414, "pos": "V11:H14", "chakra": "喉輪 (Throat)", 
-        [cite_start]"sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式 [cite: 703]"
-       },
+        "sphere": "第5精神球體 (超意識)", "desc": "啟動掌管超意識的第五精神球體，接收更高維度心電感應程式。"
+    },
     6: {
         "plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", 
         "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢 (Solar Plexus)", 
-        [cite_start]"sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號 [cite: 703]"
-       },
+        "sphere": "第6精神球體 (閾下意識)", "desc": "啟動掌管閾下意識的第六精神球體，處理超越感官限制的信號頻率。"
+    },
     7: {
         "plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", 
         "bmu": 441, "pos": "V11:H11", "chakra": "心輪 (Heart)", 
-        [cite_start]"sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣 [cite: 703]"
-       }
+        "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動全息心智感官體（HMP），441 矩陣的核心力量。"
+    }
 }
 
 CASTLES_INFO = {
@@ -359,10 +359,6 @@ def get_telektonon_info(seal_idx):
     return TELEKTONON_MAP.get(seal_idx, {})
 
 def get_heptad_gate_info(day):
-    """取得七價大門資訊"""
-    # 一週7天，Heptad Gate 依據星期幾開啟
-    # day_num 是月亮曆日期 1-28
-    # 1-7, 8-14, 15-21, 22-28 都是對應 1-7 門
     week_day = (day - 1) % 7 + 1
     return HEPTAD_GATE_INFO.get(week_day, {})
 
@@ -438,6 +434,7 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
+    
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
     
@@ -445,11 +442,9 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     <div style="background-color:{bg_color}; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; height:100%; display:flex; flex-direction:column; align_items:center; justify_content:center;">
         <div style="font-weight:bold; margin-bottom:5px; color:#555;">{title}</div>
     """
-    # [修正] 上方顯示調性
     if b64_tone: html += f'<img src="data:image/png;base64,{b64_tone}" style="width:40px; margin-bottom:2px;">'
     else: html += f"<div>({tone_name})</div>"
     
-    # [修正] 下方顯示圖騰
     if b64_seal: html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width:70px; border-radius:5px; margin-bottom:5px;">'
     else: html += f"<div>({seal_name})</div>"
     
@@ -467,7 +462,6 @@ def render_large_kin(kin_num, kin_info):
     tone_path = f"assets/tones/tone-{tone_idx}.png"
     c1, c2 = st.columns([1, 2])
     with c1:
-        # 靈魂藍圖頁面也統一：上調性、下圖騰
         if os.path.exists(tone_path): st.image(tone_path, width=80)
         if os.path.exists(seal_path): st.image(seal_path, width=250, caption=kin_info.get('主印記'))
         else: st.markdown(f"### KIN {kin_num} {kin_info.get('主印記')}")
@@ -515,8 +509,14 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("👤 使用者設定 (KIN A)")
 conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
-
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
+
+# Debug
+if st.sidebar.checkbox("🔧 檔案檢查"):
+    st.sidebar.write("Seals Path: assets/seals")
+    if os.path.exists("assets/seals"):
+        st.sidebar.write(os.listdir("assets/seals")[:5])
+    else: st.sidebar.error("Seals not found")
 
 if use_contact and not contacts_df.empty:
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])
@@ -547,7 +547,7 @@ if not use_contact:
                 st.success(f"已儲存 {new_name}")
                 st.rerun()
 
-# ---------------- 核心計算 ----------------
+# 計算
 kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
 info_A = get_kin_details(kin_A, DB)
 oracle_A = calculate_oracle(kin_A, DB)
@@ -560,9 +560,8 @@ moon_str, moon_num, day_num, heptad_week = get_13moon_date(daily_date)
 daily_energy = get_daily_energy(moon_num, day_num, DB)
 today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
 sync_data = calculate_synchronotron_data(daily_date, kin_A, DB)
-heptad_info = get_heptad_gate_info(day_num) # [新增]
+heptad_info = get_heptad_gate_info(day_num)
 
-# ---------------- 頁面標題 ----------------
 if selected_function != "👥 人員管理":
     st.title("🌌 13 Moon Synchronotron Master System")
     st.markdown(f"**歡迎來到時間法則的中心** | 設定今日: **{daily_date}** | 今日 KIN **{today_kin_info['KIN']} {today_kin_info['主印記']}**")
@@ -849,4 +848,3 @@ elif selected_function == "👥 人員管理":
                         st.rerun()
                     else: st.error("CSV 缺少 '姓名' 或 '生日' 欄位")
                 except Exception as e: st.error(f"匯入失敗: {e}")
-

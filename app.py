@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import re
 import os
+import base64
 from streamlit_gsheets import GSheetsConnection
 
 # ==========================================
@@ -43,7 +44,6 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
-# 行星軌道映射
 TELEKTONON_MAP = {
     1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
     2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
@@ -344,47 +344,69 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     kin_equiv = (mcf - 1) % 260 + 1
     return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
 
-# --- 輔助：雙重圖片顯示 (圖騰 + 調性) ---
-def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
-    """顯示帶有 圖騰 與 調性 圖片的卡片"""
-    with st.container():
-        # 將 Title 置中
-        st.markdown(f"<div style='text-align: center; font-weight: bold;'>{title}</div>", unsafe_allow_html=True)
-        
-        seal_idx = (kin_num - 1) % 20 + 1
-        tone_idx = (kin_num - 1) % 13 + 1
-        
-        seal_path = f"assets/seals/{seal_idx:02d}.jpg" 
-        tone_path = f"assets/tones/tone-{tone_idx}.png"
-        
-        # 建立直式布局
-        col_content = st.columns([1])[0] # 單欄
-        with col_content:
-            # 圖片置中容器
-            st.markdown(f"""
-            <div style="background-color:{bg_color}; padding:10px; border-radius:5px; border:1px solid #ddd; height:100%; text-align: center;">
-                """, unsafe_allow_html=True)
-            
-            # 顯示調性 (小圖)
-            if os.path.exists(tone_path):
-                st.image(tone_path, width=40, use_column_width=False)
-            
-            # 顯示圖騰 (大圖)
-            if os.path.exists(seal_path):
-                st.image(seal_path, width=80, use_column_width=False)
-            
-            # 文字資訊
-            st.markdown(f"""
-                <div style="font-size:16px; font-weight:bold; margin-top:5px;">KIN {kin_num}</div>
-                <div style="font-size:14px;">{kin_info.get('主印記', '')}</div>
-            </div>
-            """, unsafe_allow_html=True)
+# --- 輔助：圖片轉 Base64 函式 ---
+def image_to_base64(img_path):
+    """將圖片轉為 Base64 字串，以便嵌入 HTML"""
+    if os.path.exists(img_path):
+        with open(img_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    return None
 
-def render_vertical_oracle_card(title, kin_data, bg_color):
-    """Tab 1 專用的直式卡片渲染"""
-    render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
+# --- 輔助：HTML 神諭卡片渲染 (十字佈陣專用) ---
+def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+    """顯示 HTML 版本的直式卡片：[標題] [調性圖] [圖騰圖] [KIN 資訊]"""
+    
+    seal_idx = (kin_num - 1) % 20 + 1
+    tone_idx = (kin_num - 1) % 13 + 1
+    
+    seal_path = f"assets/seals/{seal_idx:02d}.jpg"
+    tone_path = f"assets/tones/tone-{tone_idx}.png"
+    
+    b64_seal = image_to_base64(seal_path)
+    b64_tone = image_to_base64(tone_path)
+    
+    tone_name = TONES_NAME[tone_idx]
+    seal_name = SEALS_NAME[seal_idx]
+    
+    html = f"""
+    <div style="
+        background-color: {bg_color}; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        padding: 10px; 
+        text-align: center; 
+        height: 100%;
+        display: flex; 
+        flex-direction: column; 
+        align_items: center;
+        justify_content: center;
+    ">
+        <div style="font-weight: bold; margin-bottom: 5px; color: #555;">{title}</div>
+    """
+    
+    # 顯示調性 (上)
+    if b64_tone:
+        html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 40px; margin-bottom: 2px;">'
+    else:
+        html += f"<div>({tone_name}調性)</div>"
+        
+    # 顯示圖騰 (下)
+    if b64_seal:
+        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 70px; border-radius: 5px; margin-bottom: 5px;">'
+    else:
+        html += f"<div>({seal_name}圖騰)</div>"
+        
+    # 顯示文字資訊
+    html += f"""
+        <div style="font-size: 18px; font-weight: bold; color: #333;">KIN {kin_num}</div>
+        <div style="font-size: 13px; color: #666;">{tone_name}調性 {seal_name}</div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
 def render_large_kin(kin_num, kin_info):
+    """靈魂藍圖的大圖顯示 (保持 Streamlit 原生元件以求簡單)"""
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
@@ -407,7 +429,8 @@ def render_oracle_pyramid(title, kin_num, kin_info):
     with st.container():
         st.markdown(f"**{title}**")
         st.caption(f"KIN {kin_num} {kin_info.get('圖騰')}")
-        is_destiny = ("命運" in title)
+        # [修正] 統一檢查關鍵字 "主印記"
+        is_destiny = ("主印記" in title)
         pyr_path = get_pyramid_path(kin_num, is_destiny)
         if os.path.exists(pyr_path): st.image(pyr_path, width=80)
         else: st.markdown("⚠️") 
@@ -421,8 +444,15 @@ def render_oracle_pyramid(title, kin_num, kin_info):
 
 if DB is None: st.stop()
 
-# --- Sidebar ---
-st.sidebar.header("🌌 使用者資料")
+# --- Sidebar: 功能導航 ---
+st.sidebar.header("🌌 13 Moon System")
+
+# 功能選單 (取代 Tabs)
+menu_options = ["🔮 靈魂藍圖", "🏰 時間地圖", "🌊 流年與運勢", "💞 關係合盤", "👑 國王棋盤", "🧠 441 共時化科學", "👥 人員管理"]
+selected_function = st.sidebar.radio("功能選單", menu_options)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("使用者資料")
 
 # 資料庫載入與選單
 conn, contacts_df = load_contacts_db()
@@ -443,7 +473,6 @@ kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
 info_A = get_kin_details(kin_A, DB)
 
 # 儲存按鈕
-st.sidebar.markdown("---")
 with st.sidebar.expander("儲存到通訊錄"):
     new_name = st.text_input("輸入名字")
     if st.button("儲存"):
@@ -452,7 +481,7 @@ with st.sidebar.expander("儲存到通訊錄"):
             st.success(f"已儲存 {new_name}")
             st.rerun()
 
-# 執行其他計算
+# 執行所有核心計算
 oracle_A = calculate_oracle(kin_A, DB)
 psi_num, _ = get_psi_kin(birth_date, kin_A, DB)
 psi_info = get_kin_details(psi_num, DB)
@@ -464,15 +493,16 @@ moon_str, moon_num, day_num, heptad_week = get_13moon_date(today_date)
 daily_energy = get_daily_energy(moon_num, day_num, DB)
 today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
 
+# 主標題區 (只在非人員管理頁面顯示，或保持常駐)
 st.title("🌌 13 Moon Synchronotron Master System")
 st.markdown(f"**歡迎來到時間法則的中心** | 今日: {today_date} | KIN {today_kin_info['KIN']}")
+st.markdown("---")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "🔮 靈魂藍圖", "🏰 時間地圖", "🌊 流年與運勢", "💞 關係合盤", "👑 國王棋盤", "🧠 441 共時化科學", "👥 人員管理"
-])
+# ==========================================
+# 5. 頁面路由 (Page Routing)
+# ==========================================
 
-# --- Tab 1: 靈魂藍圖 (十字佈陣版) ---
-with tab1:
+if selected_function == "🔮 靈魂藍圖":
     # 1. 主印記基本資料 (上方大圖)
     col_text = render_large_kin(kin_A, info_A)
     with col_text:
@@ -493,27 +523,23 @@ with tab1:
     bg_occult = "#F4F6F6"
 
     # 建立 3x3 網格模擬十字
-    # Row 1: 空 | Guide | 空
     r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
     with r1c2:
-        render_vertical_oracle_card("指引 (Guide)", oracle_A['guide'], bg_guide)
+        render_kin_card("指引 (Guide)", oracle_A['guide']['KIN'], oracle_A['guide'], bg_guide)
 
-    # Row 2: Antipode | Destiny | Analog
     r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
     with r2c1:
-        render_vertical_oracle_card("挑戰 (Antipode)", oracle_A['antipode'], bg_antipode)
+        render_kin_card("挑戰 (Antipode)", oracle_A['antipode']['KIN'], oracle_A['antipode'], bg_antipode)
     with r2c2:
-        render_vertical_oracle_card("命運 (Destiny)", oracle_A['main'], bg_destiny)
+        render_kin_card("主印記 (Main Kin)", oracle_A['main']['KIN'], oracle_A['main'], bg_destiny)
     with r2c3:
-        render_vertical_oracle_card("支持 (Analog)", oracle_A['analog'], bg_analog)
+        render_kin_card("支持 (Analog)", oracle_A['analog']['KIN'], oracle_A['analog'], bg_analog)
 
-    # Row 3: 空 | Occult | 空
     r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
     with r3c2:
-        render_vertical_oracle_card("隱藏 (Occult)", oracle_A['occult'], bg_occult)
+        render_kin_card("隱藏 (Occult)", oracle_A['occult']['KIN'], oracle_A['occult'], bg_occult)
 
-# --- Tab 2 ---
-with tab2:
+elif selected_function == "🏰 時間地圖":
     castle_name = info_A.get('城堡', '')
     castle_data = None
     for c_key, c_val in CASTLES_INFO.items():
@@ -538,8 +564,7 @@ with tab2:
     with st.expander(f"查看 {info_A.get('波符')} 的 13 個提問"):
         for t_name, q in TONE_QUESTIONS.items(): st.write(f"**{t_name}調性**：{q}")
 
-# --- Tab 3 ---
-with tab3:
+elif selected_function == "🌊 流年與運勢":
     st.subheader(f"🌊 流年 ({flow_year_val})")
     c1, c2 = st.columns([1, 3])
     with c1:
@@ -555,8 +580,7 @@ with tab3:
         st.markdown(f"### {flow_year_info.get('主印記')}")
         st.write(f"**波符**：{flow_year_info.get('波符')}")
 
-# --- Tab 4 ---
-with tab4:
+elif selected_function == "💞 關係合盤":
     st.header("💞 關係能量合盤")
     
     # 從資料庫選擇對象
@@ -588,8 +612,7 @@ with tab4:
             st.write(f"**波符**：{cinfo.get('波符')}")
             st.write(f"**城堡**：{cinfo.get('城堡')}")
 
-# --- Tab 5: 國王棋盤 ---
-with tab5:
+elif selected_function == "👑 國王棋盤":
     st.header("👑 Telektonon 預言棋盤")
     
     board_img = "assets/tokens/telektonon_board.jpg"
@@ -670,7 +693,7 @@ with tab5:
     
     cols = st.columns(5)
     keys = ['guide', 'analog', 'main', 'antipode', 'occult']
-    labels = ["指引", "支持", "命運", "挑戰", "隱藏"]
+    labels = ["指引", "支持", "主印記", "挑戰", "隱藏"] # 修正標籤
     for i, col in enumerate(cols):
         k_info = today_oracle[keys[i]]
         with col:
@@ -686,8 +709,7 @@ with tab5:
             st.image("assets/tokens/crystal_battery.jpg", width=200)
         st.info(f"將水晶移至今日圖騰：**{today_kin_info.get('圖騰')}**")
 
-# --- Tab 6 ---
-with tab6:
+elif selected_function == "🧠 441 共時化科學":
     st.header("🧠 441 Synchronotron")
     c_h, c_res = st.columns([1, 1])
     with c_h:
@@ -718,8 +740,7 @@ with tab6:
             for log in sync_data['logs']:
                 st.code(log, language="text")
 
-# --- Tab 7: 人員管理 ---
-with tab7:
+elif selected_function == "👥 人員管理":
     st.header("👥 人員資料庫管理")
     
     # 1. 讀取資料

@@ -1,388 +1,685 @@
 import streamlit as st
-import datetime
-import os
 import pandas as pd
-import sqlite3
-import base64
-from create_db import init_db
-from kin_utils import *
+import datetime
+import re
+import os
+from streamlit_gsheets import GSheetsConnection
 
-# 1. 初始化
-st.set_page_config(page_title="13 Moon Pro", layout="wide", page_icon="🔮")
+# ==========================================
+# 1. 系統設定與常數
+# ==========================================
+st.set_page_config(
+    page_title="13 Moon Synchronotron Master",
+    page_icon="🌌",
+    layout="wide"
+)
 
-if not os.path.exists("13moon.db"):
-    with st.spinner("系統初始化中..."):
-        st.cache_data.clear()
-        init_db()
-    st.success("完成！")
+TONES_NAME = ["", "磁性", "月亮", "電力", "自我存在", "超頻", "韻律", "共鳴", "銀河星系", "太陽", "行星", "光譜", "水晶", "宇宙"]
+SEALS_NAME = ["", "紅龍", "白風", "藍夜", "黃種子", "紅蛇", "白世界橋", "藍手", "黃星星", "紅月", "白狗", "藍猴", "黃人", "紅天行者", "白巫師", "藍鷹", "黃戰士", "紅地球", "白鏡", "藍風暴", "黃太陽"]
+SEAL_COLORS = {
+    1: 'red', 2: 'white', 3: 'blue', 4: 'yellow',
+    5: 'red', 6: 'white', 7: 'blue', 8: 'yellow',
+    9: 'red', 10: 'white', 11: 'blue', 12: 'yellow',
+    13: 'red', 14: 'white', 15: 'blue', 16: 'yellow',
+    17: 'red', 18: 'white', 19: 'blue', 20: 'yellow'
+}
 
-MIN_YEAR, MAX_YEAR = get_year_range()
-if MIN_YEAR > 1800: MIN_YEAR = 1800
-if MAX_YEAR < 2100: MAX_YEAR = 2100
-SAFE_DATE = datetime.date(1990, 1, 1)
+MOON_NAMES = ["", "磁性之月", "月亮之月", "電力之月", "自我存在之月", "超頻之月", "韻律之月", "共鳴之月", "銀河星系之月", "太陽之月", "行星之月", "光譜之月", "水晶之月", "宇宙之月"]
 
-# CSS (新增選單優化)
-st.markdown("""
-<style>
-    .stApp { background-color: #0e1117; color: #fff; }
-    h1, h2, h3 { color: #d4af37 !important; font-family: "Microsoft JhengHei"; }
+TONE_QUESTIONS = {
+    "磁性": "我的目的是什麼？", "月亮": "我的挑戰是什麼？", "電力": "我如何給予最佳的服務？",
+    "自我存在": "我該以什麼形式來服務他人？", "超頻": "我如何能讓自己獲得最佳的力量？",
+    "韻律": "我如何與他人擴大平等？", "共鳴": "我如何使我的服務與他人協調融合？",
+    "銀河星系": "我是否活出我所相信的？", "太陽": "我如何完成我的目的？",
+    "行星": "我如何完美我所做的？", "光譜": "我該如何釋放與放下？",
+    "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
+}
+
+CASTLES_INFO = {
+    "紅色東方啟動城堡": {"range": "Kin 1-52", "color_bg": "#FFCCCB", "court": "出生之庭", "theme": "啟動與開創", "desc": "適合發起新事物的起始開創課題。", "img": "assets/tokens/pyramid_red.png"},
+    "白色北方跨越城堡": {"range": "Kin 53-104", "color_bg": "#F0F3F4", "court": "死亡之庭", "theme": "跨越與淨化", "desc": "透過淨化與斷捨離，跨越舊有。", "img": "assets/tokens/pyramid_white.png"},
+    "藍色西方蛻變城堡": {"range": "Kin 105-156", "color_bg": "#D6EAF8", "court": "魔法之庭", "theme": "改變與轉化", "desc": "轉化能量，經歷如同蛇蛻皮般的重生。", "img": "assets/tokens/pyramid_blue.png"},
+    "黃色南方給予城堡": {"range": "Kin 157-208", "color_bg": "#FCF3CF", "court": "智能之庭", "theme": "收穫與給予", "desc": "享受成果，分享智慧。", "img": "assets/tokens/pyramid_yellow.png"},
+    "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
+}
+
+TELEKTONON_MAP = {
+    1: {"planet": "海王星 (Neptune)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星 (Uranus)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星 (Saturn)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星 (Jupiter)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克 (Maldek)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星 (Mars)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球 (Earth)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星 (Venus)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星 (Mercury)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    10: {"planet": "水星 (Mercury)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
+    11: {"planet": "金星 (Venus)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球 (Earth)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星 (Mars)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克 (Maldek)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星 (Jupiter)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星 (Saturn)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星 (Uranus)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星 (Neptune)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星 (Pluto)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星 (Pluto)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+}
+
+WARRIOR_JOURNEY = {
+    7: "神性之源 (意志)", 8: "靈性 (呼吸)", 9: "豐盛 (夢想)", 10: "開花 (覺察)",
+    11: "生命力 (本能)", 12: "死亡 (機會)", 13: "完成 (療癒)", 14: "藝術 (美麗)",
+    15: "淨化 (也就是)", 16: "愛 (忠誠)", 17: "魔法 (遊戲)", 18: "自由意志 (智慧)",
+    19: "預言 (覺醒)", 20: "永恆 (接受)", 21: "自生 (能量)", 22: "開悟 (宇宙之火)"
+}
+
+EARTH_JOURNEY = {
+    1: "建立銀河業力流 (GK) - 實踐之塔底部", 2: "建立銀河業力流 (GK) - 實踐之塔中部", 3: "建立銀河業力流 (GK) - 實踐之塔頂部",
+    4: "建立太陽預言流 (SP) - 智慧之塔底部", 5: "建立太陽預言流 (SP) - 智慧之塔中部", 6: "建立太陽預言流 (SP) - 智慧之塔頂部"
+}
+
+HEAVEN_JOURNEY = {
+    23: "情人重聚日 - 國王與皇后相遇",
+    24: "拆除太陽預言流 (SP) - 智慧之塔頂部", 25: "拆除太陽預言流 (SP) - 智慧之塔中部", 26: "拆除太陽預言流 (SP) - 智慧之塔底部",
+    27: "拆除銀河業力流 (GK) - 實踐之塔頂部", 28: "拆除銀河業力流 (GK) - 實踐之塔中部"
+}
+
+# ==========================================
+# 2. 資料載入層
+# ==========================================
+@st.cache_data
+def load_data():
+    data = {}
+    files = {
+        'start_year': "data/kin_start_year.csv",
+        'month_accum': "data/month_day_accum.csv",
+        'kin_info': "data/kin_basic_info.csv",
+        'psi': "data/PSI印記對照表.csv",
+        'plasma': "data/Heptad_Gate_Path.csv",
+        'white_turtle': "data/White_Turtle_Day.csv",
+        'week_keyword': "data/瑪亞週關鍵句.csv",
+        'date_to_matrix': "data/瑪雅生日對時間矩陣對照表.csv",
+        'base_matrix': "data/Base_Matrix_441.csv",
+        'tzolkin_matrix': "data/Tzolkin_Matrix.csv",
+        'iching': "data/銀河易經編碼.csv",
+        'time_matrix': "data/Time_Matrix.csv",
+        'space_matrix': "data/Space_Matrix.csv",
+        'synchronic_matrix': "data/Synchronic_Matrix.csv"
+    }
+    for key, filename in files.items():
+        try:
+            if os.path.exists(filename):
+                df = pd.read_csv(filename)
+                if len(df.columns) > 0 and ("Unnamed" in str(df.columns[0]) or "Unnamed" in str(df.columns[1])):
+                     df = pd.read_csv(filename, header=1)
+                df.columns = [str(c).strip() for c in df.columns]
+                data[key] = df
+            else: data[key] = None
+        except: data[key] = None
+
+    if data['start_year'] is not None:
+        data['start_year_dict'] = dict(zip(data['start_year']['年份'], data['start_year']['起始KIN']))
+    if data['month_accum'] is not None:
+        data['month_accum_dict'] = dict(zip(data['month_accum']['月份'], data['month_accum']['累積天數']))
     
-    /* 修正後的網格高度 */
-    .oracle-grid-container {
-        display: grid; grid-template-columns: 100px 100px 100px;
-        grid-template-rows: 100px 140px 100px; gap: 12px; 
-        justify-content: center; align-items: center;
-    }
-    
-    /* === 關鍵修正：側邊欄選單優化 (字體放大與反白) === */
-    /* 目標：放大側邊欄選項文字 */
-    div[data-testid="stSidebarContent"] div[role="radiogroup"] label {
-        font-size: 16px !important; 
-        padding: 8px 10px !important;
-        margin-top: 2px;
-        transition: background-color 0.1s ease;
-    }
-    /* 目標：選中時反白 */
-    div[data-testid="stSidebarContent"] div[role="radiogroup"] label:has(input:checked) {
-        background-color: #d4af37 !important; /* Streamlit accent color */
-        color: #0e1117 !important; /* 確保選中時文字變深 */
-        border-radius: 6px;
-        font-weight: bold;
-    }
-    
-    .psi-box, .goddess-box { background: linear-gradient(135deg, #2b1055, #7597de); padding: 15px; border-radius: 10px; color: white; margin-top: 20px; }
-    .matrix-data {
-        font-family: monospace; color: #00ff00; background: #000;
-        padding: 10px; border-radius: 5px; margin-top: 10px; border: 1px solid #004400;
-    }
-    .concept-text {
-        font-size: 14px; color: #aaa; background-color: #1f1f1f; 
-        padding: 10px; border-left: 4px solid #d4af37; margin-bottom: 20px;
-        border-radius: 4px;
-    }
-</style>
-""", unsafe_allow_html=True)
+    data['harmonic_map'] = {}
+    if data['iching'] is not None:
+        for _, row in data['iching'].iterrows():
+            try:
+                match = re.search(r'諧波(\d+)', str(row.get('諧波', '')))
+                if match: data['harmonic_map'][int(match.group(1))] = row.to_dict()
+            except: continue
+    return data
 
-st.sidebar.title("🌌 13 Moon System")
-mode = st.sidebar.radio("功能導航", [
-    "個人星系解碼", "個人流年查詢", "52流年城堡", 
-    "PSI查詢", "女神印記查詢", "對等印記查詢", "全腦調頻", "國王棋盤",
-    "人員生日管理", "通訊錄/合盤", "八度音階查詢", "系統檢查員"
+# --- Google Sheets 資料庫 ---
+def load_contacts_db():
+    """連線並讀取 Google Sheets"""
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    try:
+        df = conn.read(worksheet="contacts", ttl=0)
+        return conn, df
+    except:
+        return conn, pd.DataFrame(columns=["姓名", "生日", "KIN"])
+
+def save_contact(conn, df, name, birth_date, kin_num):
+    """寫入新聯絡人"""
+    new_data = pd.DataFrame([{"姓名": name, "生日": str(birth_date), "KIN": int(kin_num)}])
+    updated_df = pd.concat([df, new_data], ignore_index=True)
+    conn.update(worksheet="contacts", data=updated_df)
+    return updated_df
+
+DB = load_data()
+
+# ==========================================
+# 3. 邏輯核心層
+# ==========================================
+
+def find_kin_num(tone, seal):
+    for k in range(1, 261):
+        if (k-1)%13+1 == tone and (k-1)%20+1 == seal: return k
+    return 0
+
+def calculate_kin_num(year, month, day, db):
+    if db['start_year'] is None: return None
+    start_kin = db['start_year_dict'].get(year)
+    if not start_kin: return None
+    accum = db['month_accum_dict'].get(month, 0)
+    total = start_kin + accum + day
+    kin = total % 260
+    return 260 if kin == 0 else kin
+
+def get_kin_details(kin_num, db):
+    if not kin_num or db['kin_info'] is None: return {}
+    row = db['kin_info'][db['kin_info']['KIN'] == kin_num]
+    if not row.empty: return row.iloc[0].to_dict()
+    t = (kin_num - 1) % 13 + 1
+    s = (kin_num - 1) % 20 + 1
+    return {'KIN': kin_num, '主印記': f"{TONES_NAME[t]}{SEALS_NAME[s]}", '圖騰': SEALS_NAME[s], '波符': '', '城堡': ''}
+
+def calculate_oracle(kin_num, db):
+    if not kin_num: return None
+    t = (kin_num - 1) % 13 + 1
+    s = (kin_num - 1) % 20 + 1
+    s_ana = (19 - s); 
+    if s_ana <= 0: s_ana += 20
+    s_anti = (s + 10) % 20
+    if s_anti == 0: s_anti = 20
+    s_occ = (21 - s)
+    if s_occ <= 0: s_occ += 20
+    t_occ = 14 - t
+    s_guide = s
+    if t in [2,7,12]: s_guide = (s + 12) % 20
+    elif t in [3,8,13]: s_guide = (s + 4) % 20
+    elif t in [4,9]: s_guide = (s - 4)
+    elif t in [5,10]: s_guide = (s + 8) % 20
+    if s_guide <= 0: s_guide += 20
+    if s_guide == 0: s_guide = 20
+    return {
+        'main': get_kin_details(kin_num, db),
+        'analog': get_kin_details(find_kin_num(t, s_ana), db),
+        'antipode': get_kin_details(find_kin_num(t, s_anti), db),
+        'occult': get_kin_details(find_kin_num(t_occ, s_occ), db),
+        'guide': get_kin_details(find_kin_num(t, s_guide), db)
+    }
+
+def get_psi_kin(date_obj, main_kin_num, db):
+    m, d = date_obj.month, date_obj.day
+    if m == 7 and d == 25: return main_kin_num, "無時間日"
+    query = f"{m}月{d}日"
+    if db['psi'] is not None:
+        row = db['psi'][db['psi']['月日'] == query]
+        if row.empty:
+            query2 = f"{m:02d}月{d:02d}日"
+            row = db['psi'][db['psi']['國曆生日'] == query2]
+        if not row.empty:
+            try: return int(row.iloc[0]['PSI印記']), "PSI資料庫"
+            except: pass
+    return None, "未知"
+
+def calculate_goddess_force(oracle_data, db):
+    if not oracle_data: return None
+    kins = [oracle_data[k]['KIN'] for k in ['main', 'analog', 'antipode', 'occult', 'guide']]
+    tones = [(k - 1) % 13 + 1 for k in kins]
+    seals = [(k - 1) % 20 + 1 for k in kins]
+    final_tone = (sum(tones) - 1) % 13 + 1
+    final_seal = (sum(seals) - 1) % 20 + 1
+    return get_kin_details(find_kin_num(final_tone, final_seal), db)
+
+def get_13moon_date(date_obj):
+    year = date_obj.year
+    start_date = datetime.date(year, 7, 26)
+    if date_obj < start_date: start_date = datetime.date(year - 1, 7, 26)
+    delta = (date_obj - start_date).days
+    if delta == 364: return "Day Out of Time", 0, 0, 0
+    moon = (delta // 28) + 1
+    day = (delta % 28) + 1
+    heptad_week = (delta // 7) + 1
+    return f"{moon}.{day}", moon, day, heptad_week
+
+def calculate_flow_year_kin(birth_date, db):
+    today = datetime.date.today()
+    this_year_bday = datetime.date(today.year, birth_date.month, birth_date.day)
+    target_year = today.year if today >= this_year_bday else today.year - 1
+    flow_kin_num = calculate_kin_num(target_year, birth_date.month, birth_date.day, db)
+    return target_year, get_kin_details(flow_kin_num, db)
+
+def get_daily_energy(moon, day, db):
+    info = {}
+    if db['plasma'] is not None:
+        row = db['plasma'][db['plasma']['第幾天'] == day]
+        if not row.empty: info['plasma'] = row.iloc[0].to_dict()
+    if db['week_keyword'] is not None:
+        week_idx = (day - 1) // 7
+        weeks = ['紅色啟動之週', '白色淨化之週', '藍色蛻變之週', '黃色收穫之週']
+        if 0 <= week_idx < 4:
+            w_name = weeks[week_idx]
+            row = db['week_keyword'][db['week_keyword']['瑪雅週'] == w_name]
+            if not row.empty: info['week'] = row.iloc[0].to_dict()
+    return info
+
+def calculate_today_kin(db):
+    today = datetime.date.today()
+    kin = calculate_kin_num(today.year, today.month, today.day, db)
+    return today, get_kin_details(kin, db)
+
+def calculate_relationship(kin1, kin2, db):
+    if not kin1 or not kin2: return None
+    combined_kin_num = (kin1 + kin2 - 1) % 260 + 1
+    t1 = (kin1 - 1) % 13 + 1; s1 = (kin1 - 1) % 20 + 1
+    t2 = (kin2 - 1) % 13 + 1; s2 = (kin2 - 1) % 20 + 1
+    combined_tone = (t1 + t2 - 1) % 13 + 1
+    combined_seal = (s1 + s2 - 1) % 20 + 1
+    return {'KIN': combined_kin_num, 'info': get_kin_details(combined_kin_num, db), 'tone_sum': combined_tone, 'seal_sum': combined_seal}
+
+def get_journey_earth_heaven(day):
+    if 1 <= day <= 6:
+        step = EARTH_JOURNEY.get(day, "建立基地")
+        return f"🌍 地球之旅 (Day {day})", step, ["assets/tokens/turtle_yellow.png", "assets/tokens/turtle_white.png"], "黃上白下 (頭右)"
+    elif 7 <= day <= 22:
+        return f"🛤️ 分道揚鑣 (Day {day})", "黃烏龜：繼續前進 / 白烏龜：Day 6 原地等待", ["assets/tokens/turtle_yellow.png", "assets/tokens/turtle_white.png"], "分開行動"
+    elif 23 <= day <= 28:
+        heaven_step = HEAVEN_JOURNEY.get(day, "返回天堂")
+        return f"☁️ 天堂之旅 (Day {day})", heaven_step, ["assets/tokens/turtle_yellow.png", "assets/tokens/turtle_white.png"], "肩並肩 (黃左白右, 頭左)"
+    return "無時間日", "自由", [], ""
+
+def get_journey_warrior(day):
+    if 7 <= day <= 22:
+        warrior_step = WARRIOR_JOURNEY.get(day, "奪回力量")
+        return f"⚔️ 戰士立方體之旅 (Day {day})", warrior_step, "assets/tokens/turtle_green.png"
+    return None, None, None
+
+def get_telektonon_info(seal_idx):
+    return TELEKTONON_MAP.get(seal_idx, {})
+
+def calculate_synchronotron_data(date_obj, main_kin, db):
+    logs = []
+    m, d = date_obj.month, date_obj.day
+    q = f"{m:02d}/{d:02d}"
+    pos_1 = None
+    if db['date_to_matrix'] is not None:
+        row = db['date_to_matrix'][db['date_to_matrix']['月日'] == q]
+        if not row.empty: pos_1 = row.iloc[0]['時間矩陣位置']
+        elif m==7 and d==25: pos_1 = "V11:H11"
+    if not pos_1: return None, ["無法定位生辰座標"]
+
+    def get_val(key, pos):
+        if db[key] is None or not pos: return 0
+        df = db[key]
+        try: 
+            r = df[df['矩陣位置'].astype(str).str.strip() == str(pos).strip()]
+            if not r.empty: return int(r.iloc[0]['KIN'])
+        except: pass
+        return 0
+    
+    def get_pos(key, k):
+        if db[key] is None: return None
+        df = db[key]
+        try:
+            r = df[df['KIN'] == k]
+            if not r.empty: return r.iloc[0]['矩陣位置']
+        except: pass
+        return None
+
+    v_t1 = get_val('time_matrix', pos_1)
+    v_s1 = get_val('space_matrix', pos_1)
+    v_sy1 = get_val('synchronic_matrix', pos_1)
+    sum_1 = v_t1 + v_s1 + v_sy1
+    logs.append(f"1. 時間矩陣座標 {pos_1} → {v_t1} + {v_s1} + {v_sy1} = {sum_1}")
+    
+    pos_2 = get_pos('space_matrix', main_kin)
+    v_t2 = get_val('time_matrix', pos_2)
+    v_s2 = main_kin
+    v_sy2 = get_val('synchronic_matrix', pos_2)
+    sum_2 = v_t2 + v_s2 + v_sy2
+    logs.append(f"2. 空間矩陣座標 {pos_2} → {v_t2} + {v_s2} + {v_sy2} = {sum_2}")
+    
+    pos_3 = get_pos('tzolkin_matrix', main_kin)
+    v_t3 = get_val('time_matrix', pos_3)
+    v_s3 = get_val('space_matrix', pos_3)
+    v_sy3 = main_kin
+    sum_3 = v_t3 + v_s3 + v_sy3
+    logs.append(f"3. 共時矩陣座標 {pos_3} → {v_t3} + {v_s3} + {v_sy3} = {sum_3}")
+    
+    mcf = sum_1 + sum_2 + sum_3
+    bmu = (mcf - 1) % 441 + 1
+    kin_equiv = (mcf - 1) % 260 + 1
+    return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
+
+# --- 輔助：圖片顯示 ---
+def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+    with st.container():
+        st.markdown(f"**{title}**")
+        seal_idx = (kin_num - 1) % 20 + 1
+        tone_idx = (kin_num - 1) % 13 + 1
+        seal_path = f"assets/seals/{seal_idx:02d}.jpg" 
+        tone_path = f"assets/tones/tone-{tone_idx}.png"
+        col_imgs, col_txt = st.columns([2, 2])
+        with col_imgs:
+            c1, c2 = st.columns(2)
+            with c1:
+                if os.path.exists(tone_path): st.image(tone_path, width=50)
+                else: st.caption(f"Tone {tone_idx}")
+            with c2:
+                if os.path.exists(seal_path): st.image(seal_path, width=60)
+                else: st.caption(f"Seal {seal_idx}")
+        with col_txt:
+            st.markdown(f"""
+            <div style="background-color:{bg_color}; padding:10px; border-radius:5px; border:1px solid #ddd; height:100%;">
+                <div style="font-size:18px; font-weight:bold;">KIN {kin_num}</div>
+                <div style="font-size:14px;">{kin_info.get('圖騰', '')}</div>
+                <div style="font-size:12px; color:#666;">{kin_info.get('主印記', '')}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+def render_large_kin(kin_num, kin_info):
+    seal_idx = (kin_num - 1) % 20 + 1
+    tone_idx = (kin_num - 1) % 13 + 1
+    seal_path = f"assets/seals/{seal_idx:02d}.jpg"
+    tone_path = f"assets/tones/tone-{tone_idx}.png"
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        if os.path.exists(tone_path): st.image(tone_path, width=80)
+        if os.path.exists(seal_path): st.image(seal_path, width=250, caption=kin_info.get('主印記'))
+        else: st.markdown(f"### KIN {kin_num} {kin_info.get('主印記')}")
+    return c2
+
+def get_pyramid_path(kin_num, is_main=False):
+    if not kin_num: return None
+    if is_main: return "assets/tokens/pyramid_green.png"
+    seal_idx = (kin_num - 1) % 20 + 1
+    color = SEAL_COLORS.get(seal_idx, 'green')
+    return f"assets/tokens/pyramid_{color}.png"
+
+def render_oracle_pyramid(title, kin_num, kin_info):
+    with st.container():
+        st.markdown(f"**{title}**")
+        st.caption(f"KIN {kin_num} {kin_info.get('圖騰')}")
+        is_destiny = ("命運" in title)
+        pyr_path = get_pyramid_path(kin_num, is_destiny)
+        if os.path.exists(pyr_path): st.image(pyr_path, width=80)
+        else: st.markdown("⚠️") 
+        s_idx = (kin_num - 1) % 20 + 1
+        t_data = get_telektonon_info(s_idx)
+        st.markdown(f"""<div style="font-size:12px; line-height:1.2;">🪐 {t_data.get('planet')}<br>⚡ {t_data.get('circuit')}<br>🌊 {t_data.get('flow')}</div>""", unsafe_allow_html=True)
+
+# ==========================================
+# 4. 前端展示層
+# ==========================================
+
+if DB is None: st.stop()
+
+# --- Sidebar ---
+st.sidebar.header("🌌 使用者資料")
+
+# 資料庫載入與選單
+conn, contacts_df = load_contacts_db()
+selected_contact = "-- 請選擇 --"
+if not contacts_df.empty:
+    contact_list = contacts_df['姓名'].tolist()
+    selected_contact = st.sidebar.selectbox("從通訊錄選擇", ["-- 請選擇 --"] + contact_list)
+
+if selected_contact != "-- 請選擇 --":
+    row = contacts_df[contacts_df['姓名'] == selected_contact].iloc[0]
+    saved_birth = datetime.datetime.strptime(row['生日'], "%Y-%m-%d").date()
+    birth_date = st.sidebar.date_input("生日", value=saved_birth)
+else:
+    birth_date = st.sidebar.date_input("請輸入生日", value=datetime.date(1985, 10, 24))
+
+# 核心計算
+kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
+info_A = get_kin_details(kin_A, DB)
+
+# 儲存按鈕
+st.sidebar.markdown("---")
+with st.sidebar.expander("儲存到通訊錄"):
+    new_name = st.text_input("輸入名字")
+    if st.button("儲存"):
+        if new_name:
+            save_contact(conn, contacts_df, new_name, birth_date, kin_A)
+            st.success(f"已儲存 {new_name}")
+            st.rerun()
+
+# 執行其他計算
+oracle_A = calculate_oracle(kin_A, DB)
+psi_num, _ = get_psi_kin(birth_date, kin_A, DB)
+psi_info = get_kin_details(psi_num, DB)
+goddess_info = calculate_goddess_force(oracle_A, DB)
+sync_data = calculate_synchronotron_data(birth_date, kin_A, DB)
+flow_year_val, flow_year_info = calculate_flow_year_kin(birth_date, DB)
+today_date, today_kin_info = calculate_today_kin(DB)
+moon_str, moon_num, day_num, heptad_week = get_13moon_date(today_date)
+daily_energy = get_daily_energy(moon_num, day_num, DB)
+today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
+
+st.title("🌌 13 Moon Synchronotron Master System")
+st.markdown(f"**歡迎來到時間法則的中心** | 今日: {today_date} | KIN {today_kin_info['KIN']}")
+
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🔮 靈魂藍圖", "🏰 時間地圖", "🌊 流年與運勢", "💞 關係合盤", "👑 國王棋盤", "🧠 441 共時化科學"
 ])
 
-# --- 輔助函數 ---
-def get_card_html(label, kin_num, s_id, t_id, is_main=False):
-    s_f = SEAL_FILES.get(s_id, f"{str(s_id).zfill(2)}.png")
-    t_f = TONE_FILES.get(t_id, f"tone-{t_id}.png")
-    img_s = get_img_b64(f"assets/seals/{s_f}")
-    img_t = get_img_b64(f"assets/tones/{t_f}")
-    txt = get_main_sign_text(kin_num)
-    if "查無" in txt: txt = f"{TONE_NAMES[t_id]} {SEALS_NAMES[s_id]}"
-    border = "2px solid gold" if is_main else "1px solid #555"
-    return f"""<div class="kin-card-grid" style="border:{border};"><img src="data:image/png;base64,{img_t}" style="width:30px; filter:invert(1); margin:0 auto 5px auto;"><img src="data:image/jpeg;base64,{img_s}" style="width:70px; margin-bottom:5px;"><div style="font-size:12px; color:#ddd; line-height:1.2;">{txt}</div><div style="font-size:10px; color:#888;">KIN {kin_num}</div></div>"""
+# --- Tab 1 ---
+with tab1:
+    col_text = render_large_kin(kin_A, info_A)
+    with col_text:
+        st.subheader("核心印記資訊")
+        st.write(f"**PSI 印記**：KIN {psi_num} {psi_info.get('主印記')}")
+        st.write(f"**女神印記**：KIN {goddess_info['KIN']} {goddess_info.get('主印記')}")
+        st.write(f"**波符**：{info_A.get('波符')}")
+        st.info("調性 (Bar-Dot) 代表頻率，圖騰 (Seal) 代表原型能量。")
+    st.markdown("---")
+    st.subheader("🧩 五大神諭佈陣")
+    cols = st.columns(5)
+    keys = ['guide', 'analog', 'main', 'antipode', 'occult']
+    colors = ["#F4F6F6", "#F4F6F6", "#FCF3CF", "#F4F6F6", "#F4F6F6"]
+    labels = ["指引", "支持", "命運", "挑戰", "隱藏"]
+    for i, col in enumerate(cols):
+        with col:
+            k = oracle_A[keys[i]]
+            render_kin_card(labels[i], k['KIN'], k, colors[i])
 
-def show_basic_result(kin, data):
-    if os.path.exists(f"assets/seals/{data.get('seal_img','' )}"):
-        st.image(f"assets/seals/{data.get('seal_img','')}", width=150)
-    st.markdown(f"## KIN {kin}")
-    st.markdown(f"### {data.get('主印記','')}")
-    st.info(f"🌊 **波符**：{data.get('wave_name','')} 波符")
-
-def user_selector(label, key):
-    df = get_user_list()
-    if df.empty: st.warning("通訊錄為空"); return None
-    if '主印記' not in df.columns: return st.selectbox(f"選擇 {label}", df['姓名'].unique(), key=f"{key}_simple")
-
-    fm = st.radio(f"篩選 {label}", ["全部", "依調性", "依圖騰"], horizontal=True, key=f"{key}_mode")
-    fdf = df
-    if fm == "依調性":
-        t = st.selectbox("調性", TONE_NAMES[1:], key=f"{key}_t")
-        fdf = df[df['主印記'].astype(str).str.contains(t, na=False)]
-    elif fm == "依圖騰":
-        s = st.selectbox("圖騰", SEALS_NAMES[1:], key=f"{key}_s")
-        fdf = df[df['主印記'].astype(str).str.contains(s, na=False)]
-    
-    opts = fdf.apply(lambda x: f"{x['姓名']} ({x['主印記']})", axis=1).tolist()
-    if not opts: st.warning("無符合"); return None
-    sel = st.selectbox(f"選擇 {label}", opts, key=f"{key}_sel")
-    return sel.split(" (")[0] if sel else None
-
-def render_date_selector(key_prefix=""):
-    m = st.radio("輸入方式", ["📅 自訂", "👤 通訊錄"], horizontal=True, key=f"{key_prefix}_m")
-    d = SAFE_DATE; u = ""
-    if m == "📅 自訂":
-        d = st.date_input("生日", value=SAFE_DATE, min_value=datetime.date(MIN_YEAR,1,1), max_value=datetime.date(MAX_YEAR,12,31), key=f"{key_prefix}_d")
-    else:
-        sn = user_selector("人員", key_prefix)
-        if sn:
-            u = sn
-            us = get_user_list()
-            try: 
-                dob = us[us['姓名']==sn].iloc[0]['生日']
-                d = datetime.datetime.strptime(dob, "%Y-%m-%d").date()
-                st.caption(f"已載入：{sn} ({d})")
-            except: st.error("日期錯誤")
-    return d, u
-
-# 1. 個人解碼
-if mode == "個人星系解碼":
-    st.title("🔮 個人星系印記解碼")
-    c1, c2 = st.columns([2,1])
-    with c1: date_in, _ = render_date_selector("decode")
-    with c2: 
-        st.write(""); st.write("")
-        go = st.button("🚀 開始解碼", type="primary", use_container_width=True)
-        
-    if go or st.session_state.get('run'):
-        st.session_state['run'] = True
-        kin, err = calculate_kin_v2(date_in)
-        if not kin: st.warning(err); kin = calculate_kin_math(date_in)
-        
-        data = get_full_kin_data(kin)
-        oracle = get_oracle(kin)
-        psi = get_psi_kin(date_in)
-        goddess = get_goddess_kin(kin)
-        maya = get_maya_calendar_info(date_in)
-        wk = get_week_key_sentence(maya.get('Maya_Week'))
-        pr = get_heptad_prayer(maya.get('Heptad_Path'))
-        
-        st.divider()
-        t1, t2 = st.tabs(["1️⃣3️⃣ : 2️⃣0️⃣ 共時編碼", "1️⃣3️⃣ : 2️⃣8️⃣ 時間循環"])
-        
-        with t1:
-            st.markdown("<div class='concept-text'><b>13:20 共時編碼：</b>結合13調性與20圖騰，理解時間的潛在結構與靈魂頻率。</div>", unsafe_allow_html=True)
-            tc1, tc2 = st.columns([1, 1.6])
-            with tc1:
-                show_basic_result(kin, data)
-                if psi and psi['KIN']: st.markdown(f"<div class='psi-box'><h4>🧬 PSI</h4>KIN {psi['KIN']} {psi['Info'].get('主印記','')}<br><small>矩陣: {psi.get('Matrix','-')}</small></div>", unsafe_allow_html=True)
-                if goddess and goddess['KIN']: st.markdown(f"<div class='goddess-box'><h4>💖 女神</h4>KIN {goddess['KIN']} {goddess['Info'].get('主印記','')}<br><small>源頭: KIN {goddess.get('Base_KIN')}</small></div>", unsafe_allow_html=True)
-                with st.expander("✨ 進階星際密碼"):
-                    st.markdown(f"**原型**：{data.get('星際原型','-')}<br>**BMU**：{data.get('BMU','-')}<br>**行星**：{data.get('行星','-')}<br>**家族**：{data.get('家族','-')}", unsafe_allow_html=True)
-                with st.expander("🧬 441 矩陣"):
-                    st.markdown(f"<div class='matrix-data'>BMU: {data.get('BMU_Position','-')}<br>音符: {data.get('BMU_Note','-')}<br>腦部: {data.get('BMU_Brain','-')}<hr>時間: {data.get('Matrix_Time','-')}<br>空間: {data.get('Matrix_Space','-')}<br>共時: {data.get('Matrix_Sync','-')}</div>", unsafe_allow_html=True)
-            with tc2:
-                st.subheader("五大神諭盤")
-                def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
-                k_g = gk(oracle['guide']['s'], oracle['guide']['t']); k_an = gk(oracle['analog']['s'], oracle['analog']['t'])
-                k_anti = gk(oracle['antipode']['s'], oracle['antipode']['t']); k_occ = gk(oracle['occult']['s'], oracle['occult']['t'])
-                st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html("引導", k_g, oracle['guide']['s'], oracle['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_anti, oracle['antipode']['s'], oracle['antipode']['t'])}</div> 
-                    <div>{get_card_html("主印記", kin, oracle['destiny']['s'], oracle['destiny']['t'], True)}</div> 
-                    <div>{get_card_html("支持", k_an, oracle['analog']['s'], oracle['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occ, oracle['occult']['s'], oracle['occult']['t'])}</div> <div></div>
-                </div>""", unsafe_allow_html=True)
-                st.markdown("---")
-                if 'IChing_Meaning' in data: st.success(f"**☯️ 易經：{data.get('對應卦象','')}**\n\n{data.get('IChing_Meaning','')}")
-                if '祈禱文' in data: 
-                    with st.expander("📜 查看祈禱文"): st.write(data['祈禱文'])
-            
-            st.markdown("---")
-            st.subheader(f"🌊 {data.get('wave_name','')} 波符旅程")
-            wz = get_wavespell_data(kin)
-            with st.expander("📜 查看完整 13 天波符"):
-                 for w in wz:
-                    hl = "border: 2px solid #d4af37; background: #333;" if w['KIN'] == kin else "border: 1px solid #444;"
-                    c_img, c_txt = st.columns([0.5, 4])
-                    with c_img:
-                         if os.path.exists(f"assets/seals/{w['Image']}"): st.image(f"assets/seals/{w['Image']}", width=40)
-                    with c_txt:
-                        st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#d4af37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['Name']}</span></div>", unsafe_allow_html=True)
-
-        with t2:
-            st.markdown("<div class='concept-text'><b>13:28 時間循環：</b>13個月x28天+無時間日，與自然韻律同步。</div>", unsafe_allow_html=True)
-            lc1, lc2 = st.columns(2)
-            with lc1:
-                st.markdown(f"<div class='lunar-bg'><h3>{maya['Solar_Year']}</h3><h2>{maya['Maya_Date']}</h2><p><b>月</b>：{maya['Maya_Month']}<br><b>週</b>：{maya['Maya_Week']}</p></div>", unsafe_allow_html=True)
-                if wk: st.info(f"🔑 **週金句**：{wk}")
-            with lc2:
-                st.subheader("🛣️ 調頻")
-                st.success(f"**等離子**：{maya['Plasma']}\n\n**路徑**：{maya['Heptad_Path']}")
-                if pr: st.info(f"🙏 **祈禱文**：\n{pr}")
-
-# 2. 個人流年
-elif mode == "個人流年查詢":
-    st.title("📅 個人流年查詢")
-    d, u = render_date_selector("flow")
-    ty = st.number_input("流年年份", 1900, 2100, datetime.date.today().year)
-    if st.button("查詢"):
-        bk, _ = calculate_kin_v2(d)
-        if not bk: bk = calculate_kin_math(d)
-        age = ty - d.year
-        fk = (bk + age*105)%260
-        if fk==0: fk=260
-        st.subheader(f"{u or '此人'} {ty} 年 ( {age} 歲 )")
-        fd = get_full_kin_data(fk)
-        fo = get_oracle(fk)
-        c1, c2 = st.columns([1, 1.6])
-        with c1: show_basic_result(fk, fd)
+# --- Tab 2 ---
+with tab2:
+    castle_name = info_A.get('城堡', '')
+    castle_data = None
+    for c_key, c_val in CASTLES_INFO.items():
+        if c_key in castle_name: castle_data = c_val
+    st.subheader("🏰 生命城堡 (52 天週期)")
+    if castle_data:
+        c1, c2 = st.columns([1, 3])
+        with c1:
+            if os.path.exists(castle_data['img']):
+                st.image(castle_data['img'], width=100)
         with c2:
-            def gk(s, t): return (s + (t-1)*20 -1)%260 + 1
-            k_g = gk(fo['guide']['s'], fo['guide']['t']); k_an = gk(fo['analog']['s'], fo['analog']['t'])
-            k_anti = gk(fo['antipode']['s'], fo['antipode']['t']); k_occ = gk(fo['occult']['s'], fo['occult']['t'])
-            st.markdown(f"""<div class="oracle-grid-container">
-                    <div></div> <div>{get_card_html("引導", k_g, fo['guide']['s'], fo['guide']['t'])}</div> <div></div>
-                    <div>{get_card_html("擴展", k_anti, fo['antipode']['s'], fo['antipode']['t'])}</div> 
-                    <div>{get_card_html("流年", fk, fo['destiny']['s'], fo['destiny']['t'], True)}</div> 
-                    <div>{get_card_html("支持", k_an, fo['analog']['s'], fo['analog']['t'])}</div>
-                    <div></div> <div>{get_card_html("推動", k_occ, fo['occult']['s'], fo['occult']['t'])}</div> <div></div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="background-color:{castle_data['color_bg']}; padding:15px; border-radius:10px; border:1px solid #ddd;">
+                <h3 style="margin:0;">{castle_name}</h3>
+                <p><strong>{castle_data['court']}</strong></p>
+                <p><strong>{castle_data['theme']}</strong> ({castle_data['range']})</p>
+                <p>{castle_data['desc']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    st.markdown("---")
+    st.subheader("🌊 波符生命道路 (13 天週期)")
+    with st.expander(f"查看 {info_A.get('波符')} 的 13 個提問"):
+        for t_name, q in TONE_QUESTIONS.items(): st.write(f"**{t_name}調性**：{q}")
 
-# 3. 52流年
-elif mode == "52流年城堡":
-    st.title("🏰 52 年生命城堡")
-    col_d, col_y = st.columns([1.5, 1.5])
-    with col_d: d, _ = render_date_selector("castle")
-    with col_y: sy = st.number_input("起始年", 1800, 2100, d.year)
-    if st.button("計算"):
-        path = calculate_life_castle(datetime.date(sy, d.month, d.day))
-        st.subheader(f"週期起始：{sy} 年")
-        cols = st.columns(4)
-        for i, r in enumerate(path[:52]):
-            with cols[i%4]:
-                inf = r['Info']
-                img = f'<img src="data:image/png;base64,{get_img_b64(f"assets/seals/{inf.get("seal_img","")}")}" width="30">'
-                st.markdown(f"<div style='background:{r['Color']}; padding:5px; border-radius:5px; margin-bottom:5px; color:#333; text-align:center; font-size:12px;'><b>{r['Age']}歲</b><br><span style='color:#b8860b'>KIN {r['KIN']}</span><br>{img}<br>{inf.get('波符','')} | {inf.get('主印記','')}</div>", unsafe_allow_html=True)
+# --- Tab 3 ---
+with tab3:
+    st.subheader(f"🌊 流年 ({flow_year_val})")
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        fk = flow_year_info['KIN']
+        f_s_idx = (fk - 1) % 20 + 1
+        f_t_idx = (fk - 1) % 13 + 1
+        f_img = f"assets/seals/{f_s_idx:02d}.jpg"
+        t_img = f"assets/tones/tone-{f_t_idx}.png"
+        if os.path.exists(t_img): st.image(t_img, width=40)
+        if os.path.exists(f_img): st.image(f_img, width=120)
+        st.metric("流年 KIN", fk)
+    with c2: 
+        st.markdown(f"### {flow_year_info.get('主印記')}")
+        st.write(f"**波符**：{flow_year_info.get('波符')}")
 
-# 4. PSI/女神/對等
-elif mode == "PSI查詢":
-    st.title("🧬 PSI 查詢")
-    d, _ = render_date_selector("psi")
-    if st.button("查詢"):
-        res = get_psi_kin(d)
-        if res and res['KIN']: st.success(f"PSI: KIN {res['KIN']}"); show_basic_result(res['KIN'], res['Info'])
-        else: st.warning("無資料")
+# --- Tab 4 ---
+with tab4:
+    st.header("💞 關係能量合盤")
+    
+    # 從資料庫選擇對象
+    rel_contact = st.selectbox("選擇合盤對象", ["-- 自訂輸入 --"] + (contacts_df['姓名'].tolist() if not contacts_df.empty else []))
+    
+    if rel_contact != "-- 自訂輸入 --":
+        row_b = contacts_df[contacts_df['姓名'] == rel_contact].iloc[0]
+        b_date = datetime.datetime.strptime(row_b['生日'], "%Y-%m-%d").date()
+        st.info(f"已載入：{rel_contact} ({b_date})")
+    else:
+        b_date = st.date_input("對方生日", value=datetime.date(1990, 1, 1))
+        
+    kin_B = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
+    combined = calculate_relationship(kin_A, kin_B, DB)
+    
+    if combined:
+        cinfo = combined['info']
+        ck = combined['KIN']
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            c_s_idx = (ck - 1) % 20 + 1
+            c_t_idx = (ck - 1) % 13 + 1
+            c_img = f"assets/seals/{c_s_idx:02d}.jpg"
+            ct_img = f"assets/tones/tone-{c_t_idx}.png"
+            if os.path.exists(ct_img): st.image(ct_img, width=50)
+            if os.path.exists(c_img): st.image(c_img, width=150)
+        with c2:
+            st.markdown(f"### 合盤 KIN {ck} {cinfo.get('主印記')}")
+            st.write(f"**波符**：{cinfo.get('波符')}")
+            st.write(f"**城堡**：{cinfo.get('城堡')}")
 
-elif mode == "女神印記查詢":
-    st.title("💖 女神查詢")
-    d, _ = render_date_selector("god")
-    if st.button("查詢"):
-        k, _ = calculate_kin_v2(d)
-        if not k: k = calculate_kin_math(d)
-        res = get_goddess_kin(k)
-        st.success(f"女神: KIN {res['KIN']}")
-        show_basic_result(res['KIN'], res['Info'])
+# --- Tab 5: 國王棋盤 ---
+with tab5:
+    st.header("👑 Telektonon 預言棋盤")
+    
+    board_img = "assets/telektonon_board.jpg"
+    if os.path.exists(board_img):
+        st.image(board_img, caption="Telektonon 預言遊戲棋盤", use_column_width=True)
+    
+    if 1 <= day_num <= 6:
+        path_img = "assets/yellow_white_path_1_6.jpg"
+        if os.path.exists(path_img): st.image(path_img, caption="黃白烏龜地球之旅 (Day 1-6)", width=400)
+    elif 23 <= day_num <= 28:
+        path_img = "assets/heaven_reunion_path.jpg"
+        if os.path.exists(path_img): st.image(path_img, caption="天堂之旅 (Day 23-28)", width=400)
+    elif 7 <= day_num <= 22:
+        warrior_img = "assets/warrior_yellow_white_path.jpg"
+        if os.path.exists(warrior_img): st.image(warrior_img, caption="戰士期間分道揚鑣 (Day 7-22)", width=400)
 
-elif mode == "對等印記查詢":
-    st.title("🔄 對等印記查詢")
-    d, _ = render_date_selector("eq")
-    if st.button("查詢"):
-        k, _ = calculate_kin_v2(d)
-        if not k: k = calculate_kin_math(d)
-        res = calculate_equivalent_kin(k)
-        if res: st.success(f"TFI: {res['TFI']} -> 對等 KIN {res['Eq_Kin']}")
-        show_basic_result(res['Eq_Kin'], res['Eq_Info'])
+    # 1. 13:20 羅盤
+    st.markdown("---")
+    st.subheader("🧭 13:20 羅盤每日校準")
+    c_compass, c_inst = st.columns([1, 1])
+    with c_compass:
+        compass_img = "assets/compass_1320.jpg"
+        if os.path.exists(compass_img): st.image(compass_img, width=300)
+    with c_inst:
+        t_idx = (today_kin_info['KIN'] - 1) % 13 + 1
+        s_idx = (today_kin_info['KIN'] - 1) % 20 + 1
+        st.success(f"**今日校準：KIN {today_kin_info['KIN']}**")
+        c_w, c_b = st.columns(2)
+        with c_w:
+            st.image("assets/tokens/particle_white.png", width=50)
+            st.write(f"**白粒子**：內圈 第 {t_idx} 格")
+        with c_b:
+            st.image("assets/tokens/particle_black.png", width=50)
+            st.write(f"**黑粒子**：外圈 第 {s_idx} 格")
 
-# 5. 高階功能
-elif mode == "全腦調頻":
-    st.title("🧠 全腦調頻")
-    data = get_whole_brain_tuning()
-    if data:
-        for item in data:
-            with st.expander(f"{item['Part']}"): st.write(item['Text'])
-    else: st.warning("無資料")
+    # 2. 13:28 羅盤
+    st.markdown("---")
+    st.subheader("🗓️ 13:28 羅盤每日校準")
+    c_comp2, c_inst2 = st.columns([1, 1])
+    with c_comp2:
+        compass2 = "assets/compass_1328.jpg"
+        if os.path.exists(compass2): st.image(compass2, width=300)
+    with c_inst2:
+        st.success(f"**今日校準：{MOON_NAMES[moon_num]} 第 {day_num} 天**")
+        c_w2, c_b2 = st.columns(2)
+        with c_w2:
+            st.image("assets/tokens/particle_white.png", width=50)
+            st.write(f"**白粒子**：內圈 第 {moon_num} 格")
+        with c_b2:
+            st.image("assets/tokens/particle_black.png", width=50)
+            st.write(f"**黑粒子**：外圈 第 {day_num} 格")
 
-elif mode == "國王棋盤":
-    st.title("👑 國王預言棋盤")
-    d, _ = render_date_selector("king")
-    if st.button("讀取"):
-        k, _ = calculate_kin_v2(d)
-        if not k: k = calculate_kin_math(d)
-        maya = get_maya_calendar_info(d)
-        tk = get_telektonon_info(k, maya)
+    # 3. 烏龜移動
+    st.markdown("---")
+    st.subheader("🐢 烏龜移動")
+    
+    eh_name, eh_desc, eh_imgs, eh_hint = get_journey_earth_heaven(day_num)
+    st.write(f"**{eh_name}** — {eh_desc}")
+    if eh_hint: st.caption(f"提示：{eh_hint}")
+    if eh_imgs:
         c1, c2 = st.columns(2)
-        with c1: st.info(f"水晶: {tk['Crystal_Battery']}\n\n立方: {tk['Warrior_Cube']}")
-        with c2: st.success(f"🐢 {tk['Turtle_Color']} | {tk['Turtle_Day']}\n\n{tk.get('Turtle_Desc','')}")
+        with c1: st.image(eh_imgs[0], caption="黃烏龜 (國王)", width=80)
+        with c2: st.image(eh_imgs[1], caption="白烏龜 (皇后)", width=80)
+        
+    warrior_name, warrior_desc, warrior_img = get_journey_warrior(day_num)
+    if warrior_name:
+        st.divider()
+        st.info(f"**{warrior_name}** — {warrior_desc}")
+        if os.path.exists(warrior_img):
+            st.image(warrior_img, caption="綠烏龜 (戰士)", width=80)
 
-# 6. 人員管理
-elif mode == "人員生日管理":
-    st.title("👤 人員管理")
-    t1, t2, t3 = st.tabs(["新增", "列表/編輯", "匯入/匯出"])
-    with t1:
-        c1, c2 = st.columns(2)
-        n = c1.text_input("姓名")
-        db = c2.date_input("生日", SAFE_DATE)
-        if st.button("存檔"):
-            k, _ = calculate_kin_v2(db)
-            if k:
-                ok, m = save_user_data(n, db.strftime('%Y-%m-%d'), k, get_main_sign_text(k))
-                if ok: st.success(m)
-                else: st.error(m)
-    with t2:
-        df = get_user_list()
-        st.dataframe(df)
-        if not df.empty:
-            sel = st.selectbox("編輯對象", df['姓名'])
-            if sel:
-                r = df[df['姓名']==sel].iloc[0]
-                nn = st.text_input("新姓名", value=sel)
-                nd = st.date_input("新生日", value=datetime.datetime.strptime(r['生日'],"%Y-%m-%d").date())
-                c_up, c_del = st.columns(2)
-                if c_up.button("更新"):
-                    nk, _ = calculate_kin_v2(nd)
-                    update_user_data(sel, nn, nd.strftime('%Y-%m-%d'), nk, get_main_sign_text(nk))
-                    st.success("更新成功"); st.rerun()
-                if c_del.button("刪除"):
-                    delete_user_data([sel])
-                    st.success("已刪除"); st.rerun()
-    with t3:
-        df = get_user_list()
-        st.download_button("匯出 CSV", df.to_csv(index=False).encode('utf-8-sig'), "users.csv")
-        up = st.file_uploader("匯入 CSV", type="csv")
-        if up and st.button("開始匯入"):
-            try:
-                d_in = pd.read_csv(up)
-                count = 0
-                for _, r in d_in.iterrows():
-                    try:
-                        # 嘗試解析生日
-                        if '生日' in r and pd.notna(r['生日']):
-                            dd = datetime.datetime.strptime(str(r['生日']).replace('/','-'), "%Y-%m-%d").date()
-                        elif '出生年' in r and pd.notna(r['出生年']):
-                            dd = datetime.date(int(r['出生年']), int(r['出生月']), int(r['出生日']))
-                        else: continue # 無生日資料，跳過
-                        
-                        # 修正姓名欄位
-                        name = r['姓名'] if '姓名' in r else r['名字']
-                        
-                        kk, _ = calculate_kin_v2(dd)
-                        if kk and name:
-                            save_user_data(name, dd.strftime('%Y-%m-%d'), kk, get_main_sign_text(kk))
-                            count += 1
-                    except: pass
-                st.success(f"匯入完成：{count} 筆")
-            except Exception as e: st.error(f"格式錯誤: {e}")
+    # 4. 水晶與金字塔
+    st.markdown("---")
+    st.subheader("🏛️ 神諭金字塔佈陣 (GK/SP 能量流)")
+    flow_img = "assets/gk_sp_flow.jpg"
+    if os.path.exists(flow_img):
+        st.image(flow_img, caption="GK (左) / SP (右) 垂直能量流", use_column_width=True)
+    
+    cols = st.columns(5)
+    keys = ['guide', 'analog', 'main', 'antipode', 'occult']
+    labels = ["指引", "支持", "命運", "挑戰", "隱藏"]
+    for i, col in enumerate(cols):
+        k_info = today_oracle[keys[i]]
+        with col:
+            render_oracle_pyramid(labels[i], k_info['KIN'], k_info)
+    
+    st.markdown("---")
+    c_cry1, c_cry2 = st.columns([1, 3])
+    with c_cry1:
+        if os.path.exists("assets/tokens/crystal.png"):
+            st.image("assets/tokens/crystal.png", width=80)
+    with c_cry2:
+        if os.path.exists("assets/crystal_battery.jpg"):
+            st.image("assets/crystal_battery.jpg", width=200)
+        st.info(f"將水晶移至今日圖騰：**{today_kin_info.get('圖騰')}**")
 
-# 7. 合盤
-elif mode == "通訊錄/合盤":
-    st.title("❤️ 關係合盤")
-    pn1 = user_selector("夥伴 A", "p1")
-    pn2 = user_selector("夥伴 B", "p2")
-    if st.button("計算"):
-        if pn1 and pn2:
-            us = get_user_list()
-            k1, _ = get_user_kin(pn1, us)
-            k2, _ = get_user_kin(pn2, us)
-            if k1 and k2:
-                ck = calculate_composite(k1, k2)
-                ci = get_full_kin_data(ck)
-                st.success(f"🎉 {pn1} & {pn2} 合盤 KIN {ck}：{ci.get('主印記','')}")
-                show_basic_result(ck, ci)
-        else: st.warning("請選擇兩位夥伴")
-
-# 8. 八度音階
-elif mode == "八度音階查詢":
-    st.title("🎵 八度音階")
-    note = st.selectbox("音符", ['Do','Re','Mi','Fa','Sol','La','Si',"Do'"])
-    if st.button("查詢"):
-        st.dataframe(pd.DataFrame(get_octave_positions(note)))
-
-# 9. 系統檢查
-elif mode == "系統檢查員":
-    st.title("🔍 系統檢查")
-    if os.path.exists("13moon.db"):
-        conn = sqlite3.connect("13moon.db")
-        st.success("資料庫連線正常")
-        st.write("表格清單:", pd.read_sql("SELECT name FROM sqlite_master WHERE type='table'", conn))
-        conn.close()
-    else: st.error("資料庫遺失")
+# --- Tab 6 ---
+with tab6:
+    st.header("🧠 441 Synchronotron")
+    c_h, c_res = st.columns([1, 1])
+    with c_h:
+        st.markdown("#### 52 七價路徑")
+        if moon_str == "Day Out of Time":
+            st.success("✨ 無時間日：Hunab Ku 21 的核心通道")
+        else:
+            st.metric("年度路徑", f"Week {heptad_week}")
+            st.info(f"當前位於年度第 {heptad_week} 條路徑，連接 Hunab Ku 21。")
+    if sync_data:
+        mcf = sync_data['MCF']
+        bmu = sync_data['BMU']
+        keq = sync_data['KIN_EQUIV']
+        with c_res:
+            st.markdown("#### 核心頻率數據")
+            st.markdown(f"""
+            <div style="background-color:#E8F8F5; padding:20px; border-radius:10px; border:2px solid #1ABC9C;">
+                <h2>MCF: {mcf}</h2>
+                <small>Master Coordinating Frequency</small>
+                <hr>
+                <h3>BMU: {bmu}</h3>
+                <small>Base Matrix Unit</small>
+                <hr>
+                <h3>對等: KIN {keq['KIN']}</h3>
+            </div>
+            """, unsafe_allow_html=True)
+        with st.expander("查看 TFI 加總細節"):
+            for log in sync_data['logs']:
+                st.code(log, language="text")

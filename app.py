@@ -43,28 +43,27 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
-# 行星軌道映射 (左GK / 右SP)
 TELEKTONON_MAP = {
-    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    1: {"planet": "海王星 (Neptune)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星 (Uranus)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星 (Saturn)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星 (Jupiter)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克 (Maldek)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星 (Mars)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球 (Earth)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星 (Venus)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星 (Mercury)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
     10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    11: {"planet": "金星 (Venus)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球 (Earth)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星 (Mars)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克 (Maldek)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星 (Jupiter)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星 (Saturn)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星 (Uranus)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星 (Neptune)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星 (Pluto)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星 (Pluto)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -557,18 +556,18 @@ with tab4:
 with tab5:
     st.header("👑 Telektonon 預言棋盤")
     
-    board_img = "assets/telektonon_board.jpg"
+    board_img = "assets/tokens/telektonon_board.jpg"
     if os.path.exists(board_img):
         st.image(board_img, caption="Telektonon 預言遊戲棋盤", use_column_width=True)
     
     if 1 <= day_num <= 6:
-        path_img = "assets/yellow_white_path_1_6.jpg"
+        path_img = "assets/tokens/yellow_white_path_1_6.jpg"
         if os.path.exists(path_img): st.image(path_img, caption="黃白烏龜地球之旅 (Day 1-6)", width=400)
     elif 23 <= day_num <= 28:
-        path_img = "assets/heaven_reunion_path.jpg"
+        path_img = "assets/tokens/heaven_reunion_path.jpg"
         if os.path.exists(path_img): st.image(path_img, caption="天堂之旅 (Day 23-28)", width=400)
     elif 7 <= day_num <= 22:
-        warrior_img = "assets/warrior_yellow_white_path.jpg"
+        warrior_img = "assets/tokens/warrior_yellow_white_path.jpg"
         if os.path.exists(warrior_img): st.image(warrior_img, caption="戰士期間分道揚鑣 (Day 7-22)", width=400)
 
     # 1. 13:20 羅盤
@@ -576,7 +575,7 @@ with tab5:
     st.subheader("🧭 13:20 羅盤每日校準")
     c_compass, c_inst = st.columns([1, 1])
     with c_compass:
-        compass_img = "assets/compass_1320.jpg"
+        compass_img = "assets/tokens/compass_1320.jpg"
         if os.path.exists(compass_img): st.image(compass_img, width=300)
     with c_inst:
         t_idx = (today_kin_info['KIN'] - 1) % 13 + 1
@@ -595,7 +594,7 @@ with tab5:
     st.subheader("🗓️ 13:28 羅盤每日校準")
     c_comp2, c_inst2 = st.columns([1, 1])
     with c_comp2:
-        compass2 = "assets/compass_1328.jpg"
+        compass2 = "assets/tokens/compass_1328.jpg"
         if os.path.exists(compass2): st.image(compass2, width=300)
     with c_inst2:
         st.success(f"**今日校準：{MOON_NAMES[moon_num]} 第 {day_num} 天**")
@@ -629,7 +628,7 @@ with tab5:
     # 4. 水晶與金字塔
     st.markdown("---")
     st.subheader("🏛️ 神諭金字塔佈陣 (GK/SP 能量流)")
-    flow_img = "assets/gk_sp_flow.jpg"
+    flow_img = "assets/tokens/gk_sp_flow.jpg"
     if os.path.exists(flow_img):
         st.image(flow_img, caption="GK (左) / SP (右) 垂直能量流", use_column_width=True)
     
@@ -647,8 +646,8 @@ with tab5:
         if os.path.exists("assets/tokens/crystal.png"):
             st.image("assets/tokens/crystal.png", width=80)
     with c_cry2:
-        if os.path.exists("assets/crystal_battery.jpg"):
-            st.image("assets/crystal_battery.jpg", width=200)
+        if os.path.exists("assets/tokens/crystal_battery.jpg"):
+            st.image("assets/tokens/crystal_battery.jpg", width=200)
         st.info(f"將水晶移至今日圖騰：**{today_kin_info.get('圖騰')}**")
 
 # --- Tab 6 ---

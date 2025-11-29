@@ -15,6 +15,39 @@ st.set_page_config(
     layout="wide"
 )
 
+# CSS 樣式注入 (五大神諭網格佈局)
+st.markdown("""
+<style>
+    .oracle-grid-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 10px;
+        justify-items: center;
+        align-items: center;
+        max_width: 600px;
+        margin: 0 auto;
+    }
+    .oracle-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify_content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .oracle-title { font-size: 12px; color: #666; font-weight: bold; margin-bottom: 5px; }
+    .oracle-kin { font-size: 16px; font-weight: bold; color: #333; margin-top: 5px; }
+    .oracle-desc { font-size: 12px; color: #888; }
+    .wave-active { border: 2px solid #FFD700 !important; background-color: #FFFBE6 !important; }
+</style>
+""", unsafe_allow_html=True)
+
 TONES_NAME = ["", "磁性", "月亮", "電力", "自我存在", "超頻", "韻律", "共鳴", "銀河星系", "太陽", "行星", "光譜", "水晶", "宇宙"]
 SEALS_NAME = ["", "紅龍", "白風", "藍夜", "黃種子", "紅蛇", "白世界橋", "藍手", "黃星星", "紅月", "白狗", "藍猴", "黃人", "紅天行者", "白巫師", "藍鷹", "黃戰士", "紅地球", "白鏡", "藍風暴", "黃太陽"]
 SEAL_COLORS = {
@@ -36,16 +69,6 @@ TONE_QUESTIONS = {
     "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
 }
 
-HEPTAD_GATE_INFO = {
-    1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
-    2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
-    3: {"plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪", "sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應"},
-    4: {"plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧"},
-    5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
-    6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
-    7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
-}
-
 CASTLES_INFO = {
     "紅色東方啟動城堡": {"range": "Kin 1-52", "color_bg": "#FFCCCB", "court": "出生之庭", "theme": "啟動與開創", "desc": "適合發起新事物的起始開創課題。", "img": "assets/tokens/pyramid_red.png"},
     "白色北方跨越城堡": {"range": "Kin 53-104", "color_bg": "#F0F3F4", "court": "死亡之庭", "theme": "跨越與淨化", "desc": "透過淨化與斷捨離，跨越舊有。", "img": "assets/tokens/pyramid_white.png"},
@@ -55,26 +78,26 @@ CASTLES_INFO = {
 }
 
 TELEKTONON_MAP = {
-    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
-    10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    1: {"planet": "海王星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    10: {"planet": "水星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
+    11: {"planet": "金星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -93,6 +116,16 @@ HEAVEN_JOURNEY = {
     23: "情人重聚日 - 國王與皇后相遇",
     24: "拆除太陽預言流 (SP) - 智慧之塔頂部", 25: "拆除太陽預言流 (SP) - 智慧之塔中部", 26: "拆除太陽預言流 (SP) - 智慧之塔底部",
     27: "拆除銀河業力流 (GK) - 實踐之塔頂部", 28: "拆除銀河業力流 (GK) - 實踐之塔中部"
+}
+
+HEPTAD_GATE_INFO = {
+    1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
+    2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
+    3: {"plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪", "sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應"},
+    4: {"plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧"},
+    5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
+    6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
+    7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
 }
 
 # ==========================================
@@ -395,8 +428,11 @@ def image_to_base64(img_path):
         return base64.b64encode(data).decode()
     return None
 
-# --- 輔助：HTML 神諭卡片渲染 (圖騰修復版) ---
-def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+# --- 輔助：HTML 神諭卡片渲染 (上調性, 下圖騰) ---
+def get_card_html(title, kin_num, kin_data, is_main=False):
+    """產生單張卡片的 HTML"""
+    if not kin_data: return ""
+    
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
     
@@ -406,61 +442,99 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
     
-    tone_name = TONES_NAME[tone_idx]
-    seal_name = SEALS_NAME[seal_idx]
+    bg_color = "#FCF3CF" if is_main else "#F4F6F6"
+    border = "2px solid #FFD700" if is_main else "1px solid #ddd"
     
-    # HTML 結構：上調性、下圖騰
     html = f"""
-    <div style="background-color:{bg_color}; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; height:100%; display:flex; flex-direction:column; align_items:center; justify_content:center;">
-        <div style="font-weight:bold; margin-bottom:5px; color:#555;">{title}</div>
+    <div class="oracle-card" style="background-color: {bg_color}; border: {border};">
+        <div class="oracle-title">{title}</div>
     """
     
-    # 調性 (Tone)
     if b64_tone:
-        html += f'<img src="data:image/png;base64,{b64_tone}" style="width:40px; margin-bottom:2px;">'
+        html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 40px; margin-bottom: 5px;">'
     else:
-        html += f"<div>({tone_name})</div>"
+        html += f"<div>({TONES_NAME[tone_idx]})</div>"
         
-    # 圖騰 (Seal)
     if b64_seal:
-        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width:70px; border-radius:5px; margin-bottom:5px;">'
+        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 70px; border-radius: 5px; margin-bottom: 5px;">'
     else:
-        html += f"<div>({seal_name})</div>"
+        html += f"<div>({SEALS_NAME[seal_idx]})</div>"
         
-    html += f"""<div style="font-size:18px; font-weight:bold; color:#333;">KIN {kin_num}</div>
-        <div style="font-size:13px; color:#666;">{tone_name}調性 {seal_name}</div></div>"""
-    st.markdown(html, unsafe_allow_html=True)
+    html += f"""
+        <div class="oracle-desc">{kin_data.get('主印記', '')}</div>
+        <div class="oracle-kin">KIN {kin_num}</div>
+    </div>
+    """
+    return html
 
-def render_vertical_oracle_card(title, kin_data, bg_color):
-    render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
+# --- 輔助：波符數據生成 ---
+def get_wavespell_data(kin_num):
+    """計算該 KIN 所屬波符的 13 天資料"""
+    tone = (kin_num - 1) % 13 + 1
+    start_kin = kin_num - (tone - 1)
+    if start_kin <= 0: start_kin += 260
+    
+    wavespell = []
+    for i in range(13):
+        k = start_kin + i
+        if k > 260: k -= 260
+        t = (k - 1) % 13 + 1
+        s = (k - 1) % 20 + 1
+        
+        q = TONE_QUESTIONS.get(TONES_NAME[t], "")
+        img = f"assets/seals/{s:02d}.jpg"
+        
+        wavespell.append({
+            "Tone": t,
+            "ToneName": TONES_NAME[t],
+            "SealName": SEALS_NAME[s],
+            "KIN": k,
+            "Question": q,
+            "Image": img,
+            "FullName": f"{TONES_NAME[t]}{SEALS_NAME[s]}"
+        })
+    return wavespell
 
-def render_wavespell_section(kin_info):
-    ws_name = kin_info.get('波符', '未知波符')
-    st.markdown(f"### 🌊 波符解讀：{ws_name}")
-    with st.expander(f"查看 {ws_name} 的 13 個提問"):
-        for i, (t_name, q) in enumerate(TONE_QUESTIONS.items()):
-            st.write(f"**{i+1}. {t_name}調性**：{q}")
-
+# --- 通用渲染：全套分析 (神諭 + 波符) ---
 def render_full_analysis(kin_num, title, db):
-    """通用分析模組：顯示任何 KIN 的神諭與波符"""
     kin_info = get_kin_details(kin_num, db)
     oracle = calculate_oracle(kin_num, db)
     
     st.markdown(f"## {title}: KIN {kin_num} {kin_info.get('主印記')}")
     
-    # 十字佈陣
-    bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
-    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
-    with r1c2: render_kin_card("指引", oracle['guide']['KIN'], oracle['guide'], bg_guide)
-    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
-    with r2c1: render_kin_card("挑戰", oracle['antipode']['KIN'], oracle['antipode'], bg_antipode)
-    with r2c2: render_kin_card("主印記", oracle['main']['KIN'], oracle['main'], bg_destiny)
-    with r2c3: render_kin_card("支持", oracle['analog']['KIN'], oracle['analog'], bg_analog)
-    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
-    with r3c2: render_kin_card("隱藏", oracle['occult']['KIN'], oracle['occult'], bg_occult)
+    # 1. 五大神諭 (十字佈陣)
+    st.markdown("""
+    <div class="oracle-grid-container">
+        <div></div> <div>""" + get_card_html("指引 (Guide)", oracle['guide']['KIN'], oracle['guide']) + """</div> <div></div>
+        <div>""" + get_card_html("挑戰 (Antipode)", oracle['antipode']['KIN'], oracle['antipode']) + """</div> 
+        <div>""" + get_card_html("主印記 (Destiny)", oracle['main']['KIN'], oracle['main'], True) + """</div> 
+        <div>""" + get_card_html("支持 (Analog)", oracle['analog']['KIN'], oracle['analog']) + """</div>
+        <div></div> <div>""" + get_card_html("隱藏 (Occult)", oracle['occult']['KIN'], oracle['occult']) + """</div> <div></div>
+    </div>
+    """, unsafe_allow_html=True)
     
+    # 2. 波符解讀
     st.markdown("---")
-    render_wavespell_section(kin_info)
+    ws_data = get_wavespell_data(kin_num)
+    wave_name = ws_data[0]['SealName'] + "波符" # 波符名稱由第1天決定
+    
+    st.subheader(f"🌊 {wave_name} 波符旅程")
+    with st.expander("查看完整 13 天波符路徑"):
+        for w in ws_data:
+            # 高亮當前 KIN
+            hl_style = "border: 2px solid #FFD700; background-color: #FFFBE6;" if w['KIN'] == kin_num else "border: 1px solid #eee;"
+            
+            c_img, c_txt = st.columns([0.5, 4])
+            with c_img:
+                if os.path.exists(w['Image']):
+                    st.image(w['Image'], width=40)
+            with c_txt:
+                st.markdown(f"""
+                <div style="{hl_style} padding: 8px; border-radius: 5px; margin-bottom: 5px;">
+                    <b style='color:#D4AF37'>調性 {w['Tone']} ({w['ToneName']})：{w['Question']}</b><br>
+                    <span style='font-size:14px; color:#555;'>KIN {w['KIN']} {w['FullName']}</span>
+                </div>
+                """, unsafe_allow_html=True)
 
 def render_large_kin(kin_num, kin_info):
     seal_idx = (kin_num - 1) % 20 + 1
@@ -517,13 +591,6 @@ conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
 
-# Debug
-if st.sidebar.checkbox("🔧 檔案檢查"):
-    st.sidebar.write("Seals Path: assets/seals")
-    if os.path.exists("assets/seals"):
-        st.sidebar.write(os.listdir("assets/seals")[:5])
-    else: st.sidebar.error("Seals not found")
-
 if use_contact and not contacts_df.empty:
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])
     f_seal = st.sidebar.multiselect("篩選圖騰", SEALS_NAME[1:])
@@ -553,7 +620,7 @@ if not use_contact:
                 st.success(f"已儲存 {new_name}")
                 st.rerun()
 
-# 計算
+# 核心計算
 kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
 info_A = get_kin_details(kin_A, DB)
 oracle_A = calculate_oracle(kin_A, DB)
@@ -578,12 +645,16 @@ if selected_function != "👥 人員管理":
 # ==========================================
 
 if selected_function == "🔮 靈魂藍圖":
+    # 主印記分析
     render_full_analysis(kin_A, "出生印記 (Birth Kin)", DB)
     
     st.markdown("---")
+    
+    # PSI 展開
     with st.expander(f"查看 PSI 印記詳情: KIN {psi_num}"):
         render_full_analysis(psi_num, "PSI 印記 (Planetary Memory)", DB)
         
+    # 女神展開
     with st.expander(f"查看 女神印記詳情: KIN {goddess_info['KIN']}"):
         render_full_analysis(goddess_info['KIN'], "女神印記 (Goddess Force)", DB)
 
@@ -604,10 +675,12 @@ elif selected_function == "🏰 時間地圖":
                 <p><strong>{castle_data['theme']}</strong> ({castle_data['range']})</p>
                 <p>{castle_data['desc']}</p></div>""", unsafe_allow_html=True)
     st.markdown("---")
+    # 這邊使用新的波符渲染
     render_wavespell_section(info_A)
 
 elif selected_function == "🌊 流年與運勢":
     st.subheader(f"🌊 流年運勢 ({flow_year_val})")
+    # 直接使用完整分析模組
     render_full_analysis(flow_year_info['KIN'], f"流年印記 (Flow Year)", DB)
 
 elif selected_function == "💞 關係合盤":
@@ -622,6 +695,7 @@ elif selected_function == "💞 關係合盤":
     kin_B = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
     combined = calculate_relationship(kin_A, kin_B, DB)
     if combined:
+        # 合盤也使用完整分析
         render_full_analysis(combined['KIN'], "合盤印記 (Combined Seal)", DB)
 
 elif selected_function == "👑 國王棋盤":
@@ -736,6 +810,7 @@ elif selected_function == "🧠 441 共時化科學":
                 <h3>BMU: {bmu}</h3><small>Base Matrix Unit</small><hr>
                 <h3>對等: KIN {keq['KIN']}</h3></div>""", unsafe_allow_html=True)
         
+        # 對等印記展開詳情 (套用完整分析)
         with st.expander(f"查看 對等印記詳情: KIN {keq['KIN']}"):
             render_full_analysis(keq['KIN'], "對等印記 (Equivalent Kin)", DB)
             

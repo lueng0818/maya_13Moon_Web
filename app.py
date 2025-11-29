@@ -43,27 +43,28 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
+# 行星軌道映射 (左GK / 右SP)
 TELEKTONON_MAP = {
-    1: {"planet": "海王星 (Neptune)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星 (Uranus)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星 (Saturn)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星 (Jupiter)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克 (Maldek)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星 (Mars)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球 (Earth)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星 (Venus)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星 (Mercury)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
-    10: {"planet": "水星 (Mercury)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星 (Venus)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球 (Earth)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星 (Mars)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克 (Maldek)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星 (Jupiter)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星 (Saturn)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星 (Uranus)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星 (Neptune)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星 (Pluto)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星 (Pluto)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
+    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -85,7 +86,7 @@ HEAVEN_JOURNEY = {
 }
 
 # ==========================================
-# 2. 資料載入層
+# 2. 資料載入層 (Data Layer)
 # ==========================================
 @st.cache_data
 def load_data():
@@ -133,7 +134,6 @@ def load_data():
 
 # --- Google Sheets 資料庫 ---
 def load_contacts_db():
-    """連線並讀取 Google Sheets"""
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
         df = conn.read(worksheet="contacts", ttl=0)
@@ -142,7 +142,6 @@ def load_contacts_db():
         return conn, pd.DataFrame(columns=["姓名", "生日", "KIN"])
 
 def save_contact(conn, df, name, birth_date, kin_num):
-    """寫入新聯絡人"""
     new_data = pd.DataFrame([{"姓名": name, "生日": str(birth_date), "KIN": int(kin_num)}])
     updated_df = pd.concat([df, new_data], ignore_index=True)
     conn.update(worksheet="contacts", data=updated_df)

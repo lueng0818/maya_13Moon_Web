@@ -54,6 +54,7 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
+# 行星軌道映射 (左GK / 右SP)
 TELEKTONON_MAP = {
     1: {"planet": "海王星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
     2: {"planet": "天王星", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
@@ -142,6 +143,7 @@ def load_data():
             except: continue
     return data
 
+# --- Google Sheets 資料庫 ---
 def load_contacts_db():
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
@@ -386,10 +388,10 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     kin_equiv = (mcf - 1) % 260 + 1
     return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
 
-# --- 輔助：圖片轉 Base64 (防呆) ---
+# --- 輔助：圖片轉 Base64 函式 ---
 def image_to_base64(img_path):
-    """將圖片轉為 Base64 字串，並使用絕對路徑以避免找不到檔案"""
-    # 確保使用絕對路徑
+    """將圖片轉為 Base64 字串，以便嵌入 HTML"""
+    # 使用絕對路徑確保 Streamlit Cloud 能找到檔案
     abs_path = os.path.abspath(img_path)
     
     if os.path.exists(abs_path):
@@ -400,22 +402,26 @@ def image_to_base64(img_path):
         except Exception as e:
             print(f"Error reading image {abs_path}: {e}")
             return None
-    else:
-        # 嘗試從當前目錄相對路徑讀取
-        if os.path.exists(img_path):
-            try:
-                with open(img_path, "rb") as f:
-                    data = f.read()
-                return base64.b64encode(data).decode()
-            except: return None
+    # Fallback
+    elif os.path.exists(img_path):
+        try:
+            with open(img_path, "rb") as f:
+                data = f.read()
+            return base64.b64encode(data).decode()
+        except: return None
     return None
 
 # --- 輔助：HTML 神諭卡片渲染 ---
 def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+    """顯示 HTML 版本的直式卡片：[標題] [調性圖] [圖騰圖] [KIN 資訊]"""
+    
+    # 確保 KIN 有效
+    if not kin_num: return
+    
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
     
-    # 確保路徑正確
+    # 路徑設定 (注意大小寫與副檔名)
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
     tone_path = f"assets/tones/tone-{tone_idx}.png"
     
@@ -425,78 +431,46 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
     
-    # Debug 訊息 (只在開發環境顯示)
-    # if not b64_seal: print(f"Missing seal image: {seal_path}")
-    # if not b64_tone: print(f"Missing tone image: {tone_path}")
-
+    # 樣式設定
     html = f"""
-    <div style="background-color:{bg_color}; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; height:100%; display:flex; flex-direction:column; align_items:center; justify_content:center;">
-        <div style="font-weight:bold; margin-bottom:5px; color:#555;">{title}</div>
+    <div style="
+        background-color: {bg_color}; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        padding: 10px; 
+        text-align: center; 
+        height: 100%;
+        display: flex; 
+        flex-direction: column; 
+        align_items: center;
+        justify_content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    ">
+        <div style="font-size: 12px; font-weight: bold; color: #666; margin-bottom: 5px;">{title}</div>
     """
-    # 上：調性
-    if b64_tone: html += f'<img src="data:image/png;base64,{b64_tone}" style="width:40px; margin-bottom:2px;">'
-    else: html += f"<div>({tone_name})</div>"
     
-    # 下：圖騰
-    if b64_seal: html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width:70px; border-radius:5px; margin-bottom:5px;">'
-    else: html += f"<div>({seal_name})</div>"
-    
-    html += f"""<div style="font-size:18px; font-weight:bold; color:#333;">KIN {kin_num}</div>
-        <div style="font-size:13px; color:#666;">{tone_name}調性 {seal_name}</div></div>"""
+    # 調性圖片
+    if b64_tone:
+        html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 40px; margin-bottom: 2px;">'
+    else:
+        html += f"<div style='font-size:12px; color:#555;'>({tone_name}調性)</div>"
+        
+    # 圖騰圖片
+    if b64_seal:
+        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 60px; border-radius: 5px; margin-bottom: 5px;">'
+    else:
+        html += f"<div style='font-size:12px; color:#555;'>({seal_name}圖騰)</div>"
+        
+    # 文字資訊
+    html += f"""
+        <div style="font-size: 16px; font-weight: bold; color: #333;">KIN {kin_num}</div>
+        <div style="font-size: 12px; color: #666;">{tone_name}調性 {seal_name}</div>
+    </div>
+    """
     st.markdown(html, unsafe_allow_html=True)
 
 def render_vertical_oracle_card(title, kin_data, bg_color):
     render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
-
-# --- 波符渲染 ---
-def get_wavespell_data(kin_num):
-    tone = (kin_num - 1) % 13 + 1
-    start_kin = kin_num - (tone - 1)
-    if start_kin <= 0: start_kin += 260
-    wavespell = []
-    for i in range(13):
-        k = start_kin + i
-        if k > 260: k -= 260
-        t = (k - 1) % 13 + 1
-        s = (k - 1) % 20 + 1
-        q = TONE_QUESTIONS.get(TONES_NAME[t], "")
-        img = f"assets/seals/{s:02d}.jpg"
-        wavespell.append({"Tone": t, "ToneName": TONES_NAME[t], "SealName": SEALS_NAME[s], "KIN": k, "Question": q, "Image": img, "FullName": f"{TONES_NAME[t]}{SEALS_NAME[s]}"})
-    return wavespell
-
-def render_wavespell_section(kin_info):
-    kin_num = kin_info['KIN']
-    ws_data = get_wavespell_data(kin_num)
-    wave_name = ws_data[0]['SealName'] + "波符"
-    st.subheader(f"🌊 {wave_name} 波符旅程")
-    with st.expander(f"查看完整 13 天波符"):
-        for w in ws_data:
-            hl = "border: 2px solid #FFD700; background: #FFFBE6;" if w['KIN'] == kin_num else "border: 1px solid #eee;"
-            c_img, c_txt = st.columns([0.5, 4])
-            with c_img:
-                if os.path.exists(w['Image']): st.image(w['Image'], width=40)
-            with c_txt:
-                st.markdown(f"<div style='{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;'><b style='color:#D4AF37'>調性 {w['Tone']}：{w['Question']}</b><br><span style='font-size:14px;'>KIN {w['KIN']} {w['FullName']}</span></div>", unsafe_allow_html=True)
-
-def render_full_analysis(kin_num, title, db):
-    kin_info = get_kin_details(kin_num, db)
-    oracle = calculate_oracle(kin_num, db)
-    
-    st.markdown(f"## {title}: KIN {kin_num} {kin_info.get('主印記')}")
-    
-    # 十字佈陣
-    bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
-    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
-    with r1c2: render_kin_card("指引", oracle['guide']['KIN'], oracle['guide'], bg_guide)
-    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
-    with r2c1: render_kin_card("挑戰", oracle['antipode']['KIN'], oracle['antipode'], bg_antipode)
-    with r2c2: render_kin_card("主印記", oracle['main']['KIN'], oracle['main'], bg_destiny)
-    with r2c3: render_kin_card("支持", oracle['analog']['KIN'], oracle['analog'], bg_analog)
-    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
-    with r3c2: render_kin_card("隱藏", oracle['occult']['KIN'], oracle['occult'], bg_occult)
-    
-    st.markdown("---")
-    render_wavespell_section(kin_info)
 
 def render_large_kin(kin_num, kin_info):
     seal_idx = (kin_num - 1) % 20 + 1
@@ -529,6 +503,70 @@ def render_oracle_pyramid(title, kin_num, kin_info):
         t_data = get_telektonon_info(s_idx)
         st.markdown(f"""<div style="font-size:12px; line-height:1.2;">🪐 {t_data.get('planet')}<br>⚡ {t_data.get('circuit')}<br>🌊 {t_data.get('flow')}</div>""", unsafe_allow_html=True)
 
+# --- 波符渲染函式 ---
+def get_wavespell_data(kin_num):
+    tone = (kin_num - 1) % 13 + 1
+    start_kin = kin_num - (tone - 1)
+    if start_kin <= 0: start_kin += 260
+    
+    wavespell = []
+    for i in range(13):
+        k = start_kin + i
+        if k > 260: k -= 260
+        t = (k - 1) % 13 + 1
+        s = (k - 1) % 20 + 1
+        
+        q = TONE_QUESTIONS.get(TONES_NAME[t], "")
+        img = f"assets/seals/{s:02d}.jpg"
+        
+        wavespell.append({
+            "Tone": t, "ToneName": TONES_NAME[t], "SealName": SEALS_NAME[s],
+            "KIN": k, "Question": q, "Image": img, "FullName": f"{TONES_NAME[t]}{SEALS_NAME[s]}"
+        })
+    return wavespell
+
+def render_wavespell_section(kin_info):
+    kin_num = kin_info['KIN']
+    ws_data = get_wavespell_data(kin_num)
+    wave_name = ws_data[0]['SealName'] + "波符"
+    
+    st.subheader(f"🌊 {wave_name} 波符旅程")
+    with st.expander("查看完整 13 天波符路徑"):
+        for w in ws_data:
+            hl = "border: 2px solid #FFD700; background: #FFFBE6;" if w['KIN'] == kin_num else "border: 1px solid #eee;"
+            
+            c_img, c_txt = st.columns([0.5, 4])
+            with c_img:
+                if os.path.exists(w['Image']): st.image(w['Image'], width=40)
+            with c_txt:
+                st.markdown(f"""
+                <div style="{hl} padding: 8px; border-radius: 5px; margin-bottom: 5px;">
+                    <b style='color:#D4AF37'>調性 {w['Tone']} ({w['ToneName']})：{w['Question']}</b><br>
+                    <span style='font-size:14px; color:#555;'>KIN {w['KIN']} {w['FullName']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+def render_full_analysis(kin_num, title, db):
+    """通用分析模組：顯示任何 KIN 的神諭與波符"""
+    kin_info = get_kin_details(kin_num, db)
+    oracle = calculate_oracle(kin_num, db)
+    
+    st.markdown(f"## {title}: KIN {kin_num} {kin_info.get('主印記')}")
+    
+    # 十字佈陣
+    bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
+    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
+    with r1c2: render_kin_card("指引 (Guide)", oracle['guide']['KIN'], oracle['guide'], bg_guide)
+    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
+    with r2c1: render_kin_card("挑戰 (Antipode)", oracle['antipode']['KIN'], oracle['antipode'], bg_antipode)
+    with r2c2: render_kin_card("主印記 (Main Kin)", oracle['main']['KIN'], oracle['main'], bg_destiny)
+    with r2c3: render_kin_card("支持 (Analog)", oracle['analog']['KIN'], oracle['analog'], bg_analog)
+    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
+    with r3c2: render_kin_card("隱藏 (Occult)", oracle['occult']['KIN'], oracle['occult'], bg_occult)
+    
+    st.markdown("---")
+    render_wavespell_section(kin_info)
+
 # ==========================================
 # 4. 前端展示層
 # ==========================================
@@ -551,6 +589,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("👤 使用者設定 (KIN A)")
 conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
+
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
 
 # Debug
@@ -644,12 +683,10 @@ elif selected_function == "🏰 時間地圖":
                 <p><strong>{castle_data['theme']}</strong> ({castle_data['range']})</p>
                 <p>{castle_data['desc']}</p></div>""", unsafe_allow_html=True)
     st.markdown("---")
-    # 這邊使用新的波符渲染
     render_wavespell_section(info_A)
 
 elif selected_function == "🌊 流年與運勢":
     st.subheader(f"🌊 流年運勢 ({flow_year_val})")
-    # 直接使用完整分析模組
     render_full_analysis(flow_year_info['KIN'], f"流年印記 (Flow Year)", DB)
 
 elif selected_function == "💞 關係合盤":
@@ -664,7 +701,6 @@ elif selected_function == "💞 關係合盤":
     kin_B = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
     combined = calculate_relationship(kin_A, kin_B, DB)
     if combined:
-        # 合盤也使用完整分析
         render_full_analysis(combined['KIN'], "合盤印記 (Combined Seal)", DB)
 
 elif selected_function == "👑 國王棋盤":

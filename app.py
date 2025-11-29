@@ -43,27 +43,28 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
+# 行星軌道映射
 TELEKTONON_MAP = {
-    1: {"planet": "海王星 (Neptune)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星 (Uranus)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星 (Saturn)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星 (Jupiter)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克 (Maldek)", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星 (Mars)", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球 (Earth)", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星 (Venus)", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星 (Mercury)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
     10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星 (Venus)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球 (Earth)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星 (Mars)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克 (Maldek)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星 (Jupiter)", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星 (Saturn)", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星 (Uranus)", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星 (Neptune)", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星 (Pluto)", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星 (Pluto)", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -343,31 +344,45 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     kin_equiv = (mcf - 1) % 260 + 1
     return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
 
-# --- 輔助：圖片顯示 ---
+# --- 輔助：雙重圖片顯示 (圖騰 + 調性) ---
 def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+    """顯示帶有 圖騰 與 調性 圖片的卡片"""
     with st.container():
-        st.markdown(f"**{title}**")
+        # 將 Title 置中
+        st.markdown(f"<div style='text-align: center; font-weight: bold;'>{title}</div>", unsafe_allow_html=True)
+        
         seal_idx = (kin_num - 1) % 20 + 1
         tone_idx = (kin_num - 1) % 13 + 1
+        
         seal_path = f"assets/seals/{seal_idx:02d}.jpg" 
         tone_path = f"assets/tones/tone-{tone_idx}.png"
-        col_imgs, col_txt = st.columns([2, 2])
-        with col_imgs:
-            c1, c2 = st.columns(2)
-            with c1:
-                if os.path.exists(tone_path): st.image(tone_path, width=50)
-                else: st.caption(f"Tone {tone_idx}")
-            with c2:
-                if os.path.exists(seal_path): st.image(seal_path, width=60)
-                else: st.caption(f"Seal {seal_idx}")
-        with col_txt:
+        
+        # 建立直式布局
+        col_content = st.columns([1])[0] # 單欄
+        with col_content:
+            # 圖片置中容器
             st.markdown(f"""
-            <div style="background-color:{bg_color}; padding:10px; border-radius:5px; border:1px solid #ddd; height:100%;">
-                <div style="font-size:18px; font-weight:bold;">KIN {kin_num}</div>
-                <div style="font-size:14px;">{kin_info.get('圖騰', '')}</div>
-                <div style="font-size:12px; color:#666;">{kin_info.get('主印記', '')}</div>
+            <div style="background-color:{bg_color}; padding:10px; border-radius:5px; border:1px solid #ddd; height:100%; text-align: center;">
+                """, unsafe_allow_html=True)
+            
+            # 顯示調性 (小圖)
+            if os.path.exists(tone_path):
+                st.image(tone_path, width=40, use_column_width=False)
+            
+            # 顯示圖騰 (大圖)
+            if os.path.exists(seal_path):
+                st.image(seal_path, width=80, use_column_width=False)
+            
+            # 文字資訊
+            st.markdown(f"""
+                <div style="font-size:16px; font-weight:bold; margin-top:5px;">KIN {kin_num}</div>
+                <div style="font-size:14px;">{kin_info.get('主印記', '')}</div>
             </div>
             """, unsafe_allow_html=True)
+
+def render_vertical_oracle_card(title, kin_data, bg_color):
+    """Tab 1 專用的直式卡片渲染"""
+    render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
 
 def render_large_kin(kin_num, kin_info):
     seal_idx = (kin_num - 1) % 20 + 1
@@ -452,12 +467,13 @@ today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
 st.title("🌌 13 Moon Synchronotron Master System")
 st.markdown(f"**歡迎來到時間法則的中心** | 今日: {today_date} | KIN {today_kin_info['KIN']}")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🔮 靈魂藍圖", "🏰 時間地圖", "🌊 流年與運勢", "💞 關係合盤", "👑 國王棋盤", "🧠 441 共時化科學"
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "🔮 靈魂藍圖", "🏰 時間地圖", "🌊 流年與運勢", "💞 關係合盤", "👑 國王棋盤", "🧠 441 共時化科學", "👥 人員管理"
 ])
 
-# --- Tab 1 ---
+# --- Tab 1: 靈魂藍圖 (十字佈陣版) ---
 with tab1:
+    # 1. 主印記基本資料 (上方大圖)
     col_text = render_large_kin(kin_A, info_A)
     with col_text:
         st.subheader("核心印記資訊")
@@ -465,16 +481,36 @@ with tab1:
         st.write(f"**女神印記**：KIN {goddess_info['KIN']} {goddess_info.get('主印記')}")
         st.write(f"**波符**：{info_A.get('波符')}")
         st.info("調性 (Bar-Dot) 代表頻率，圖騰 (Seal) 代表原型能量。")
+    
     st.markdown("---")
-    st.subheader("🧩 五大神諭佈陣")
-    cols = st.columns(5)
-    keys = ['guide', 'analog', 'main', 'antipode', 'occult']
-    colors = ["#F4F6F6", "#F4F6F6", "#FCF3CF", "#F4F6F6", "#F4F6F6"]
-    labels = ["指引", "支持", "命運", "挑戰", "隱藏"]
-    for i, col in enumerate(cols):
-        with col:
-            k = oracle_A[keys[i]]
-            render_kin_card(labels[i], k['KIN'], k, colors[i])
+    st.subheader("🧩 五大神諭佈陣 (Oracle Cross)")
+    
+    # 定義十字架構的顏色
+    bg_guide = "#F4F6F6"
+    bg_antipode = "#F4F6F6"
+    bg_destiny = "#FCF3CF" # 命運色 (黃)
+    bg_analog = "#F4F6F6"
+    bg_occult = "#F4F6F6"
+
+    # 建立 3x3 網格模擬十字
+    # Row 1: 空 | Guide | 空
+    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
+    with r1c2:
+        render_vertical_oracle_card("指引 (Guide)", oracle_A['guide'], bg_guide)
+
+    # Row 2: Antipode | Destiny | Analog
+    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
+    with r2c1:
+        render_vertical_oracle_card("挑戰 (Antipode)", oracle_A['antipode'], bg_antipode)
+    with r2c2:
+        render_vertical_oracle_card("命運 (Destiny)", oracle_A['main'], bg_destiny)
+    with r2c3:
+        render_vertical_oracle_card("支持 (Analog)", oracle_A['analog'], bg_analog)
+
+    # Row 3: 空 | Occult | 空
+    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
+    with r3c2:
+        render_vertical_oracle_card("隱藏 (Occult)", oracle_A['occult'], bg_occult)
 
 # --- Tab 2 ---
 with tab2:
@@ -681,3 +717,94 @@ with tab6:
         with st.expander("查看 TFI 加總細節"):
             for log in sync_data['logs']:
                 st.code(log, language="text")
+
+# --- Tab 7: 人員管理 ---
+with tab7:
+    st.header("👥 人員資料庫管理")
+    
+    # 1. 讀取資料
+    # conn 已經在上面載入過，直接用
+    
+    # 2. 搜尋/過濾
+    search_term = st.text_input("🔍 搜尋姓名", "")
+    if search_term:
+        display_df = contacts_df[contacts_df['姓名'].str.contains(search_term, case=False, na=False)]
+    else:
+        display_df = contacts_df
+
+    # 3. 編輯器
+    st.info("💡在此表格中直接 **修改** 或 **新增/刪除** 列。完成後請點擊下方「儲存」按鈕。")
+    edited_df = st.data_editor(
+        display_df,
+        num_rows="dynamic",
+        column_config={
+            "生日": st.column_config.DateColumn("生日", format="YYYY-MM-DD", required=True),
+            "KIN": st.column_config.NumberColumn("KIN", disabled=True)
+        },
+        key="contact_editor"
+    )
+
+    # 4. 儲存按鈕
+    if st.button("💾 儲存變更 & 更新 KIN"):
+        # 重新計算 KIN
+        updated_rows = []
+        for index, row in edited_df.iterrows():
+            try:
+                b_date = pd.to_datetime(row['生日']).date()
+                k = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
+                updated_rows.append({
+                    "姓名": row['姓名'],
+                    "生日": str(b_date),
+                    "KIN": k
+                })
+            except Exception as e:
+                st.error(f"資料格式錯誤: {row.get('姓名', 'Unknown')} - {e}")
+        
+        if updated_rows:
+            final_df = pd.DataFrame(updated_rows)
+            conn.update(worksheet="contacts", data=final_df)
+            st.success("✅ 資料庫已更新！")
+            st.rerun()
+        elif len(edited_df) == 0: # 處理全部刪除的情況
+            conn.update(worksheet="contacts", data=pd.DataFrame(columns=["姓名", "生日", "KIN"]))
+            st.success("✅ 資料庫已清空！")
+            st.rerun()
+
+    st.markdown("---")
+    
+    # 5. 匯入/匯出
+    c_exp, c_imp = st.columns(2)
+    
+    with c_exp:
+        st.subheader("📤 匯出資料")
+        csv = contacts_df.to_csv(index=False).encode('utf-8-sig')
+        st.download_button(
+            label="下載 CSV",
+            data=csv,
+            file_name='13moon_contacts.csv',
+            mime='text/csv',
+        )
+        
+    with c_imp:
+        st.subheader("📥 匯入資料")
+        uploaded_file = st.file_uploader("上傳 CSV (需包含 '姓名', '生日' 欄位)", type=['csv'])
+        if uploaded_file is not None:
+            if st.button("確認匯入"):
+                try:
+                    imp_df = pd.read_csv(uploaded_file)
+                    if '姓名' in imp_df.columns and '生日' in imp_df.columns:
+                        new_rows = []
+                        for _, row in imp_df.iterrows():
+                            b_d = pd.to_datetime(row['生日']).date()
+                            k_num = calculate_kin_num(b_d.year, b_d.month, b_d.day, DB)
+                            new_rows.append({"姓名": row['姓名'], "生日": str(b_d), "KIN": k_num})
+                        
+                        new_data = pd.DataFrame(new_rows)
+                        final_import_df = pd.concat([contacts_df, new_data], ignore_index=True)
+                        conn.update(worksheet="contacts", data=final_import_df)
+                        st.success(f"成功匯入 {len(new_data)} 筆資料！")
+                        st.rerun()
+                    else:
+                        st.error("CSV 缺少 '姓名' 或 '生日' 欄位")
+                except Exception as e:
+                    st.error(f"匯入失敗: {e}")

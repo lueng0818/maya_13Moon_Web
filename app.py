@@ -36,7 +36,15 @@ TONE_QUESTIONS = {
     "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
 }
 
-# [補回] HMP 七價路徑之門定義 (解決 KeyError)
+CASTLES_INFO = {
+    "紅色東方啟動城堡": {"range": "Kin 1-52", "color_bg": "#FFCCCB", "court": "出生之庭", "theme": "啟動與開創", "desc": "適合發起新事物的起始開創課題。", "img": "assets/tokens/pyramid_red.png"},
+    "白色北方跨越城堡": {"range": "Kin 53-104", "color_bg": "#F0F3F4", "court": "死亡之庭", "theme": "跨越與淨化", "desc": "透過淨化與斷捨離，跨越舊有。", "img": "assets/tokens/pyramid_white.png"},
+    "藍色西方蛻變城堡": {"range": "Kin 105-156", "color_bg": "#D6EAF8", "court": "魔法之庭", "theme": "改變與轉化", "desc": "轉化能量，經歷如同蛇蛻皮般的重生。", "img": "assets/tokens/pyramid_blue.png"},
+    "黃色南方給予城堡": {"range": "Kin 157-208", "color_bg": "#FCF3CF", "court": "智能之庭", "theme": "收穫與給予", "desc": "享受成果，分享智慧。", "img": "assets/tokens/pyramid_yellow.png"},
+    "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
+}
+
+# HMP 七價路徑之門
 HEPTAD_GATE_INFO = {
     1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
     2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
@@ -45,14 +53,6 @@ HEPTAD_GATE_INFO = {
     5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
     6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
     7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
-}
-
-CASTLES_INFO = {
-    "紅色東方啟動城堡": {"range": "Kin 1-52", "color_bg": "#FFCCCB", "court": "出生之庭", "theme": "啟動與開創", "desc": "適合發起新事物的起始開創課題。", "img": "assets/tokens/pyramid_red.png"},
-    "白色北方跨越城堡": {"range": "Kin 53-104", "color_bg": "#F0F3F4", "court": "死亡之庭", "theme": "跨越與淨化", "desc": "透過淨化與斷捨離，跨越舊有。", "img": "assets/tokens/pyramid_white.png"},
-    "藍色西方蛻變城堡": {"range": "Kin 105-156", "color_bg": "#D6EAF8", "court": "魔法之庭", "theme": "改變與轉化", "desc": "轉化能量，經歷如同蛇蛻皮般的重生。", "img": "assets/tokens/pyramid_blue.png"},
-    "黃色南方給予城堡": {"range": "Kin 157-208", "color_bg": "#FCF3CF", "court": "智能之庭", "theme": "收穫與給予", "desc": "享受成果，分享智慧。", "img": "assets/tokens/pyramid_yellow.png"},
-    "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
 # 行星軌道映射 (左GK / 右SP)
@@ -335,6 +335,28 @@ def get_heptad_gate_info(day):
     week_day = (day - 1) % 7 + 1
     return HEPTAD_GATE_INFO.get(week_day, {})
 
+# [修正] 共時矩陣位置查找 (V5-V17)
+def find_synchronic_pos_restricted(db, kin_num):
+    """在 Synchronic Matrix 中查找 KIN，限制 V 在 5-17 之間"""
+    if db['synchronic_matrix'] is None: return None
+    df = db['synchronic_matrix']
+    
+    # 確保 KIN 欄位是數字
+    try:
+        df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce')
+        matches = df[df['KIN'] == kin_num]
+    except:
+        return None
+
+    for _, row in matches.iterrows():
+        pos = str(row['矩陣位置']) # e.g. V5:H1
+        match = re.match(r'V(\d+):H(\d+)', pos)
+        if match:
+            v = int(match.group(1))
+            if 5 <= v <= 17:
+                return pos
+    return None
+
 def calculate_synchronotron_data(date_obj, main_kin, db):
     logs = []
     m, d = date_obj.month, date_obj.day
@@ -364,12 +386,14 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
         except: pass
         return None
 
+    # Step 1: Time
     v_t1 = get_val('time_matrix', pos_1)
     v_s1 = get_val('space_matrix', pos_1)
     v_sy1 = get_val('synchronic_matrix', pos_1)
     sum_1 = v_t1 + v_s1 + v_sy1
     logs.append(f"1. 時間矩陣座標 {pos_1} → {v_t1} + {v_s1} + {v_sy1} = {sum_1}")
     
+    # Step 2: Space
     pos_2 = get_pos('space_matrix', main_kin)
     v_t2 = get_val('time_matrix', pos_2)
     v_s2 = main_kin
@@ -377,19 +401,24 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     sum_2 = v_t2 + v_s2 + v_sy2
     logs.append(f"2. 空間矩陣座標 {pos_2} → {v_t2} + {v_s2} + {v_sy2} = {sum_2}")
     
-    pos_3 = get_pos('tzolkin_matrix', main_kin)
-    v_t3 = get_val('time_matrix', pos_3)
-    v_s3 = get_val('space_matrix', pos_3)
-    v_sy3 = main_kin
-    sum_3 = v_t3 + v_s3 + v_sy3
-    logs.append(f"3. 共時矩陣座標 {pos_3} → {v_t3} + {v_s3} + {v_sy3} = {sum_3}")
+    # Step 3: Synchronic (Restricted)
+    pos_3 = find_synchronic_pos_restricted(db, main_kin)
+    if pos_3:
+        v_t3 = get_val('time_matrix', pos_3)
+        v_s3 = get_val('space_matrix', pos_3)
+        v_sy3 = main_kin
+        sum_3 = v_t3 + v_s3 + v_sy3
+        logs.append(f"3. 共時矩陣座標 {pos_3} (V5-17) → {v_t3} + {v_s3} + {v_sy3} = {sum_3}")
+    else:
+        sum_3 = 0
+        logs.append("3. 無法在共時矩陣(V5-17)找到對應座標")
     
     mcf = sum_1 + sum_2 + sum_3
     bmu = (mcf - 1) % 441 + 1
     kin_equiv = (mcf - 1) % 260 + 1
     return {'MCF': mcf, 'BMU': bmu, 'KIN_EQUIV': get_kin_details(kin_equiv, db), 'logs': logs}
 
-# --- 輔助：圖片轉 Base64 函式 ---
+# --- 輔助：圖片轉 Base64 ---
 def image_to_base64(img_path):
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
@@ -407,7 +436,6 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
-    
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
     
@@ -482,14 +510,8 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("👤 使用者設定 (KIN A)")
 conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
-use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
 
-# Debug
-if st.sidebar.checkbox("🔧 檔案檢查"):
-    st.sidebar.write("Seals Path: assets/seals")
-    if os.path.exists("assets/seals"):
-        st.sidebar.write(os.listdir("assets/seals")[:5])
-    else: st.sidebar.error("Seals not found")
+use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
 
 if use_contact and not contacts_df.empty:
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])

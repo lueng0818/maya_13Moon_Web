@@ -44,18 +44,6 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
-# HMP 七價路徑之門
-HEPTAD_GATE_INFO = {
-    1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
-    2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
-    3: {"plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪", "sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應"},
-    4: {"plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧"},
-    5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
-    6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
-    7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
-}
-
-# 行星軌道映射 (左GK / 右SP)
 TELEKTONON_MAP = {
     1: {"planet": "海王星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
     2: {"planet": "天王星", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
@@ -95,6 +83,16 @@ HEAVEN_JOURNEY = {
     23: "情人重聚日 - 國王與皇后相遇",
     24: "拆除太陽預言流 (SP) - 智慧之塔頂部", 25: "拆除太陽預言流 (SP) - 智慧之塔中部", 26: "拆除太陽預言流 (SP) - 智慧之塔底部",
     27: "拆除銀河業力流 (GK) - 實踐之塔頂部", 28: "拆除銀河業力流 (GK) - 實踐之塔中部"
+}
+
+HEPTAD_GATE_INFO = {
+    1: {"plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", "bmu": 108, "pos": "V11:H2", "chakra": "頂輪", "sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊"},
+    2: {"plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", "bmu": 291, "pos": "V11:H5", "chakra": "海底輪", "sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊"},
+    3: {"plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪", "sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應"},
+    4: {"plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", "bmu": 315, "pos": "V11:H4", "chakra": "臍輪", "sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧"},
+    5: {"plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", "bmu": 414, "pos": "V11:H14", "chakra": "喉輪", "sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式"},
+    6: {"plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢", "sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號"},
+    7: {"plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", "bmu": 441, "pos": "V11:H11", "chakra": "心輪", "sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣"}
 }
 
 # ==========================================
@@ -335,28 +333,6 @@ def get_heptad_gate_info(day):
     week_day = (day - 1) % 7 + 1
     return HEPTAD_GATE_INFO.get(week_day, {})
 
-# [修正] 共時矩陣位置查找 (V5-V17)
-def find_synchronic_pos_restricted(db, kin_num):
-    """在 Synchronic Matrix 中查找 KIN，限制 V 在 5-17 之間"""
-    if db['synchronic_matrix'] is None: return None
-    df = db['synchronic_matrix']
-    
-    # 確保 KIN 欄位是數字
-    try:
-        df['KIN'] = pd.to_numeric(df['KIN'], errors='coerce')
-        matches = df[df['KIN'] == kin_num]
-    except:
-        return None
-
-    for _, row in matches.iterrows():
-        pos = str(row['矩陣位置']) # e.g. V5:H1
-        match = re.match(r'V(\d+):H(\d+)', pos)
-        if match:
-            v = int(match.group(1))
-            if 5 <= v <= 17:
-                return pos
-    return None
-
 def calculate_synchronotron_data(date_obj, main_kin, db):
     logs = []
     m, d = date_obj.month, date_obj.day
@@ -386,14 +362,12 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
         except: pass
         return None
 
-    # Step 1: Time
     v_t1 = get_val('time_matrix', pos_1)
     v_s1 = get_val('space_matrix', pos_1)
     v_sy1 = get_val('synchronic_matrix', pos_1)
     sum_1 = v_t1 + v_s1 + v_sy1
     logs.append(f"1. 時間矩陣座標 {pos_1} → {v_t1} + {v_s1} + {v_sy1} = {sum_1}")
     
-    # Step 2: Space
     pos_2 = get_pos('space_matrix', main_kin)
     v_t2 = get_val('time_matrix', pos_2)
     v_s2 = main_kin
@@ -401,17 +375,12 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
     sum_2 = v_t2 + v_s2 + v_sy2
     logs.append(f"2. 空間矩陣座標 {pos_2} → {v_t2} + {v_s2} + {v_sy2} = {sum_2}")
     
-    # Step 3: Synchronic (Restricted)
-    pos_3 = find_synchronic_pos_restricted(db, main_kin)
-    if pos_3:
-        v_t3 = get_val('time_matrix', pos_3)
-        v_s3 = get_val('space_matrix', pos_3)
-        v_sy3 = main_kin
-        sum_3 = v_t3 + v_s3 + v_sy3
-        logs.append(f"3. 共時矩陣座標 {pos_3} (V5-17) → {v_t3} + {v_s3} + {v_sy3} = {sum_3}")
-    else:
-        sum_3 = 0
-        logs.append("3. 無法在共時矩陣(V5-17)找到對應座標")
+    pos_3 = get_pos('tzolkin_matrix', main_kin)
+    v_t3 = get_val('time_matrix', pos_3)
+    v_s3 = get_val('space_matrix', pos_3)
+    v_sy3 = main_kin
+    sum_3 = v_t3 + v_s3 + v_sy3
+    logs.append(f"3. 共時矩陣座標 {pos_3} → {v_t3} + {v_s3} + {v_sy3} = {sum_3}")
     
     mcf = sum_1 + sum_2 + sum_3
     bmu = (mcf - 1) % 441 + 1
@@ -436,9 +405,11 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
+    
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
     
+    # 格式：上調性圖、下圖騰圖、底部文字
     html = f"""
     <div style="background-color:{bg_color}; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; height:100%; display:flex; flex-direction:column; align_items:center; justify_content:center;">
         <div style="font-weight:bold; margin-bottom:5px; color:#555;">{title}</div>
@@ -449,12 +420,44 @@ def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     if b64_seal: html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width:70px; border-radius:5px; margin-bottom:5px;">'
     else: html += f"<div>({seal_name})</div>"
     
-    html += f"""<div style="font-size:18px; font-weight:bold; color:#333;">KIN {kin_num}</div>
-        <div style="font-size:13px; color:#666;">{tone_name}調性 {seal_name}</div></div>"""
+    html += f"""
+        <div style="font-size:14px; color:#333; margin-top:5px;">{tone_name}{seal_name}</div>
+        <div style="font-size:12px; color:#666;">({title})</div>
+        <div style="font-size:16px; font-weight:bold; color:#222;">KIN {kin_num}</div>
+    </div>
+    """
     st.markdown(html, unsafe_allow_html=True)
 
 def render_vertical_oracle_card(title, kin_data, bg_color):
     render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
+
+def render_oracle_cross(oracle_data):
+    bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
+    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
+    with r1c2: render_kin_card("指引", oracle_data['guide']['KIN'], oracle_data['guide'], bg_guide)
+    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
+    with r2c1: render_kin_card("挑戰", oracle_data['antipode']['KIN'], oracle_data['antipode'], bg_antipode)
+    with r2c2: render_kin_card("主印記", oracle_data['main']['KIN'], oracle_data['main'], bg_destiny)
+    with r2c3: render_kin_card("支持", oracle_data['analog']['KIN'], oracle_data['analog'], bg_analog)
+    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
+    with r3c2: render_kin_card("隱藏", oracle_data['occult']['KIN'], oracle_data['occult'], bg_occult)
+
+def render_wavespell_section(kin_info):
+    ws_name = kin_info.get('波符', '未知波符')
+    st.markdown(f"### 🌊 波符解讀：{ws_name}")
+    with st.expander(f"查看 {ws_name} 的 13 個提問"):
+        for i, (t_name, q) in enumerate(TONE_QUESTIONS.items()):
+            st.write(f"**{i+1}. {t_name}調性**：{q}")
+
+def render_full_analysis(kin_num, title, db):
+    """通用分析模組：顯示任何 KIN 的神諭與波符"""
+    kin_info = get_kin_details(kin_num, db)
+    oracle = calculate_oracle(kin_num, db)
+    
+    st.markdown(f"## {title}: KIN {kin_num} {kin_info.get('主印記')}")
+    render_oracle_cross(oracle)
+    st.markdown("---")
+    render_wavespell_section(kin_info)
 
 def render_large_kin(kin_num, kin_info):
     seal_idx = (kin_num - 1) % 20 + 1
@@ -567,26 +570,14 @@ if selected_function != "👥 人員管理":
 # ==========================================
 
 if selected_function == "🔮 靈魂藍圖":
-    col_text = render_large_kin(kin_A, info_A)
-    with col_text:
-        st.subheader("核心印記資訊")
-        st.write(f"**PSI 印記**：KIN {psi_num} {psi_info.get('主印記')}")
-        st.write(f"**女神印記**：KIN {goddess_info['KIN']} {goddess_info.get('主印記')}")
-        st.write(f"**波符**：{info_A.get('波符')}")
-        st.info("調性 (Bar-Dot) 代表頻率，圖騰 (Seal) 代表原型能量。")
+    render_full_analysis(kin_A, "出生印記 (Birth Kin)", DB)
     
     st.markdown("---")
-    st.subheader("🧩 五大神諭佈陣 (Oracle Cross)")
-    bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
-
-    r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
-    with r1c2: render_vertical_oracle_card("指引 (Guide)", oracle_A['guide'], bg_guide)
-    r2c1, r2c2, r2c3 = st.columns([1, 1, 1])
-    with r2c1: render_vertical_oracle_card("挑戰 (Antipode)", oracle_A['antipode'], bg_antipode)
-    with r2c2: render_vertical_oracle_card("主印記 (Main Kin)", oracle_A['main'], bg_destiny)
-    with r2c3: render_vertical_oracle_card("支持 (Analog)", oracle_A['analog'], bg_analog)
-    r3c1, r3c2, r3c3 = st.columns([1, 1, 1])
-    with r3c2: render_vertical_oracle_card("隱藏 (Occult)", oracle_A['occult'], bg_occult)
+    with st.expander(f"查看 PSI 印記詳情: KIN {psi_num}"):
+        render_full_analysis(psi_num, "PSI 印記 (Planetary Memory)", DB)
+        
+    with st.expander(f"查看 女神印記詳情: KIN {goddess_info['KIN']}"):
+        render_full_analysis(goddess_info['KIN'], "女神印記 (Goddess Force)", DB)
 
 elif selected_function == "🏰 時間地圖":
     castle_name = info_A.get('城堡', '')
@@ -605,25 +596,11 @@ elif selected_function == "🏰 時間地圖":
                 <p><strong>{castle_data['theme']}</strong> ({castle_data['range']})</p>
                 <p>{castle_data['desc']}</p></div>""", unsafe_allow_html=True)
     st.markdown("---")
-    st.subheader("🌊 波符生命道路 (13 天週期)")
-    with st.expander(f"查看 {info_A.get('波符')} 的 13 個提問"):
-        for t_name, q in TONE_QUESTIONS.items(): st.write(f"**{t_name}調性**：{q}")
+    render_wavespell_section(info_A)
 
 elif selected_function == "🌊 流年與運勢":
-    st.subheader(f"🌊 流年 ({flow_year_val})")
-    c1, c2 = st.columns([1, 3])
-    with c1:
-        fk = flow_year_info['KIN']
-        f_s_idx = (fk - 1) % 20 + 1
-        f_t_idx = (fk - 1) % 13 + 1
-        f_img = f"assets/seals/{f_s_idx:02d}.jpg"
-        t_img = f"assets/tones/tone-{f_t_idx}.png"
-        if os.path.exists(t_img): st.image(t_img, width=40)
-        if os.path.exists(f_img): st.image(f_img, width=120)
-        st.metric("流年 KIN", fk)
-    with c2: 
-        st.markdown(f"### {flow_year_info.get('主印記')}")
-        st.write(f"**波符**：{flow_year_info.get('波符')}")
+    st.subheader(f"🌊 流年運勢 ({flow_year_val})")
+    render_full_analysis(flow_year_info['KIN'], f"流年印記 (Flow Year)", DB)
 
 elif selected_function == "💞 關係合盤":
     st.header("💞 關係能量合盤")
@@ -637,20 +614,7 @@ elif selected_function == "💞 關係合盤":
     kin_B = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
     combined = calculate_relationship(kin_A, kin_B, DB)
     if combined:
-        cinfo = combined['info']
-        ck = combined['KIN']
-        c1, c2 = st.columns([1, 2])
-        with c1:
-            c_s_idx = (ck - 1) % 20 + 1
-            c_t_idx = (ck - 1) % 13 + 1
-            c_img = f"assets/seals/{c_s_idx:02d}.jpg"
-            ct_img = f"assets/tones/tone-{c_t_idx}.png"
-            if os.path.exists(ct_img): st.image(ct_img, width=50)
-            if os.path.exists(c_img): st.image(c_img, width=150)
-        with c2:
-            st.markdown(f"### 合盤 KIN {ck} {cinfo.get('主印記')}")
-            st.write(f"**波符**：{cinfo.get('波符')}")
-            st.write(f"**城堡**：{cinfo.get('城堡')}")
+        render_full_analysis(combined['KIN'], "合盤印記 (Combined Seal)", DB)
 
 elif selected_function == "👑 國王棋盤":
     st.header("👑 Telektonon 預言棋盤")
@@ -763,6 +727,10 @@ elif selected_function == "🧠 441 共時化科學":
                 <h2>MCF: {mcf}</h2><small>Master Coordinating Frequency</small><hr>
                 <h3>BMU: {bmu}</h3><small>Base Matrix Unit</small><hr>
                 <h3>對等: KIN {keq['KIN']}</h3></div>""", unsafe_allow_html=True)
+        
+        with st.expander(f"查看 對等印記詳情: KIN {keq['KIN']}"):
+            render_full_analysis(keq['KIN'], "對等印記 (Equivalent Kin)", DB)
+            
         with st.expander("查看 TFI 加總細節"):
             for log in sync_data['logs']: st.code(log, language="text")
 

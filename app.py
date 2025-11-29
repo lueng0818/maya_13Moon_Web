@@ -27,6 +27,7 @@ SEAL_COLORS = {
 
 MOON_NAMES = ["", "磁性之月", "月亮之月", "電力之月", "自我存在之月", "超頻之月", "韻律之月", "共鳴之月", "銀河星系之月", "太陽之月", "行星之月", "光譜之月", "水晶之月", "宇宙之月"]
 
+# 波符 13 問
 TONE_QUESTIONS = {
     "磁性": "我的目的是什麼？", "月亮": "我的挑戰是什麼？", "電力": "我如何給予最佳的服務？",
     "自我存在": "我該以什麼形式來服務他人？", "超頻": "我如何能讓自己獲得最佳的力量？",
@@ -34,6 +35,17 @@ TONE_QUESTIONS = {
     "銀河星系": "我是否活出我所相信的？", "太陽": "我如何完成我的目的？",
     "行星": "我如何完美我所做的？", "光譜": "我該如何釋放與放下？",
     "水晶": "我如何全心的奉獻予所有的生命？", "宇宙": "我如何活在當下？"
+}
+
+# [新增] 高階教材：七價大門與 BMU 對照
+HEPTAD_GATE_INFO = {
+    1: {"plasma": "Dali", "chakra": "頂輪", "bmu": 108, "pos": "V11:H2", "desc": "前意識 / 原始力 (Primordial Force)"},
+    2: {"plasma": "Seli", "chakra": "海底輪", "bmu": 291, "pos": "V11:H5", "desc": "無意識 / 化身 (Avatar)"},
+    3: {"plasma": "Gamma", "chakra": "眉心輪", "bmu": 144, "pos": "V11:H20", "desc": "清醒意識 / 傳承 (Lineage)"},
+    4: {"plasma": "Kali", "chakra": "臍輪", "bmu": 315, "pos": "V11:H17", "desc": "持續意識 / 啟蒙 (Initiation)"},
+    5: {"plasma": "Alpha", "chakra": "喉輪", "bmu": 414, "pos": "V11:H14", "desc": "超意識 / 時空 (Time-Space)"},
+    6: {"plasma": "Limi", "chakra": "太陽神經叢", "bmu": 402, "pos": "V11:H8", "desc": "閾下意識 / 超越 (Transcendence)"},
+    7: {"plasma": "Silio", "chakra": "心輪", "bmu": 441, "pos": "V11:H11", "desc": "全息心智 / 立方體 (Cube)"}
 }
 
 CASTLES_INFO = {
@@ -44,28 +56,28 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
-# 行星軌道映射 (左GK / 右SP)
+# Telektonon 行星軌道
 TELEKTONON_MAP = {
-    1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
-    2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
-    3: {"planet": "土星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
-    4: {"planet": "木星", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
-    5: {"planet": "馬爾代克", "flow": "GK (銀河業力-吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
-    6: {"planet": "火星", "flow": "GK (銀河業力-吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
-    7: {"planet": "地球", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
-    8: {"planet": "金星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
-    9: {"planet": "水星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
-    10: {"planet": "水星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
-    11: {"planet": "金星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
-    12: {"planet": "地球", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
-    13: {"planet": "火星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
-    14: {"planet": "馬爾代克", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
-    15: {"planet": "木星", "flow": "SP (太陽預言-呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
-    16: {"planet": "土星", "flow": "SP (太陽預言-呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
-    17: {"planet": "天王星", "flow": "SP (太陽預言-呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
-    18: {"planet": "海王星", "flow": "SP (太陽預言-呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
-    19: {"planet": "冥王星", "flow": "SP (太陽預言-呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
-    20: {"planet": "冥王星", "flow": "GK (銀河業力-吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
+    1: {"planet": "海王星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
+    2: {"planet": "天王星", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
+    3: {"planet": "土星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4"},
+    4: {"planet": "木星", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5"},
+    5: {"planet": "馬爾代克", "flow": "GK (吸入)", "circuit": "C5 內在原子", "pos": "左邊 (Left) - 軌道5 (內)"},
+    6: {"planet": "火星", "flow": "GK (吸入)", "circuit": "C4 吸收智能", "pos": "左邊 (Left) - 軌道4 (內)"},
+    7: {"planet": "地球", "flow": "GK (吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3 (內)"},
+    8: {"planet": "金星", "flow": "GK (吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2 (內)"},
+    9: {"planet": "水星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (內)"},
+    10: {"planet": "水星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1 (內)"},
+    11: {"planet": "金星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2 (內)"},
+    12: {"planet": "地球", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3 (內)"},
+    13: {"planet": "火星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4 (內)"},
+    14: {"planet": "馬爾代克", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5 (內)"},
+    15: {"planet": "木星", "flow": "SP (呼出)", "circuit": "C5 內在原子", "pos": "右邊 (Right) - 軌道5"},
+    16: {"planet": "土星", "flow": "SP (呼出)", "circuit": "C4 吸收智能", "pos": "右邊 (Right) - 軌道4"},
+    17: {"planet": "天王星", "flow": "SP (呼出)", "circuit": "C3 生物心電感應", "pos": "右邊 (Right) - 軌道3"},
+    18: {"planet": "海王星", "flow": "SP (呼出)", "circuit": "C2 記憶-本能", "pos": "右邊 (Right) - 軌道2"},
+    19: {"planet": "冥王星", "flow": "SP (呼出)", "circuit": "C1 Alpha-Omega", "pos": "右邊 (Right) - 軌道1"},
+    20: {"planet": "冥王星", "flow": "GK (吸入)", "circuit": "C1 Alpha-Omega", "pos": "左邊 (Left) - 軌道1 (0/20)"}
 }
 
 WARRIOR_JOURNEY = {
@@ -92,6 +104,7 @@ HEAVEN_JOURNEY = {
 @st.cache_data
 def load_data():
     data = {}
+    # 確保檔案路徑與 GitHub 結構一致
     files = {
         'start_year': "data/kin_start_year.csv",
         'month_accum': "data/month_day_accum.csv",
@@ -112,7 +125,6 @@ def load_data():
         try:
             if os.path.exists(filename):
                 df = pd.read_csv(filename)
-                # 清理欄位
                 if len(df.columns) > 0 and ("Unnamed" in str(df.columns[0]) or "Unnamed" in str(df.columns[1])):
                      df = pd.read_csv(filename, header=1)
                 df.columns = [str(c).strip() for c in df.columns]
@@ -134,57 +146,11 @@ def load_data():
             except: continue
     return data
 
-# --- 核心工具：歷史日期解析器 ---
-def parse_date_safe(date_input):
-    """
-    安全解析日期，支援 1677 年之前的歷史日期。
-    回傳: datetime.date 物件 或 None
-    """
-    if not date_input:
-        return None
-    
-    # 如果已經是 date 物件
-    if isinstance(date_input, datetime.date):
-        return date_input
-    if isinstance(date_input, datetime.datetime):
-        return date_input.date()
-
-    date_str = str(date_input).strip()
-    
-    # 嘗試 1: 標準 Pandas (適用現代日期)
-    try:
-        ts = pd.to_datetime(date_str, errors='coerce')
-        if not pd.isna(ts):
-            return ts.date()
-    except:
-        pass
-
-    # 嘗試 2: 手動解析字串 (適用歷史日期 1483-11-10)
-    # 支援 YYYY-MM-DD 或 YYYY/MM/DD
-    try:
-        # 移除可能的時間部分
-        if " " in date_str:
-            date_str = date_str.split(" ")[0]
-        
-        date_str = date_str.replace('/', '-')
-        parts = date_str.split('-')
-        if len(parts) == 3:
-            y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
-            # Python 原生 date 支援 year 1-9999
-            return datetime.date(y, m, d)
-    except:
-        pass
-    
-    return None
-
-# --- Google Sheets ---
 def load_contacts_db():
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
         df = conn.read(worksheet="contacts", ttl=0)
-        # 確保生日欄位是字串，避免 Pandas 自動轉成 Timestamp 而崩潰
-        if '生日' in df.columns:
-            df['生日'] = df['生日'].astype(str)
+        if '生日' in df.columns: df['生日'] = df['生日'].astype(str)
         return conn, df
     except:
         return conn, pd.DataFrame(columns=["姓名", "生日", "KIN"])
@@ -195,15 +161,27 @@ def save_contact(conn, df, name, birth_date, kin_num):
     conn.update(worksheet="contacts", data=updated_df)
     return updated_df
 
+def parse_date_safe(date_input):
+    if not date_input: return None
+    if isinstance(date_input, datetime.date): return date_input
+    if isinstance(date_input, datetime.datetime): return date_input.date()
+    date_str = str(date_input).strip()
+    try:
+        if " " in date_str: date_str = date_str.split(" ")[0]
+        date_str = date_str.replace('/', '-')
+        parts = date_str.split('-')
+        if len(parts) == 3: return datetime.date(int(parts[0]), int(parts[1]), int(parts[2]))
+    except: pass
+    return None
+
 def get_kin_summary(kin_num):
     if not kin_num or pd.isna(kin_num): return "", ""
     try:
-        k = int(float(kin_num)) # Handle potential float strings
+        k = int(float(kin_num))
         t = (k - 1) % 13 + 1
         s = (k - 1) % 20 + 1
         return TONES_NAME[t], SEALS_NAME[s]
-    except:
-        return "", ""
+    except: return "", ""
 
 def enrich_contacts_with_details(df):
     if df.empty: return df
@@ -354,6 +332,12 @@ def get_journey_warrior(day):
 def get_telektonon_info(seal_idx):
     return TELEKTONON_MAP.get(seal_idx, {})
 
+def get_heptad_gate_info(day):
+    """取得七價大門與 BMU 資訊"""
+    # 13 月亮曆的一週只有 7 天，每週重複
+    week_day = (day - 1) % 7 + 1
+    return HEPTAD_GATE_INFO.get(week_day, {})
+
 def calculate_synchronotron_data(date_obj, main_kin, db):
     logs = []
     m, d = date_obj.month, date_obj.day
@@ -416,30 +400,56 @@ def image_to_base64(img_path):
         return base64.b64encode(data).decode()
     return None
 
-# --- 輔助：HTML 神諭卡片渲染 ---
+# --- 輔助：HTML 神諭卡片渲染 (視覺優化版：上調性、下圖騰) ---
 def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
+    
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
     tone_path = f"assets/tones/tone-{tone_idx}.png"
     
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
+    
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
     
+    # 樣式：垂直排列，圖片置中
     html = f"""
-    <div style="background-color:{bg_color}; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; height:100%; display:flex; flex-direction:column; align_items:center; justify_content:center;">
-        <div style="font-weight:bold; margin-bottom:5px; color:#555;">{title}</div>
+    <div style="
+        background-color: {bg_color}; 
+        border: 1px solid #ddd; 
+        border-radius: 10px; 
+        padding: 12px; 
+        text-align: center; 
+        height: 100%;
+        display: flex; 
+        flex-direction: column; 
+        align_items: center;
+        justify_content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    ">
+        <div style="font-size: 13px; font-weight: bold; color: #777; margin-bottom: 6px;">{title}</div>
     """
-    if b64_tone: html += f'<img src="data:image/png;base64,{b64_tone}" style="width:40px; margin-bottom:2px;">'
-    else: html += f"<div>({tone_name})</div>"
     
-    if b64_seal: html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width:70px; border-radius:5px; margin-bottom:5px;">'
-    else: html += f"<div>({seal_name})</div>"
-    
-    html += f"""<div style="font-size:18px; font-weight:bold; color:#333;">KIN {kin_num}</div>
-        <div style="font-size:13px; color:#666;">{tone_name}調性 {seal_name}</div></div>"""
+    # 上方：調性 (Tone)
+    if b64_tone:
+        html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 45px; margin-bottom: 4px; display: block;">'
+    else:
+        html += f"<div style='font-size:12px; color:#555;'>{tone_name}</div>"
+        
+    # 下方：圖騰 (Seal)
+    if b64_seal:
+        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 75px; border-radius: 6px; margin-bottom: 6px; display: block;">'
+    else:
+        html += f"<div style='font-size:12px; color:#555;'>{seal_name}</div>"
+        
+    # 底部：文字資訊
+    html += f"""
+        <div style="font-size: 18px; font-weight: bold; color: #222; margin-top: 4px;">KIN {kin_num}</div>
+        <div style="font-size: 12px; color: #666;">{tone_name}調性 {seal_name}</div>
+    </div>
+    """
     st.markdown(html, unsafe_allow_html=True)
 
 def render_vertical_oracle_card(title, kin_data, bg_color):
@@ -499,13 +509,6 @@ conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
 
-# Debug
-if st.sidebar.checkbox("🔧 檔案檢查"):
-    st.sidebar.write("Seals Path: assets/seals")
-    if os.path.exists("assets/seals"):
-        st.sidebar.write(os.listdir("assets/seals")[:5])
-    else: st.sidebar.error("Seals not found")
-
 if use_contact and not contacts_df.empty:
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])
     f_seal = st.sidebar.multiselect("篩選圖騰", SEALS_NAME[1:])
@@ -517,9 +520,8 @@ if use_contact and not contacts_df.empty:
     
     if selected_contact != "-- 請選擇 --":
         row = filtered_df[filtered_df['姓名'] == selected_contact].iloc[0]
-        # 使用安全解析
         birth_date = parse_date_safe(row['生日'])
-        if not birth_date: birth_date = datetime.date(1985, 10, 24) # Fallback
+        if not birth_date: birth_date = datetime.date(1985, 10, 24)
         st.sidebar.info(f"已載入：{selected_contact}")
     else:
         birth_date = datetime.date(1985, 10, 24)
@@ -527,7 +529,7 @@ else:
     birth_date = st.sidebar.date_input("手動輸入生日", value=datetime.date(1985, 10, 24))
 
 if not use_contact:
-    with st.sidebar.expander("儲存當前設定"):
+    with st.sidebar.expander("儲存當前設定到通訊錄"):
         new_name = st.text_input("輸入名字")
         if st.button("儲存"):
             k = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
@@ -549,6 +551,7 @@ moon_str, moon_num, day_num, heptad_week = get_13moon_date(daily_date)
 daily_energy = get_daily_energy(moon_num, day_num, DB)
 today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
 sync_data = calculate_synchronotron_data(daily_date, kin_A, DB)
+heptad_info = get_heptad_gate_info(day_num)
 
 if selected_function != "👥 人員管理":
     st.title("🌌 13 Moon Synchronotron Master System")
@@ -739,6 +742,13 @@ elif selected_function == "🧠 441 共時化科學":
         else:
             st.metric("年度路徑", f"Week {heptad_week}")
             st.info(f"當前位於年度第 {heptad_week} 條路徑，連接 Hunab Ku 21。")
+            
+            # [新增] 顯示今日七價大門
+            if heptad_info:
+                st.success(f"**今日大門：{heptad_info['plasma']} ({heptad_info['chakra']})**")
+                st.caption(heptad_info['desc'])
+                st.write(f"BMU {heptad_info['bmu']} | 座標 {heptad_info['pos']}")
+
     if sync_data:
         mcf = sync_data['MCF']
         bmu = sync_data['BMU']
@@ -769,7 +779,6 @@ elif selected_function == "👥 人員管理":
         display_df,
         num_rows="dynamic",
         column_config={
-            # 將生日改為 TextColumn 以避免 Pandas 時間戳記錯誤
             "生日": st.column_config.TextColumn("生日 (YYYY-MM-DD)", required=True),
             "KIN": st.column_config.NumberColumn("KIN", disabled=True),
             "調性": st.column_config.TextColumn("調性", disabled=True),

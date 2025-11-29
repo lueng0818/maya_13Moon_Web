@@ -42,37 +42,37 @@ HEPTAD_GATE_INFO = {
         "plasma": "Dali", "gate": "第 1 門", "name": "ALPHA-ALPHA", 
         "bmu": 108, "pos": "V11:H2", "chakra": "頂輪 (Crown)", 
         [cite_start]"sphere": "第1精神球體 (前意識)", "desc": "啟動前意識，儲存超感官資訊 [cite: 703]"
-    },
+       },
     2: {
         "plasma": "Seli", "gate": "第 2 門", "name": "ALPHA-BETA", 
         "bmu": 291, "pos": "V11:H5", "chakra": "海底輪 (Root)", 
         [cite_start]"sphere": "第2精神球體 (潛意識)", "desc": "啟動潛意識，轉化被潛抑的資訊 [cite: 703]"
-    },
+       },
     3: {
         "plasma": "Gamma", "gate": "第 3 門", "name": "BETA-BETA", 
         "bmu": 144, "pos": "V11:H17", "chakra": "眉心輪 (Third Eye)", 
         [cite_start]"sphere": "第3精神球體 (清醒意識)", "desc": "啟動清醒意識，穩定認知反應 [cite: 703]"
-    },
+       },
     4: {
         "plasma": "Kali", "gate": "第 4 門", "name": "BETA-ALPHA", 
         "bmu": 315, "pos": "V11:H4", "chakra": "臍輪 (Navel)", 
         [cite_start]"sphere": "第4精神球體 (持續意識)", "desc": "啟動持續意識，轉化高我智慧 [cite: 703]"
-    },
+       },
     5: {
         "plasma": "Alpha", "gate": "第 5 門", "name": "High Electron", 
         "bmu": 414, "pos": "V11:H14", "chakra": "喉輪 (Throat)", 
         [cite_start]"sphere": "第5精神球體 (超意識)", "desc": "啟動超意識，接收心電感應程式 [cite: 703]"
-    },
+       },
     6: {
         "plasma": "Limi", "gate": "第 6 門", "name": "High Neutron", 
         "bmu": 402, "pos": "V11:H8", "chakra": "太陽神經叢 (Solar Plexus)", 
         [cite_start]"sphere": "第6精神球體 (閾下意識)", "desc": "啟動閾下意識，處理跨次元信號 [cite: 703]"
-    },
+       },
     7: {
         "plasma": "Silio", "gate": "第 7 門", "name": "Sirius B-52", 
         "bmu": 441, "pos": "V11:H11", "chakra": "心輪 (Heart)", 
         [cite_start]"sphere": "第7精神球體 (全息心智感知體)", "desc": "啟動 HMP 核心，連結 441 矩陣 [cite: 703]"
-    }
+       }
 }
 
 CASTLES_INFO = {
@@ -849,3 +849,4 @@ elif selected_function == "👥 人員管理":
                         st.rerun()
                     else: st.error("CSV 缺少 '姓名' 或 '生日' 欄位")
                 except Exception as e: st.error(f"匯入失敗: {e}")
+

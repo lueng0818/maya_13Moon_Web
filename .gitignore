@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Streamlit config
+# Streamlit config (避免上傳您的 secrets.toml)
 .streamlit/
 
 # OS generated files

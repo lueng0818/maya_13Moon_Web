@@ -87,7 +87,7 @@ HEAVEN_JOURNEY = {
 }
 
 # ==========================================
-# 2. 資料載入層
+# 2. 資料載入層 (Data Layer)
 # ==========================================
 @st.cache_data
 def load_data():
@@ -112,6 +112,7 @@ def load_data():
         try:
             if os.path.exists(filename):
                 df = pd.read_csv(filename)
+                # 清理欄位名稱
                 if len(df.columns) > 0 and ("Unnamed" in str(df.columns[0]) or "Unnamed" in str(df.columns[1])):
                      df = pd.read_csv(filename, header=1)
                 df.columns = [str(c).strip() for c in df.columns]
@@ -149,7 +150,6 @@ def save_contact(conn, df, name, birth_date, kin_num):
     return updated_df
 
 def get_kin_summary(kin_num):
-    """回傳 (調性名稱, 圖騰名稱)"""
     if not kin_num or pd.isna(kin_num): return "", ""
     k = int(kin_num)
     t = (k - 1) % 13 + 1
@@ -157,13 +157,8 @@ def get_kin_summary(kin_num):
     return TONES_NAME[t], SEALS_NAME[s]
 
 def enrich_contacts_with_details(df):
-    """為通訊錄 DataFrame 增加調性與圖騰欄位"""
     if df.empty: return df
-    
-    # 避免 SettingWithCopyWarning
     df = df.copy()
-    
-    # 計算調性與圖騰
     df['調性'] = df['KIN'].apply(lambda x: get_kin_summary(x)[0])
     df['圖騰'] = df['KIN'].apply(lambda x: get_kin_summary(x)[1])
     return df
@@ -257,16 +252,9 @@ def get_13moon_date(date_obj):
     return f"{moon}.{day}", moon, day, heptad_week
 
 def calculate_flow_year_kin(birth_date, db, ref_date=None):
-    """
-    計算流年：以 ref_date (通常是 today) 為基準
-    """
-    if ref_date is None:
-        ref_date = datetime.date.today()
-        
+    if ref_date is None: ref_date = datetime.date.today()
     this_year_bday = datetime.date(ref_date.year, birth_date.month, birth_date.day)
-    # 若 ref_date 還沒到生日，流年為去年
     target_year = ref_date.year if ref_date >= this_year_bday else ref_date.year - 1
-    
     flow_kin_num = calculate_kin_num(target_year, birth_date.month, birth_date.day, db)
     return target_year, get_kin_details(flow_kin_num, db)
 
@@ -285,7 +273,6 @@ def get_daily_energy(moon, day, db):
     return info
 
 def calculate_today_kin(selected_date, db):
-    """根據選擇的日期計算 KIN"""
     kin = calculate_kin_num(selected_date.year, selected_date.month, selected_date.day, db)
     return selected_date, get_kin_details(kin, db)
 
@@ -374,31 +361,64 @@ def calculate_synchronotron_data(date_obj, main_kin, db):
 
 # --- 輔助：圖片轉 Base64 函式 ---
 def image_to_base64(img_path):
+    """將圖片轉為 Base64 字串，以便嵌入 HTML"""
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
             data = f.read()
         return base64.b64encode(data).decode()
     return None
 
-# --- 輔助：HTML 神諭卡片渲染 ---
+# --- 輔助：HTML 神諭卡片渲染 (十字佈陣專用) ---
 def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
+    """顯示 HTML 版本的直式卡片"""
+    
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
+    
+    # [修正] 確認路徑 assets/seals/XX.jpg 和 assets/tones/tone-X.png
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
     tone_path = f"assets/tones/tone-{tone_idx}.png"
+    
     b64_seal = image_to_base64(seal_path)
     b64_tone = image_to_base64(tone_path)
+    
     tone_name = TONES_NAME[tone_idx]
     seal_name = SEALS_NAME[seal_idx]
+    
     html = f"""
-    <div style="background-color: {bg_color}; border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; height: 100%; display: flex; flex-direction: column; align_items: center; justify_content: center;">
+    <div style="
+        background-color: {bg_color}; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        padding: 10px; 
+        text-align: center; 
+        height: 100%;
+        display: flex; 
+        flex-direction: column; 
+        align_items: center;
+        justify_content: center;
+    ">
         <div style="font-weight: bold; margin-bottom: 5px; color: #555;">{title}</div>
     """
-    if b64_tone: html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 40px; margin-bottom: 2px;">'
-    else: html += f"<div>({tone_name}調性)</div>"
-    if b64_seal: html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 70px; border-radius: 5px; margin-bottom: 5px;">'
-    else: html += f"<div>({seal_name}圖騰)</div>"
-    html += f"""<div style="font-size: 18px; font-weight: bold; color: #333;">KIN {kin_num}</div><div style="font-size: 13px; color: #666;">{tone_name}調性 {seal_name}</div></div>"""
+    
+    # 顯示調性 (上)
+    if b64_tone:
+        html += f'<img src="data:image/png;base64,{b64_tone}" style="width: 40px; margin-bottom: 2px;">'
+    else:
+        html += f"<div>({tone_name}調性)</div>"
+        
+    # 顯示圖騰 (下)
+    if b64_seal:
+        html += f'<img src="data:image/jpeg;base64,{b64_seal}" style="width: 70px; border-radius: 5px; margin-bottom: 5px;">'
+    else:
+        html += f"<div>({seal_name}圖騰)</div>"
+        
+    # 顯示文字資訊
+    html += f"""
+        <div style="font-size: 18px; font-weight: bold; color: #333;">KIN {kin_num}</div>
+        <div style="font-size: 13px; color: #666;">{tone_name}調性 {seal_name}</div>
+    </div>
+    """
     st.markdown(html, unsafe_allow_html=True)
 
 def render_vertical_oracle_card(title, kin_data, bg_color):
@@ -434,7 +454,6 @@ def render_oracle_pyramid(title, kin_num, kin_info):
         s_idx = (kin_num - 1) % 20 + 1
         t_data = get_telektonon_info(s_idx)
         st.markdown(f"""<div style="font-size:12px; line-height:1.2;">🪐 {t_data.get('planet')}<br>⚡ {t_data.get('circuit')}<br>🌊 {t_data.get('flow')}</div>""", unsafe_allow_html=True)
-
 # ==========================================
 # 4. 前端展示層
 # ==========================================
@@ -812,4 +831,5 @@ elif selected_function == "👥 人員管理":
                 except Exception as e:
                     st.error(f"匯入失敗: {e}")
 ```
+
 

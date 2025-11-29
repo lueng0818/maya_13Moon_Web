@@ -44,7 +44,7 @@ CASTLES_INFO = {
     "綠色中央魔法城堡": {"range": "Kin 209-260", "color_bg": "#D5F5E3", "court": "共時之庭", "theme": "共時與魔法", "desc": "協調人類與銀河意識。", "img": "assets/tokens/pyramid_green.png"}
 }
 
-# 行星軌道映射 (左GK / 右SP)
+# 行星軌道映射
 TELEKTONON_MAP = {
     1: {"planet": "海王星", "flow": "GK (銀河業力-吸入)", "circuit": "C2 記憶-本能", "pos": "左邊 (Left) - 軌道2"},
     2: {"planet": "天王星", "flow": "GK (銀河業力-吸入)", "circuit": "C3 生物心電感應", "pos": "左邊 (Left) - 軌道3"},
@@ -87,11 +87,12 @@ HEAVEN_JOURNEY = {
 }
 
 # ==========================================
-# 2. 資料載入層 (Data Layer)
+# 2. 資料載入層
 # ==========================================
 @st.cache_data
 def load_data():
     data = {}
+    # 確認檔案名稱是否正確，且位於 data/ 資料夾
     files = {
         'start_year': "data/kin_start_year.csv",
         'month_accum': "data/month_day_accum.csv",
@@ -112,7 +113,6 @@ def load_data():
         try:
             if os.path.exists(filename):
                 df = pd.read_csv(filename)
-                # 清理欄位名稱
                 if len(df.columns) > 0 and ("Unnamed" in str(df.columns[0]) or "Unnamed" in str(df.columns[1])):
                      df = pd.read_csv(filename, header=1)
                 df.columns = [str(c).strip() for c in df.columns]
@@ -134,7 +134,7 @@ def load_data():
             except: continue
     return data
 
-# --- Google Sheets 資料庫 ---
+# --- Google Sheets ---
 def load_contacts_db():
     conn = st.connection("gsheets", type=GSheetsConnection)
     try:
@@ -370,12 +370,11 @@ def image_to_base64(img_path):
 
 # --- 輔助：HTML 神諭卡片渲染 (十字佈陣專用) ---
 def render_kin_card(title, kin_num, kin_info, bg_color="#FFFFFF"):
-    """顯示 HTML 版本的直式卡片"""
+    """顯示 HTML 版本的直式卡片：[標題] [調性圖] [圖騰圖] [KIN 資訊]"""
     
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
     
-    # [修正] 確認路徑 assets/seals/XX.jpg 和 assets/tones/tone-X.png
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
     tone_path = f"assets/tones/tone-{tone_idx}.png"
     
@@ -425,6 +424,7 @@ def render_vertical_oracle_card(title, kin_data, bg_color):
     render_kin_card(title, kin_data['KIN'], kin_data, bg_color)
 
 def render_large_kin(kin_num, kin_info):
+    """靈魂藍圖的大圖顯示"""
     seal_idx = (kin_num - 1) % 20 + 1
     tone_idx = (kin_num - 1) % 13 + 1
     seal_path = f"assets/seals/{seal_idx:02d}.jpg"
@@ -454,6 +454,7 @@ def render_oracle_pyramid(title, kin_num, kin_info):
         s_idx = (kin_num - 1) % 20 + 1
         t_data = get_telektonon_info(s_idx)
         st.markdown(f"""<div style="font-size:12px; line-height:1.2;">🪐 {t_data.get('planet')}<br>⚡ {t_data.get('circuit')}<br>🌊 {t_data.get('flow')}</div>""", unsafe_allow_html=True)
+
 # ==========================================
 # 4. 前端展示層
 # ==========================================
@@ -473,41 +474,47 @@ daily_date = st.sidebar.date_input("選擇「今日」日期", value=datetime.da
 
 st.sidebar.markdown("---")
 
-# 2. 使用者設定 (控制 Tabs 1-4, KIN A)
+# 2. 使用者設定 (KIN A)
 st.sidebar.subheader("👤 使用者設定 (KIN A)")
-# 通訊錄載入
 conn, contacts_df = load_contacts_db()
 contacts_df = enrich_contacts_with_details(contacts_df)
 
 use_contact = st.sidebar.checkbox("從通訊錄匯入", value=False)
+
+# Debugging: List files in assets/seals to verify paths
+if st.sidebar.checkbox("🔧 檔案檢查模式 (Debug)"):
+    st.sidebar.write("Current Working Directory:", os.getcwd())
+    if os.path.exists("assets/seals"):
+        st.sidebar.write("Found 'assets/seals':", os.listdir("assets/seals")[:5]) # List first 5 files
+    else:
+        st.sidebar.error("'assets/seals' folder NOT found!")
+        
+    if os.path.exists("assets/tones"):
+        st.sidebar.write("Found 'assets/tones':", os.listdir("assets/tones")[:5])
+    else:
+        st.sidebar.error("'assets/tones' folder NOT found!")
+
 if use_contact and not contacts_df.empty:
-    # 篩選器
     f_tone = st.sidebar.multiselect("篩選調性", TONES_NAME[1:])
     f_seal = st.sidebar.multiselect("篩選圖騰", SEALS_NAME[1:])
-    
-    # 應用篩選
     filtered_df = contacts_df.copy()
     if f_tone: filtered_df = filtered_df[filtered_df['調性'].isin(f_tone)]
     if f_seal: filtered_df = filtered_df[filtered_df['圖騰'].isin(f_seal)]
-    
     contact_list = filtered_df['姓名'].tolist()
     selected_contact = st.sidebar.selectbox("選擇人員", ["-- 請選擇 --"] + contact_list)
-    
     if selected_contact != "-- 請選擇 --":
         row = filtered_df[filtered_df['姓名'] == selected_contact].iloc[0]
         birth_date = datetime.datetime.strptime(row['生日'], "%Y-%m-%d").date()
         st.sidebar.info(f"已載入：{selected_contact} (KIN {row['KIN']})")
     else:
-        birth_date = datetime.date(1985, 10, 24) # Default fallback
+        birth_date = datetime.date(1985, 10, 24) 
 else:
     birth_date = st.sidebar.date_input("手動輸入生日", value=datetime.date(1985, 10, 24))
 
-# 儲存按鈕
 if not use_contact:
     with st.sidebar.expander("儲存當前設定到通訊錄"):
         new_name = st.text_input("輸入名字")
         if st.button("儲存"):
-            # 計算當前 KIN
             k = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
             if new_name:
                 save_contact(conn, contacts_df, new_name, birth_date, k)
@@ -515,21 +522,19 @@ if not use_contact:
                 st.rerun()
 
 # ---------------- 核心計算 ----------------
-# User A Calculations
 kin_A = calculate_kin_num(birth_date.year, birth_date.month, birth_date.day, DB)
 info_A = get_kin_details(kin_A, DB)
 oracle_A = calculate_oracle(kin_A, DB)
 psi_num, _ = get_psi_kin(birth_date, kin_A, DB)
 psi_info = get_kin_details(psi_num, DB)
 goddess_info = calculate_goddess_force(oracle_A, DB)
-flow_year_val, flow_year_info = calculate_flow_year_kin(birth_date, DB, ref_date=daily_date) # 流年基準為 daily_date
+flow_year_val, flow_year_info = calculate_flow_year_kin(birth_date, DB, ref_date=daily_date)
 
-# Daily Calculations (Based on daily_date)
 today_date, today_kin_info = calculate_today_kin(daily_date, DB)
 moon_str, moon_num, day_num, heptad_week = get_13moon_date(daily_date)
 daily_energy = get_daily_energy(moon_num, day_num, DB)
 today_oracle = calculate_oracle(today_kin_info['KIN'], DB)
-sync_data = calculate_synchronotron_data(daily_date, kin_A, DB) # Sync data combines daily + user
+sync_data = calculate_synchronotron_data(daily_date, kin_A, DB)
 
 # ---------------- 頁面標題 ----------------
 if selected_function != "👥 人員管理":
@@ -552,6 +557,7 @@ if selected_function == "🔮 靈魂藍圖":
     
     st.markdown("---")
     st.subheader("🧩 五大神諭佈陣 (Oracle Cross)")
+    
     bg_guide = "#F4F6F6"; bg_antipode = "#F4F6F6"; bg_destiny = "#FCF3CF"; bg_analog = "#F4F6F6"; bg_occult = "#F4F6F6"
 
     r1c1, r1c2, r1c3 = st.columns([1, 1, 1])
@@ -605,17 +611,14 @@ elif selected_function == "🌊 流年與運勢":
 elif selected_function == "💞 關係合盤":
     st.header("💞 關係能量合盤")
     rel_contact = st.selectbox("選擇合盤對象", ["-- 自訂輸入 --"] + (contacts_df['姓名'].tolist() if not contacts_df.empty else []))
-    
     if rel_contact != "-- 自訂輸入 --":
         row_b = contacts_df[contacts_df['姓名'] == rel_contact].iloc[0]
         b_date = datetime.datetime.strptime(row_b['生日'], "%Y-%m-%d").date()
         st.info(f"已載入：{rel_contact} ({b_date})")
     else:
         b_date = st.date_input("對方生日", value=datetime.date(1990, 1, 1))
-        
     kin_B = calculate_kin_num(b_date.year, b_date.month, b_date.day, DB)
     combined = calculate_relationship(kin_A, kin_B, DB)
-    
     if combined:
         cinfo = combined['info']
         ck = combined['KIN']
@@ -707,8 +710,7 @@ elif selected_function == "👑 國王棋盤":
     labels = ["指引", "支持", "主印記", "挑戰", "隱藏"]
     for i, col in enumerate(cols):
         k_info = today_oracle[keys[i]]
-        with col:
-            render_oracle_pyramid(labels[i], k_info['KIN'], k_info)
+        with col: render_oracle_pyramid(labels[i], k_info['KIN'], k_info)
     st.markdown("---")
     c_cry1, c_cry2 = st.columns([1, 3])
     with c_cry1:
@@ -733,32 +735,20 @@ elif selected_function == "🧠 441 共時化科學":
         keq = sync_data['KIN_EQUIV']
         with c_res:
             st.markdown("#### 核心頻率數據")
-            st.markdown(f"""
-            <div style="background-color:#E8F8F5; padding:20px; border-radius:10px; border:2px solid #1ABC9C;">
-                <h2>MCF: {mcf}</h2>
-                <small>Master Coordinating Frequency</small>
-                <hr>
-                <h3>BMU: {bmu}</h3>
-                <small>Base Matrix Unit</small>
-                <hr>
-                <h3>對等: KIN {keq['KIN']}</h3>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div style="background-color:#E8F8F5; padding:20px; border-radius:10px; border:2px solid #1ABC9C;">
+                <h2>MCF: {mcf}</h2><small>Master Coordinating Frequency</small><hr>
+                <h3>BMU: {bmu}</h3><small>Base Matrix Unit</small><hr>
+                <h3>對等: KIN {keq['KIN']}</h3></div>""", unsafe_allow_html=True)
         with st.expander("查看 TFI 加總細節"):
-            for log in sync_data['logs']:
-                st.code(log, language="text")
+            for log in sync_data['logs']: st.code(log, language="text")
 
 elif selected_function == "👥 人員管理":
     st.header("👥 人員資料庫管理")
-    
     search_term = st.text_input("🔍 搜尋姓名", "")
-    
-    # Advanced Filters
     c_f1, c_f2 = st.columns(2)
     with c_f1: f_tone = st.multiselect("篩選調性", TONES_NAME[1:])
     with c_f2: f_seal = st.multiselect("篩選圖騰", SEALS_NAME[1:])
     
-    # Filter logic
     display_df = contacts_df
     if search_term: display_df = display_df[display_df['姓名'].str.contains(search_term, case=False, na=False)]
     if f_tone: display_df = display_df[display_df['調性'].isin(f_tone)]
@@ -790,7 +780,6 @@ elif selected_function == "👥 人員管理":
                 })
             except Exception as e:
                 st.error(f"資料格式錯誤: {row.get('姓名', 'Unknown')} - {e}")
-        
         if updated_rows:
             final_df = pd.DataFrame(updated_rows)
             conn.update(worksheet="contacts", data=final_df)
@@ -820,16 +809,10 @@ elif selected_function == "👥 人員管理":
                             b_d = pd.to_datetime(row['生日']).date()
                             k_num = calculate_kin_num(b_d.year, b_d.month, b_d.day, DB)
                             new_rows.append({"姓名": row['姓名'], "生日": str(b_d), "KIN": k_num})
-                        
                         new_data = pd.DataFrame(new_rows)
                         final_import_df = pd.concat([contacts_df, new_data], ignore_index=True)
                         conn.update(worksheet="contacts", data=final_import_df)
                         st.success(f"成功匯入 {len(new_data)} 筆資料！")
                         st.rerun()
-                    else:
-                        st.error("CSV 缺少 '姓名' 或 '生日' 欄位")
-                except Exception as e:
-                    st.error(f"匯入失敗: {e}")
-```
-
-
+                    else: st.error("CSV 缺少 '姓名' 或 '生日' 欄位")
+                except Exception as e: st.error(f"匯入失敗: {e}")

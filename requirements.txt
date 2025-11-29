@@ -2,4 +2,5 @@ streamlit
 pandas
 numpy
 pillow
+st-gsheets-connection  <-- 新增這個
 

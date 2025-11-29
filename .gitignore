@@ -1,0 +1,11 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Streamlit config
+.streamlit/
+
+# OS generated files
+.DS_Store
+Thumbs.db
